@@ -18,16 +18,18 @@
 
 %% Cyrus packages
 \usepackage{microtype}
+\usepackage{todonotes}
 
 %% Listings
+\definecolor{mygray}{rgb}{0.75,0.75,0.75}
 \usepackage{listings}
 \lstset{tabsize=2, 
-basicstyle=\ttfamily\fontsize{7.5pt}{1em}\selectfont, 
+basicstyle=\ttfamily\fontsize{10pt}{1em}\selectfont, 
 commentstyle=\itshape\ttfamily\color{gray}, 
 stringstyle=\ttfamily\color{red},
-mathescape=false,escapechar=!,
+mathescape=false,escapechar=~,
 numbers=left, numberstyle=\scriptsize\color{mygray}, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=0pt, numbersep=3pt, morekeywords=[1]{tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,datatype,new,toast,syntax,module,where,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,by,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,exptsm,pattsm},deletekeywords={double},classoffset=0,
-aboveskip=2pt,belowskip=0pt,
+aboveskip=4pt,belowskip=2pt,
 moredelim=**[is][\color{red}]{SSTR}{ESTR},
 moredelim=**[is][\color{OliveGreen}]{SHTML}{EHTML},
 moredelim=**[is][\color{purple}]{SCSS}{ECSS},
@@ -173,12 +175,13 @@ deletestring=[d]{"},
 %% before \maketitle command
 \begin{abstract}
 Programmers, 
-like ``pen-and-paper'' mathematicians, often seek to define ``syntactic sugar'' that  lowers the syntactic cost of common idioms. 
-Unfortunately, the most direct mechanisms available to programmers, e.g. \li{camlp4} \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, do not support modular reasoning about determinism (i.e. separately defined forms can conflict syntactically with one another), and they obscure the type and binding structure of the program. We argue therefore that these mechanisms are unreasonable for programming ``in the large''.
+like ``pen-and-paper'' mathematicians, often seek to define new ``syntactic sugar'' that  lowers the syntactic cost of common idioms. 
+Unfortunately, the most direct mechanisms of syntactic control available to programmers, e.g. \li{camlp4} \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, do not support modular reasoning about determinism (i.e. separately defined forms can conflict syntactically with one another), and they obscure the type and binding structure of the program. We argue therefore that these mechanisms are unreasonable for programming ``in the large''. Typed term-rewriting macro systems (e.g. as available in Scala) are more reasonable, but give programmers limited syntactic control.
 
-This paper formally introduces \emph{parametric typed syntax macros} (pTSMs), which give library providers programmatic control over both the parsing and expansion of expressions and patterns of \emph{generalized literal form} at a specified type or parameterized family of types. Expansion is \emph{strictly hygienic}, meaning that expansions can refer to external bindings only via spliced terms or explicit module parameters, and expansions do not reveal internal bindings to spliced terms or to the remainder of the program. 
+This paper formally introduces \emph{parametric typed syntax macros} (pTSMs), which give library providers programmatic control over both the parsing and expansion of expressions and patterns of \emph{generalized literal form} at a specified type or parameterized family of types. Expansion is \emph{strictly hygienic}, meaning that 1) expansions can refer to external bindings only via spliced terms or supplied module parameters; and 2)  expansions do not reveal internal bindings to spliced terms or to the remainder of the program. 
 % Partial parameter application lowers the syntactic cost of this strict style. 
-This design ensures that clients are able to reason about the binding structure of the program while holding the expansion of the program abstract. The system needs only convey to clients a \emph{segmentation} of each literal that gives the locations of the spliced terms. The system can determine this {segmentation} automatically and convey it to the client via syntax highlighting, or by presenting the client with a context-free grammar (without revealing the semantic actions associated with each production.) 
+This design ensures that clients are able to reason about the binding structure of the program while holding the expansion of the program abstract -- the system needs only convey to clients the \emph{segmentation} of each literal, which gives the locations of the spliced terms. 
+%The system can determine this {segmentation} automatically and convey it to the client via syntax highlighting, or by presenting the client with a context-free grammar (without revealing the semantic actions associated with each production.) 
 We argue that this mechanism occupies a ``sweet spot'' in the design space, in that it captures many common syntactic idioms while avoiding the problem of syntactic conflicts by construction and supplying clients with clear abstract reasoning principles.
 
 
@@ -229,9 +232,93 @@ We argue that this mechanism occupies a ``sweet spot'' in the design space, in t
 
 
 \section{Introduction}
+Programming languages commonly build in ``syntactic sugar'' that decreases the syntactic cost of working with certain standard library constructs.   
+For example, Standard ML and many other functional languages build in syntactic sugar for constructing and pattern matching on lists.
 
-Text of paper \ldots
+Third-party library providers are, justifiably, envious of the privileged status of standard library constructs -- they would like to be able to define syntactic sugar for constructing and pattern matching on values of the types that they have defined. For example, 1) the provider of a ``collections'' library might like to define syntactic sugar for finite sets and dictionaries; 2) the provider of a ``web programming'' library might like syntactic sugar for HTML and JSON values; and 3) the provider of a ``chemistry'' library might like syntactic sugar for chemical structures based on the SMILES standard \cite{anderson1987smiles}. This has led to efforts to eliminate derived forms  specific to standard library constructs from language definitions in favor of mechanisms that give more syntactic control to library providers.
 
+\subsection{Syntax Dialects are Unreasonable}
+One approach available to library providers is to use a syntax definition system like Camlp4 \cite{ocaml-manual}, Copper \cite{conf/gpce/WykS07} or SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework} to construct a \emph{syntax dialect}, i.e. a new syntax definition that extends the original syntax definition with new derived forms. 
+%library-specific (a.k.a. ``domain-specific'') 
+For example, Ur/Web extends Ur's textual syntax with derived forms for SQL queries, XHTML elements and other constructs defined in a  web programming library \cite{conf/popl/Chlipala15,conf/pldi/Chlipala10}. The example below demonstrates how an XHTML expression containing a ``spliced'' string expression can be expressed in Ur/Web.
+
+\begin{lstlisting}[numbers=none]
+  val p = SURL<xml><p>Hello, {[EURLjoin " " [first, last]SURL]}!</p></xml>EURL
+\end{lstlisting}
+The desugaring of this derived form (not shown) is substantially more verbose and, for programmers familiar with the standardized syntax for XHTML \cite{xhtml}, substantially more obscure. % Such dialects are sometimes qualitatively taxonomized as amongst the ``domain-specific language'' for this reason \cite{fowler2010domain}. %Syntactic cost is often assessed qualitatively \cite{green1996usability}, though quantitative metrics can be defined. 
+% Syntax definition systems , which we will discuss in Sec. \ref{sec:syntax-dialects}, have simplified the task of defining ``library-specific'' (a.k.a. ``domain-specific'') syntax dialects like Ur/Web, and have thereby contributed to their ongoing proliferation.
+
+% Many have argued that a proliferation of syntax dialects constructed using these tools is harmless or even desirable, because programmers can simply choose the right syntax dialect for each job at hand \cite{journals/stp/Ward94}. However, we argue that in fact 
+This ``dialect-oriented approach'' is difficult to reconcile with the best practices of ``programming in the large''  \cite{DeRemer76}, i.e. developing large programs ``consisting of many small programs (modules), possibly written by different people'' whose interactions are mediated by a reasonable type and binding discipline. The problems that tend to arise are summarized below. %a more systematic treatment will follow in  Sec. \ref{sec:syntax-dialects}.
+
+\paragraph{Problem 1: Syntactic Conflicts}
+The first problem with the dialect-oriented approach is that clients  cannot always combine different syntax dialects when they want to use derived forms that they define together. This is problematic because client programs  cannot be expected to fall cleanly into a single preconceived ``problem domain'' -- large programs use many libraries \cite{DBLP:conf/sac/LammelPS11}. In some cases, this is simply because the dialects have been defined using different, incompatible syntax definition systems. In other cases, the problem is that the dialects define common forms, but assign them different desugarings.
+
+For example, consider two syntax dialects defined under a system like Camlp4: $\mathcal{D}_1$ defines derived forms for sets, and $\mathcal{D}_2$ defines derived forms for dictionaries, both delimited by \verb~{<~ and \verb~>}~.\footnote{In OCaml, simple curly braces are already reserved by the language for record types and values.} Though each dialect defines a deterministic grammar, i.e. $\mathrm{det}(\mathcal{D}_1)$ and $\mathrm{det}(\mathcal{D}_2)$, when the grammars are na\"ively combined by Camlp4, we do not have that $\mathrm{det}(\mathcal{D}_1 \cup \mathcal{D}_2)$ (i.e. syntactic ambiguities arise under the combined dialect.) In particular, \verb~{<>}~ can be parsed as either the empty set or the empty dictionary.%(Indeed, this ambiguity arose when Python added set literals to its grammar.) %A recent version of Python added derived forms for mutable sets. Due to a conflict with dictionary syntax, however, there is no derived form for the empty set.)
+ %A third syntax dialect might come along that uses the same forms that $\mathcal{D}_2$ defines, but for ordered finite maps.
+
+Schwerdfeger and Van Wyk have developed a modular grammar analysis, implemented in Copper \cite{conf/gpce/WykS07}, that ``nearly'' guarantees that determinism is conserved when syntax dialects (of a certain restricted class) are combined \cite{conf/pldi/SchwerdfegerW09}, the caveat being that the constituent dialects must prefix all newly introduced forms with starting tokens drawn from disjoint sets.\todo{more on this?}
+
+\paragraph{Problem 2: Abstract Reasoning About Derived Forms}
+
+Even putting aside the difficulties of conservatively combining syntax dialects, there are questions about how \emph{reasonable}  sprinkling library-specific derived forms throughout a large software system might be. 
+For example, consider the perspective of a programmer attempting to comprehend (i.e. reason about) the program fragment in Figure \ref{fig:K-dialect}, which is drawn under a syntax dialect constructed by combining a number of dialects of Standard ML's textual syntax.
+
+\begin{figure}[h]
+\begin{lstlisting}
+    val a = get_a()
+    val w = get_w()
+    val x = read_data(a)
+    val y = {|(!R)@&{&/x!/:2_!x}'!R}|}
+\end{lstlisting}
+\caption{An example of a potentially confusing program fragment.}
+\label{fig:K-dialect}
+\end{figure}
+
+If the programmer happens to be familiar with the (intentionally terse) syntax of the stack-based database query processing language K, then Line 4 might pose few difficulties. If the programmer does not recognize this syntax, however, there are no simple, definitive protocols for answering questions like:\todo{label and expand upon these}
+
+\begin{enumerate}
+\item Which constituent dialect defined the derived form that appears on Line 4?
+\item Are the characters \li{x} and \li{R} inside this derived form parsed as ``spliced'' expressions \li{x} and \li{R} (of variable form), or parsed in some other way peculiar to this form?
+\item If \li{x} is the spliced expression \li{x}, does it refer to the binding on the previous line? Or was that binding shadowed by an unseen binding in the desugaring of Line 4?
+\item If \li{w} is renamed, could that possibly break the program, or change its meaning? In other words, does the desugaring  assume that some variable identified as \li{w} is in scope (even though \li{w} does not appear directly in the text of Line 4)?
+\item What type does \li{y} have?
+\end{enumerate}
+In short, syntax dialects do not come with useful principles of \emph{syntactic abstraction}: if the desugaring of the program is held abstract, programmers can no longer reason about types and binding (i.e. answer questions like those above) in the usual disciplined manner. This is burdensome at all scales, but particularly when programming in the large, where it is common to encounter a program fragment drawn by another programmer, or drawn  long ago. Forcing the programmer to examine the desugaring of the drawing in order to reason about types and binding defeats the ultimate purpose of using syntactic sugar -- lowering cognitive cost.
+
+
+%In other words, encountering an unfamiliar derived form has made it difficult for the programmer to maintain the usual \emph{type discipline} and \emph{binding discipline}. %Compelling the programmer to examine the desugaring directly defeat the purpose of defining the derived form -- decreasing cognitive cost. Indeed, it substantially increases cognitive cost.
+
+% In contrast, when a programmer encounters, for example, a function call like the call to \li{read_data} on Line 3, the analagous questions can be answered by following clear protocols that become ``cognitive reflexes'' after sufficient experience with the language, even if the programmer has no experience with the library defining \li{read_data}:
+% \begin{enumerate}
+% \item The language's syntax definition determines that \li{read_data(a)} is an expression of function application form.
+% \item Similarly, \li{read_data} and \li{a} are definitively expressions of variable form.
+% \item The variable \li{a} can only refer to the binding of \li{a} on Line 1.
+% \item The variable \li{w} can be renamed without knowing anything about the values that \li{read_data} and \li{a} stand for.
+% \item The type of \li{x} can be determined to be \li{B} by determining that the type of \li{read_data} is \li{A -> B} for some \li{A} and \li{B}, and checking that \li{a} has type \li{A}. Nothing else needs to be known about the values that \li{read_data} and \li{a} stand for. In Reynolds' words \cite{B304}:
+% \begin{quote}
+% \emph{Type structure is a syntactic discipline for enforcing levels of abstraction.}
+% \end{quote}
+% \end{enumerate}
+
+
+\subsection{Term-Rewriting Macros Give Limited Syntactic Control}
+
+
+\subsection{Contributions}
+
+\section{TSMs in VerseML}
+\subsection{Simple TSMs}
+
+\subsection{Parametric TSMs}
+
+\section{Simple TSMs, Formally}
+
+\section{Parametric TSMs, Formally}
+
+\section{Related Work}
+
+\section{Discussion \& Conclusion}
 
 %% Acknowledgments
 \begin{acks}                            %% acks environment is optional
