@@ -86,7 +86,7 @@ Condition 4.1 (pg12) explains how we formally handle this first step.
 
 The assertion that the description of the approach is "partly at the bottom of
 page 18" is incorrect: the bottom of Page 18 is the beginning of Sec. 5, which
-describes an *extension* of the core mechanism to handle parameterized families
+describes an extension of the core mechanism to handle parameterized families
 of types and module parameters. Nothing in Sec. 5 is necessary to understand
 prior sections, or the main conceptual points of the paper.
 
@@ -97,7 +97,7 @@ Spelling out this design in once place and specifying the quoting convention
 (which isn't described, as far as I can tell) would improve the presentation."
 
 The splice summary/segmentation/antiquotation mechanism, and how it relates to
-the colorings shown, is in fact spelled out in Sec. 2.2 (in particular, the
+the colorings shown, is in fact spelled out in Sec. 2.2 (in particular, in the
 final 3 paragraphs).
 
 > "Along similar lines, the introduction provides considerable motivation for
@@ -120,19 +120,8 @@ authors' opinions on how a language should behave."
 
 The phrase "sweet spot" (which appears exclusively in quotes, and only at the
 end of the abstract and conclusion) is informal. That said, the phrase was
-chosen because TSMs sit between the well-studied extremes:
-
-1. TSMs offer less syntactic control than syntax dialects, but stronger
-abstract reasoning principles (Sec. 1.1). The term "stronger" here is used in
-the technical sense -- clients can hold more information abstract when
-reasoning about types, binding and segmentation. The only opinion here is that
-abstract reasoning is itself a useful thing, but that is certainly a widely
-accepted belief within the ICFP community.
-
-2. TSMs offer more syntactic control than term-rewriting macros and offer
-comparable reasoning principles (Sec. 1.2). Again, this is an objective claim.
-TSMs have full control over parsing the literal body, whereas term-rewriting
-macros are given an already-parsed term. The reasoning principles are theorems.
+chosen because TSMs sit between the well-studied extremes as described in Sec.
+1.
 
 == Review B ==
 
