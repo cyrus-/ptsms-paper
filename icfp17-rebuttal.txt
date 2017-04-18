@@ -52,7 +52,7 @@ annotations on Template Haskell macros.
 Furthermore, Template Haskell does not maintain any sort of hygienic binding
 discipline. 
 
-Being that Template Haskell achieves none of our central goals, and that there
+Being that Template Haskell achieves neither of these central goals, and that there
 are a number of other languages that have broadly similar support for
 compile-time code generation, we neglected to mention it in Sec. 1.2 alongside,
 e.g. Scala's macro system, which is more disciplined. However, due to Template
