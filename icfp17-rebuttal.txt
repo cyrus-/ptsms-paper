@@ -1,9 +1,8 @@
 Thank you for the thoughtful reviews. We were pleased to see that no
-significant technical problems were found during the review process, and that
-the reviewers found the technical approach to be thorough. The main doubts that
-seem to remain relate to (1) usefulness and (2) novelty.
+significant technical problems were found during the review process. The main
+doubts that seem to remain relate to (1) usefulness and (2) novelty.
 
-On usefulness, Review B states:
+With regard to usefulness, Review B states:
 
 "Although assessing the usefulness of a language design is difficult, reporting
 practical and substantial uses of the extension mechanism would go far in
