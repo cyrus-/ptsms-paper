@@ -1,0 +1,177 @@
+===========================================================================
+                          ICFP 2017 Review #128A
+---------------------------------------------------------------------------
+                Paper #128: Reasonably Programmable Syntax
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: X. I am an expert in this area
+
+                         ===== Paper summary =====
+
+This paper presents an approach to syntactic extension that supports
+free-form parsing within a fixed set of predefined delimiters and with
+the constraint that escapes to the language's expression grammar are
+delegated back to the default parser. The expander enforces hygiene and
+type safety by locally checking the result of each expansion.
+
+                      ===== Comments to authors =====
+
+The most novel part of the paper's design is the approach to parsing.
+The design choices related to types and limitations against extensions
+that implement binding forms are fairly standard --- reminiscent of
+MacroML in terms of limitations and reminiscent of TemplateHaskell in
+checking well-formedness after an extension's free-form generation of
+ASTs. The formalism to check hygiene seems novel, although with
+precedents in systems that synthesize hygiene (such as Lee et al.,
+ECOOP'12). The paper could be strengthened through a better
+description of the parsing technique and by providing some form of
+validation that the system is useful in practice.
+
+The paper sets up an appropriate contrast to systems that rely on
+general parsing technology, such as SugarJ, that can suffer from
+parser-composition issues. It also implicitly sets up a contrast to
+Lisp-style languages and to Omar's typy, which have a fixed
+reader-level grammar (to aid reliable composition) in exchange for
+constraints on syntactic flexibility. The design in this paper hits a
+point in between: there's a fixed reader-level grammar, but extensions
+support free-form syntax within string literals and can only escape
+subexpressions by identifying disjoint regions of the string to be
+treated as such. The parsing protocol is an interesting design, and
+it's novel as far as I know.
+
+The paper doesn't describe this parsing approach in one particular
+section. The description is partly at the bottom of page 4, and partly
+at the bottom of page 18. It's not immediately clear whether the
+segmentation should through colors (in figures 3 and 4 and footnote 2)
+can be inferred without running the extension's implementation, but my
+current understanding is that it can't. Spelling out this design in
+once place and specifying the quoting convention (which isn't
+described, as far as I can tell) would improve the presentation. Along
+similar lines, the introduction provides considerable motivation for
+the parsing choice, but it's tangled with motivation for types, so
+drawing out the parsing strategy more explicitly could help.
+
+The paper's claim of a "sweet spot" seems to be supported only by the
+authors' opinions on how a language should behave. Although assessing
+the usefulness of a language design is difficult, reporting practical
+and substantial uses of the extension mechanism would go far in
+providing evidence that the language is useful.
+
+===========================================================================
+                          ICFP 2017 Review #128B
+---------------------------------------------------------------------------
+                Paper #128: Reasonably Programmable Syntax
+---------------------------------------------------------------------------
+
+                      Overall merit: B. OK paper, but I will not champion
+                                        it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                         ===== Paper summary =====
+
+This paper extends existing work on programmable syntax (namely TSM) to support pattern syntax, parametric syntax, composable syntax, and provides a formal definition of hygiene.
+
+The work is well presented and technically sound; my primary concern is on usability particularly on composable syntaxes and complex situations where two syntaxes might use the same symbols for starting/internal workings and the conflict might be confusing to users of both.
+
+===========================================================================
+                          ICFP 2017 Review #128C
+---------------------------------------------------------------------------
+                Paper #128: Reasonably Programmable Syntax
+---------------------------------------------------------------------------
+
+                      Overall merit: D. Reject
+                         Confidence: X. I am an expert in this area
+
+                         ===== Paper summary =====
+
+This paper presents a quasi-quotation system similar to that found in
+GHC, named "Typed Syntax Macros". These TSMs have a fixed delimiter
+form, and pass the characters between the delimiters to a
+general-purpose parser. That general purpose parser produces an
+abstract syntax tree directly (it is not re-expanded, as macros are)
+and may include references to the input in the output AST. Those
+references to the output enable support of anti-quotation.
+
+The paper presents thorough meta-theory for various properties of this
+system, in particular hygiene. This hygiene condition is extremely
+restrictive -- in particular, variables bound at the definition site
+of the macro cannot be referenced in its expansion. To alleviate this
+problem, the paper introduces parameterized macros, which are
+parameterized over an ML-style module, which the expansion can then
+reference.
+
+                      ===== Comments to authors =====
+
+Quasiquotation is a useful feature, and has proved valuable in many
+languages. This paper sets out several design goals for a
+quasiquotation system, some of which are not solved in some existing
+systems. The presented system is thorough in its meta-theory, and
+takes care to preserve hygiene, a key element of reasonable
+meta-programming.
+
+However, the system presented is not novel in the ways the authors
+suggest. Most significantly, it is very similar to the GHC
+quasiquotation system [Mainland 07], and also to the camlp4
+metaprogramming system before that. Considering GHC quasiquotes, they
+also feature a single fixed delimiter, arbitrary parsers, explicit
+invocation, and typing. Because Template Haskell, on which
+quasiquotation is built, is more powerful than the system presented
+here, they do not have context independence or capture properties, but
+a system without those particular features would would have the
+relevant properties. Segmentation is, in the present system, an
+out-of-band communication to the editor system, and could be so
+adapted for any extensible syntax system.
+
+Additionally, the idea of directly generating an AST, rather than a
+term to be further expanded, and using this to build DSLs, goes back
+at least to Shriram Krishnamurthi's thesis (see the concept of
+"micros"). 
+
+The approach to hygiene, which uses an auxiliary environment which
+maps symbols (here called identifiers) to variables, is familiar from
+the literature on hygenic macros in the Scheme community (this is
+known as a "renaming" in that literature; see for example [Dybvig
+91]). That this approach enforces hygiene is proved for a
+significantly more expressive macro system by [Herman and Wand].
+
+The parameterization is a somewhat odd feature. In the paper, it seems
+to mostly address the overly-strong hygiene restriction, by allowing
+the macro to generate references to identifiers from the module
+signature that is parameterized over. However, this seems a
+round-about way of recovering what is essentially lexical scope:
+macros should be able to reference names in their environment, and
+those references should be stable when expanded. The parameterization
+is independently useful, however, as the DICT syntax example shows. In
+this setting, the paper follows [Culpepper, Owens, Flatt; GPCE 2005]
+very closely (see also Owens' thesis).
+
+### Smaller issues
+
+* The claims of the "Syntax Dialects are Unreasonable" section seems
+  to ignore the long history of success of the Lisp community in this
+  area.
+
+* p3:44 the systems listed here are not all "typed" in the same
+  sense. Herman and Wand's types, for example, describe the scoping of
+  the resulting program, not its type.
+
+* Would splices be more simply represented by providing an opaque type
+  of strings with a "substring" operation?
+
+* p7:41 this type should be `string`, not `html`.
+
+* The discussion of `do` notation on p8 is confused. `do` notation,
+  and generation of binding forms more generally, is not prohibited
+  here by capture-avoidance, but because (I infer, the full AST is not
+  provided) there's no way to take a splice and put it in the binding
+  position of a `lam` AST.
+
+* p10:32 how would you address capture in a system which did feature
+  binding in patterns that could be subsequently referenced?
+
+* p24:34 This "backpatching" is done in many Lisp IDEs, see DrRacket
+  for an example [Florence et al, Language Workbench 2016]
+
