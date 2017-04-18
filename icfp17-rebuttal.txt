@@ -47,7 +47,7 @@ extension's free-form generation of ASTs"
 While Template Haskell does check that each expansion is well-typed (as any
 macro system in a statically typed language eventually must), there is no way
 for clients to reason abstractly about *what that type is* because there are no
-	annotations on Template Haskell macros. 
+annotations on Template Haskell macros. 
 
 Furthermore, Template Haskell does not maintain any sort of hygienic binding
 discipline. 
