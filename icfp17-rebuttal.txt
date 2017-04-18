@@ -282,7 +282,7 @@ provided body. A related mechanism was used in Omar et al, 2014. However, this
 would not guarantee that segments are non-overlapping so a check by the
 semantics would still be needed. Simply defining body as a string and including
 the bounds checks in along with the other checks is semantically simpler.
-Clients who favor the abstract approach can choose to use it, since parse
+Providers who favor the abstract approach can choose to use it, since parse
 functions are ML code.
 
 > "p7:41 this type should be `string`, not `html`"
