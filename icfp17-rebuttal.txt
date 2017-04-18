@@ -191,11 +191,11 @@ the input string and the output AST.
 be further expanded, and using this to build DSLs, goes back at least to
 Shriram Krishnamurthi's thesis (see the concept of "micros"). 
 
-Direct AST generation emerged as the "default" solution in our mechanism in
+Direct AST generation emerged as the "default" solution in our development in
 that adding support for TSM application within proto-expansions would have
 required significant additional machinery. Krishnamurthi's work on micros is
-focused on term-to-term translation from the source language to an IR, and
-macro expansion in the generated translation does eventually occur.
+focused on term-to-term translation from the source language to an IR encoding, 
+and macro expansion in the generated translation does eventually occur.
 
 > "The approach to hygiene, which uses an auxiliary environment which maps
 symbols (here called identifiers) to variables, is familiar from the literature
