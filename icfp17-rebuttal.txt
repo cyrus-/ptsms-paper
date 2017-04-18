@@ -57,7 +57,8 @@ are a number of other languages that have broadly similar support for
 compile-time code generation, we neglected to mention it in Sec. 1.2 alongside,
 e.g. Scala's macro system, which is more disciplined. However, due to Template
 Haskell's popularity in the community, we agree that it would be worth
-mentioning explicitly.
+mentioning explicitly. We say a bit more about Template Haskell in response to 
+Review C below.
 
 > "The formalism to check hygiene seems novel, although with precedents in
 systems that synthesize hygiene (such as Lee et al., ECOOP'12)."
