@@ -120,8 +120,7 @@ authors' opinions on how a language should behave."
 
 The phrase "sweet spot" (which appears exclusively in quotes, and only at the
 end of the abstract and conclusion) is informal. That said, the phrase was
-chosen because TSMs sit between the well-studied extremes as described in Sec.
-1.
+chosen because TSMs sit between the well-studied extremes described in Sec. 1.
 
 == Review B ==
 
