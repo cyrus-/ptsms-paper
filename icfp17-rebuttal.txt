@@ -270,7 +270,7 @@ systems that suffer from some or all of the problems described in Sec. 1.1.
 and Wand's types, for example, describe the scoping of the resulting program,
 not its type."
 
-Yes, you're right. That point wasn't stated as clearly as it could have been.
+Yes, that's right. That point wasn't stated as clearly as it could have been.
 
 > "Would splices be more simply represented by providing an opaque type of
 strings with a "substring" operation?"
