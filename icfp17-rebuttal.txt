@@ -1,25 +1,24 @@
 Thank you for the thoughtful reviews. We were pleased to see that no
-significant technical problems were found during the review process. The main
+technical problems were found during the review process. The main 
 doubts that seem to remain relate to (1) usefulness and (2) novelty.
 
-With regard to usefulness, Review B states:
+With regard to usefulness, Review A states:
 
-"Although assessing the usefulness of a language design is difficult, reporting
+> "Although assessing the usefulness of a language design is difficult, reporting
 practical and substantial uses of the extension mechanism would go far in
 providing evidence that the language is useful."
 
-We agree! So much so that we made just such a case for usefulness in our
+We agree! And we made just such a case for usefulness in our
 closely related work a few years ago (Omar et al, ECOOP 2014). That paper gave
 more sophisticated examples and even gathered empirical data from open source
 projects. The present paper is intended to be a follow-on "theory paper" that
 contributes more detailed formal results and develops various functional
-variants of the mechanism as was detailed in Sec. 7. Such a paper should be
-well within the scope of ICFP.
+variants of the mechanism as summarized in Sec. 7.
 
 With regard to novelty, the first sentence of Sec. 1.3 ("Contributions") makes
 explicit the specific claims of our paper:
 
-"This work introduces a system of typed syntax macros (TSMs) that gives library
+> "This work introduces a system of typed syntax macros (TSMs) that gives library
 providers substantially more syntactic control than existing typed
 term-rewriting macro systems while maintaining the ability to reason abstractly
 about types, binding and segmentation."
@@ -38,8 +37,7 @@ from term-rewriting macros and TSMs in that they do not give the macro access
 to the syntax of the arguments at all (whether parsed or unparsed.) They cannot
 therefore be used as a mechanism for syntactic control -- staging macro
 invocation syntactically coincides with function application. Staging macros
-instead serve as a mechanism for staged evaluation, primarily for reasons of
-performance. This is unrelated to our stated goals.
+are motivated by concerns about performance, rather than syntactic cost.
 
 > "reminiscent of TemplateHaskell in checking well-formedness after an
 extension's free-form generation of ASTs"
@@ -120,7 +118,7 @@ authors' opinions on how a language should behave."
 
 The phrase "sweet spot" (which appears exclusively in quotes, and only at the
 end of the abstract and conclusion) is informal. That said, the phrase was
-chosen because TSMs sit between the well-studied extremes described in Sec. 1.
+chosen because TSMs sit between the problematic extremes described in Sec. 1.
 
 == Review B ==
 
@@ -131,7 +129,7 @@ conflict might be confusing to users of both."
 
 TSMs can be applied within spliced terms without conflict (e.g. see the
 footnote on page 4, the discussion about final expansion in Sec. 2, and also
-many more complex examples in Omar et al, 2014).
+several more complex examples in Omar et al, 2014).
 
 It is not clear to us what is meant here by "two syntaxes might use the same
 symbols for starting/internal workings". This concern is perhaps related to the
@@ -246,7 +244,7 @@ be accessed by the computed expansion without examining the implementation
 directly, which is in following with our goal of making it easy to reason
 abstractly about binding.
 
-"In this setting, the paper follows [Culpepper, Owens, Flatt; GPCE 2005] very
+> "In this setting, the paper follows [Culpepper, Owens, Flatt; GPCE 2005] very
 closely (see also Owens' thesis)."
 
 The work by Culpepper, Owens and Flatt, and by Owens in his thesis, on
@@ -299,7 +297,7 @@ be related to this mechanism. Absent such a mechanism, it is in fact capture
 avoidance that prevents capture by spliced terms of variables bound in the
 expansion.
 
-* "p10:32 how would you address capture in a system which did feature binding
+> "p10:32 how would you address capture in a system which did feature binding
   in patterns that could be subsequently referenced?"
 
 This would be addressed exactly as it is with expression TSMs.
