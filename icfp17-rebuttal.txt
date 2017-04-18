@@ -78,7 +78,7 @@ finish.
 
 One source of confusion may be that the paper only tersely describes how,
 before typed expansion, the initial context-free parsing of generalized literal
-forms works (see the paragraph immediately under Fig. 3, and Sec. 2's
+forms works (though see the paragraph immediately under Fig. 3, and Sec. 2's
 discussion of the body type.) There is nothing sophisticated about this step --
 generalized literal forms are parsed like raw string literals. Our prior paper
 showed examples of various other delimiters and gave a context free grammar.
