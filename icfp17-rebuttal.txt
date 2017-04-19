@@ -1,43 +1,46 @@
-Thank you for the thoughtful reviews. We were pleased to see that no
-technical problems were found during the review process. The main 
-doubts that seem to remain relate to (1) usefulness and (2) novelty.
+Thank you for the thoughtful reviews. We are encouraged by the fact that 
+the technical approach was considered sound. The main concerns expressed 
+seem to be regarding the (1) usefulness and (2) novelty of our approach, 
 
 With regard to usefulness, Review A states:
 
-> "Although assessing the usefulness of a language design is difficult, reporting
-practical and substantial uses of the extension mechanism would go far in
-providing evidence that the language is useful."
+> "Although assessing the usefulness of a language design is difficult,
+reporting practical and substantial uses of the extension mechanism would go
+far in providing evidence that the language is useful."
 
-We agree! And we made just such a case for usefulness in our
-closely related work a few years ago (Omar et al, ECOOP 2014). That paper gave
-more sophisticated examples and even gathered empirical data from open source
-projects. The present paper is intended to be a follow-on "theory paper" that
-contributes more detailed formal results and develops various functional
-variants of the mechanism as summarized in Sec. 7.
+In fact we did just that in our prior work at ECOOP 2014, which we referred to
+as the "most closely related work" and discussed in Sec. 1 and at length in
+Sec. 7. That paper gave many realistic examples, described two implementations
+(one that today has 400+ stars on GitHub) and summarized some empirical data
+gathered from open source projects. We drew brief attention to these aspects of
+the prior work in the second paragraph of Sec. 1. We will clarify in the final
+version that this paper defers questions about usefulness to our prior work so
+as to be able to focus on semantic questions.
 
-With regard to novelty, the first sentence of Sec. 1.3 ("Contributions") makes
-explicit the specific claims of our paper:
+With regard to novelty, note that the first sentence of Sec. 1.3
+("Contributions"), makes explicit the specific claims of our paper:
 
-> "This work introduces a system of typed syntax macros (TSMs) that gives library
-providers substantially more syntactic control than existing typed
+> "This work introduces a system of typed syntax macros (TSMs) that gives
+library providers substantially more syntactic control than existing typed
 term-rewriting macro systems while maintaining the ability to reason abstractly
 about types, binding and segmentation."
 
-In the remainder of the rebuttal, we will argue, in view of these specific
-claims, that the paper does in fact address all of the major concerns about
-novelty raised by the referees. We humbly ask that the scores assigned to our
-paper be reconsidered in this light.
+In the remainder of the rebuttal, we will argue, in view of this statement of
+our specific claims, that the paper does in fact address all of the major
+concerns about novelty raised by the referees. We also respond to a few other
+concerns, e.g. about the organization of the sections. We humbly ask that the
+scores assigned to our paper be reconsidered in light of these responses.
 
 == Review A ==
 
 > "reminiscent of MacroML" 
 
-MacroML implements staging macros (stated on pg3). These are quite distinct
+MacroML implements staging macros (as stated on pg3). These are quite distinct
 from term-rewriting macros and TSMs in that they do not give the macro access
 to the syntax of the arguments at all (whether parsed or unparsed.) They cannot
 therefore be used as a mechanism for syntactic control -- staging macro
 invocation syntactically coincides with function application. Staging macros
-are motivated by concerns about performance, rather than syntactic cost.
+are motivated mainly by concerns about performance, rather than syntactic cost.
 
 > "reminiscent of TemplateHaskell in checking well-formedness after an
 extension's free-form generation of ASTs"
@@ -45,48 +48,46 @@ extension's free-form generation of ASTs"
 While Template Haskell does check that each expansion is well-typed (as any
 macro system in a statically typed language eventually must), there is no way
 for clients to reason abstractly about *what that type is* because there are no
-annotations on Template Haskell macros. 
+	type annotations on Template Haskell macros. 
 
-Furthermore, Template Haskell does not maintain any sort of hygienic binding
-discipline. 
+Furthermore, Template Haskell does not maintain a hygienic binding discipline. 
 
-Being that Template Haskell achieves neither of these central goals, and that there
-are a number of other languages that have broadly similar support for
-compile-time code generation, we neglected to mention it in Sec. 1.2 alongside,
-e.g. Scala's macro system, which is more disciplined. However, due to Template
-Haskell's popularity in the community, we agree that it would be worth
-mentioning explicitly. We say a bit more about Template Haskell in response to 
-Review C below.
+Being that Template Haskell achieves neither of these central goals, we
+neglected to mention it in Sec. 1.2 alongside, e.g. Scala's macro system and
+Rust's macro system, both of which are more disciplined. However, due to
+Template Haskell's prominence in the community, we agree that it would be worth
+mentioning explicitly. We say a bit more about Template Haskell and GHC in
+response to Review C below.
 
 > "The formalism to check hygiene seems novel, although with precedents in
 systems that synthesize hygiene (such as Lee et al., ECOOP'12)."
 
-The hygiene mechanism in Lee et al (2012) is quite different, e.g. it sends
+The hygiene mechanism in Lee et al (2012) is interesting but formally ad hoc, e.g. it sends
 queries at run-time to a compiler and reads back the error messages to
 determine which variables are free in an encoding of a term. No theoretical
-results whatsoever are established in that work.
+results are established in that work.
 
 > "The paper doesn't describe this parsing approach in one particular section.
 The description is partly at the bottom of page 4, and partly at the bottom of
 page 18."
 
-Section 2 seems to be exactly the "one particular section" that is sought: it
-gives a thorough description of how typed expansion operates from start to
-finish. 
+Section 2 describes how typed expansion works from start to finish, in the
+style of a detailed tutorial.
 
-One source of confusion may be that the paper only tersely describes how,
-before typed expansion, the initial context-free parsing of generalized literal
-forms works (though see the paragraph immediately under Fig. 3, and Sec. 2's
-discussion of the body type.) There is nothing sophisticated about this step --
-generalized literal forms are parsed like raw string literals. Our prior paper
-showed examples of various other delimiters and gave a context free grammar.
-Condition 4.1 (pg12) explains how we formally handle this first step.
+One source of confusion may be that the paper only tersely describes the step
+just before typed expansion -- context-free parsing. As stated in the paragraph
+immediately under Fig. 3, and as suggested by the definition of the body type
+in Sec. 2, there is nothing sophisticated about this step -- generalized
+literal forms are parsed like raw string literals. Condition 4.1 (pg12)
+explains how we formally handle this first step. The context-free syntax for
+various generalized literal forms was given in prior work (we would be happy to
+reproduce the grammar in the supplement.)
 
 The assertion that the description of the approach is "partly at the bottom of
 page 18" is incorrect: the bottom of Page 18 is the beginning of Sec. 5, which
 describes an extension of the core mechanism to handle parameterized families
 of types and module parameters. Nothing in Sec. 5 is necessary to understand
-prior sections, or the main conceptual points of the paper.
+prior sections, or the high-level conceptual points of the paper.
 
 > "It's not immediately clear whether the segmentation should through colors
 (in figures 3 and 4 and footnote 2) can be inferred without running the
@@ -94,31 +95,32 @@ extension's implementation, but my current understanding is that it can't.
 Spelling out this design in once place and specifying the quoting convention
 (which isn't described, as far as I can tell) would improve the presentation."
 
-The splice summary/segmentation/antiquotation mechanism, and how it relates to
-the colorings shown, is in fact spelled out in Sec. 2.2 (in particular, in the
-final 3 paragraphs).
+The splice summary/segmentation mechanism, and how it relates to the coloring
+convention, is spelled out in Sec. 2.2 (in particular, in the final 3
+paragraphs). A segmentation cannot be produced if typed expansion fails
+(error recovery is mentioned as future work in Sec. 7).
 
 > "Along similar lines, the introduction provides considerable motivation for
 the parsing choice, but it's tangled with motivation for types, so drawing out
 the parsing strategy more explicitly could help."
 
-By our reckoning, we gave little to no "motivation for types" in Sec. 1. Types
-are brought up briefly in the fifth point of "Problem 2" in Sec. 1.1, and in
-the third point in Sec. 1.2. Given that our research is focused on languages in
-the ML tradition, and our technical contributions do ultimately relate to
-types, we cannot eliminate statements about types from the introduction
-completely. We could perhaps mention that you can recover an "untyped" variant
-of TSMs by applying the usual type theorist's trick of defining just one type
-that classifies every well-scoped expression. The concerns about
-responsibility, segmentation, context independence and capture would still be
-relevant in that setting.
+[[[[This is a perplexing comment that I don't know how to respond to.]]]
+
+Readers who see no need to reason statically about types can apply the 
+usual type theorist's trick of reducing our system to one where there is 
+just one type that classifies every well-scoped expression. The concerns 
+about responsibility, segmentation, context independence and capture 
+would still be relevant in that setting.
 
 > "The paper's claim of a "sweet spot" seems to be supported only by the
 authors' opinions on how a language should behave."
 
-The phrase "sweet spot" (which appears exclusively in quotes, and only at the
-end of the abstract and conclusion) is informal. That said, the phrase was
-chosen because TSMs sit between the problematic extremes described in Sec. 1.
+The informal phrase "sweet spot" appears appropriately in quotes, and only at
+the end of the abstract and conclusion. The phrase was chosen because TSMs
+avoid the problematic extremes of both term-rewriting macros and general syntax
+definition systems, as described in Sec. 1. It is perhaps "just an opinion"
+that being able to reason abstractly is a good thing, but this is not a 
+controversial position in the ICFP community.
 
 == Review B ==
 
@@ -192,7 +194,7 @@ Shriram Krishnamurthi's thesis (see the concept of "micros").
 Direct AST generation emerged as the "default" solution in our development in
 that adding support for TSM application within proto-expansions would have
 required significant additional machinery. Krishnamurthi's work on micros is
-focused on term-to-term translation from the source language to an IR encoding, 
+focused on term-to-term translation from the source language to an IR encoding,
 and macro expansion in the generated translation does eventually occur.
 
 > "The approach to hygiene, which uses an auxiliary environment which maps
@@ -298,7 +300,7 @@ avoidance that prevents capture by spliced terms of variables bound in the
 expansion.
 
 > "p10:32 how would you address capture in a system which did feature binding
-  in patterns that could be subsequently referenced?"
+in patterns that could be subsequently referenced?"
 
 This would be addressed exactly as it is with expression TSMs.
 
