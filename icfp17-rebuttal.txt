@@ -1,6 +1,6 @@
 Thank you for the thoughtful reviews. We are encouraged by the fact that 
-the technical approach was considered sound. The main concerns expressed 
-seem to be regarding the (1) usefulness and (2) novelty of our approach, 
+no non-trivial technical mistakes were found. The main concerns expressed 
+seem to be regarding the (1) usefulness and (2) novelty of our approach. 
 
 With regard to usefulness, Review A states:
 
