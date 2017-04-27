@@ -49,8 +49,7 @@ extension's free-form generation of ASTs"
 
 While Template Haskell does check that each expansion is well-typed (as any
 macro system in a statically typed language eventually must), there is no way
-for clients to reason abstractly about *what that type is* because there are no
-	type annotations on Template Haskell macros. 
+for clients to reason abstractly about *what that type is* because there are no type annotations on Template Haskell macros. 
 
 Furthermore, Template Haskell does not maintain a hygienic binding discipline. 
 
@@ -308,4 +307,54 @@ The approach taken for expression TSMs should work in this situation too.
 example [Florence et al, Language Workbench 2016]"
 
 We will mention that in the future work, thanks.
+
+----
+
+> "Since these systems have quite different purposes, comparing them produces
+nothing meaningful."
+
+We organized our comparison by technical mechanism (syntax definition vs. term-rewriting), not by "purpose". A substantially more detailed comparison to related work, spanning 20 pages, is available in my PhD thesis [1] but obviously, this level of detail would not be appropriate for a conference paper.
+
+> "there are two quite distinct endeavours to consider"
+
+Comparing mechanisms of syntactic control in terms of reasoning principles, rather than simpler "expressability" concerns, is the major emphasis of our paper. From that perspective, the two proposed classes of examples are not distinct. 
+
+In the paper, we did distinguish examples, like do-notation, that introduce bindings into sub-terms. TSMs as defined in the paper do not support these examples, though a simple modification could be made to add support. But we suggest that even if such examples were possible, it may not be worth it for the increased reasoning complexity that clients would have to contend with (because each spliced term would be associated not just with a type, but also with a list of bindings -- that is much harder to convey using, e.g., an editor.)
+
+> "For example, can TSMs handle the SQL binding constructs such as 'AS'?"
+
+Encodings of SQL queries, including those with 'AS' clauses, can be expressed using TSMs. If one were to somehow express the binding structure of SQL 'AS' clauses using the binding structure of the host language (a HOAS-style approach), it would not be possible -- see above.
+
+> "the only way to determine the parsing is to expand the syntax and find
+the 'spliced' sections, and a reader looking at a fragment of unexpanded
+source can't tell how to parse identifiers"
+
+The paper clearly states that the locations of spliced segments is communicated using secondary notation by the editor / pretty-printer.
+
+> "Hygiene (capture and context dependence) is a significant part of this
+work, and I'd like to see a deeper comparison between your design and
+existing work on hygiene (e.g.. Dave Herman's "A Theory of Typed Hygienic
+Macros")."
+
+We state on p4 that existing hygiene mechanisms prevent splicing terms out of string literals. Our mechanism does not have that problem.
+
+Technically, our approach to specifying hygiene is also different in that it uses an ABT-generic capture-avoiding substitution mechanism, rather than an explicit renaming approach. The rebuttal to the other reviews details this distinction.
+
+> "I'm troubled by the lack of complete examples."
+
+The rebuttal to the other reviews addresses this concern -- this paper is a "theory paper" that serves as a companion to our prior paper (ECOOP 2014), which did give several more examples. We did not have enough space to give a complete parser for a non-trivial syntax.
+
+> "Since TSMs generate untyped parse trees that are type-checked on expansion
+then I would be reluctant to describe them as "typed"."
+
+We call them "typed" because type annotations serve to allow clients to reason abstractly about types.
+
+The verification-validation distinction, which we also discussed, is important, but is not equivalent to "typed vs untyped".
+
+> "A short English summary alongside each reasoning principle (Theorems 4.5,
+4.6, 5.1) would make them much more accessible to the casual reader."
+
+There is in fact an English summary alongside each reasoning principle in Theorem 4.5. The correspond clauses would have nearly identical descriptions for the other theorems, so we did not duplicate them for space reasons.
+
+[1] http://www.cs.cmu.edu/~comar/omar-thesis.pdf
 

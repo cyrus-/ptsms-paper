@@ -175,3 +175,137 @@ very closely (see also Owens' thesis).
 * p24:34 This "backpatching" is done in many Lisp IDEs, see DrRacket
   for an example [Florence et al, Language Workbench 2016]
 
+===========================================================================
+                         ICFP 2017 Review #128D
+---------------------------------------------------------------------------
+               Paper #128: Reasonably Programmable Syntax
+---------------------------------------------------------------------------
+
+                     Overall merit: C. Weak paper, though I will not fight
+                                       strongly against it
+                        Confidence: X. I am an expert in this area
+
+                        ===== Paper summary =====
+
+Typed Syntax Macros (TSMs) are a flexible mechanism for extending the
+surface syntax of a language, and come with several desirable properties:
+they are hygienic and typed, and macros from different sources can be used
+together without the possibility of collision.  TSMs support both
+expressions and patterns, and a parameterisation mechanism is available to
+carefully control the introduction of external identifiers into the
+expansion of a macro.  The paper presents the design along with proofs of
+several reasoning principles.
+
+                     ===== Comments to authors =====
+
+I like several things about this work: it's a principled attempt to address
+a readily-understood practical problem; the theoretical aspects seem sound
+(although I haven't verified every detail), and there's some discussion of
+limitations.
+
+However, the paper positions the work in an unhelpful way that makes the
+contributions unclear, the related work discussion too broad and shallow,
+and the arguments for the design much less convincing than they might be.
+Furthermore, I think the claims around segmentation and typing are not
+entirely justified.
+
+"Macro systems" is too broad a class to be meaningfully considered as a
+whole.  The discussion of related work covers a huge range of systems,
+including:
+  - Camlp4, an external tool that can perform arbitrary untyped, unhygienic
+syntactic transformations
+  - MetaML, which supports does manipulation of first-class typed code
+values, but does not provide a way to modify syntax
+  - Coq notation, which provides contextual hygienic rewrite rules
+  - Fixity directives, which allow the user to select from a small fixed
+number of parses using operator associativity & precedence
+  - Parser combinators, which are not a language extension mechanism at all
+and several more, many of which have almost nothing in common.
+
+Since these systems have quite different purposes, comparing them produces
+nothing meaningful.  In Coq one can define 'do'-notation safely and
+succinctly, but introducing HTML literal syntax would, I think, be
+difficult or impossible -- exactly the opposite situation to TSMs!  You say
+that you consider not being able to define 'do'-notation is an acceptable
+tradeoff, but that's not really the right way to look at it: defining
+'do'-notation is not what your system is for in the first place.  In fact,
+there are two quite distinct endeavours to consider:
+
+ - extending a host language with new constructs that work like existing
+language features.  Examples include try-finally notation (defineable using
+try-catch), do-notation (defineable using monadic bind), list
+comprehensions (defineable using map and filter), while loops (defineable
+using tail recursion), etc.  Systems like Coq notation and Scheme macros
+provide good support for this type of language extension, which is also
+possible using less principled tools like Camlp4.
+
+ - introducing foreign lexical syntax into a host language.  Examples
+include JSON, XML, URL literals, SQL statements and other queries, infix
+notation in a lisp-family language, etc.  TSMs target this set of
+extensions, as do Lisp/Racket reader macros, and Camlp4 (again).
+
+So I think it would be better to present TSMs as "Typed Reader Macros" (but
+see below about "Typed") rather than a general language extension
+mechanism. They don't work well for defining constructs in the first group,
+because you can't introduce bindings into sub-terms, and because the
+constructs you introduce don't look like the built-in terms in the
+language, due to the prefixed TSM name and the delimiters.  They do work
+well for at least some constructs in the second group, and the paper will
+be much stronger if you can discuss in detail exactly what in the second
+group you can support, and how your support compares to other systems that
+target the same kind of extension.  For example, can TSMs handle the SQL
+binding constructs such as 'AS'?  I suspect not, but this seems like a more
+serious problem than not supporting 'do'-notation, since query languages
+are a main example in the paper.
+
+I'm not entirely convinced by your claims around "segmentation".  On pp2-3
+you observe that existing systems make it difficult for the reader to see
+how the names 'x' and 'R' on the last line of Fig. 2 should be parsed.  But
+doesn't your system have essentially the same problem?  The implementation
+of each macro decide how to parse what could be a variable using all sorts
+of criteria: surrounding context, number of characters in the name, etc.
+So the only way to determine the parsing is to expand the syntax and find
+the 'spliced' sections, and a reader looking at a fragment of unexpanded
+source can't tell how to parse identifiers.  In any case, tracking of
+source locations and provenance seems useful for any reader macro system,
+and doesn't appear to be very closely tied to the rest of your design.
+
+Hygiene (capture and context dependence) is a significant part of this
+work, and I'd like to see a deeper comparison between your design and
+existing work on hygiene (e.g.. Dave Herman's "A Theory of Typed Hygienic
+Macros"). How does your approach differ from existing work?  What, exactly,
+changes as a result of needing to support reader macros vs the more common
+scheme-style macros?  The answers to these questions should make your
+contribution clearer.
+
+I'm troubled by the lack of complete examples.  There are a few examples of
+TSMs being used but, as far as I can tell, there's not a single complete
+example of a TSM definition in the whole paper, besides the broken example
+at top of p9.  If you want to argue that TSMs are a sweet spot then you
+should show how sweet they are to use in practice, and complete examples
+will make your paper more accessible and more convincing.  I realise that
+an example doing non-trivial parsing might look rather involved, but even
+assuming the existence of a few low-level parsing functions would be a
+great improvement on the current situation, where the examples are filled
+with ellipses.
+
+Since TSMs generate untyped parse trees that are type-checked on expansion
+then I would be reluctant to describe them as "typed".  MetaML and its
+descendants are typed, because code-generating functions can be checked
+without being run to ensure that they never generate ill-typed code.
+Camlp4 is not typed: even though the code that it generates is subsequently
+type-checked, type-checking a Camlp4 extension does not give any guarantees
+about the code that the extension generates.  Of these two systems, TSMs
+are much more like Camlp4.
+
+Minor:
+
+* The introduction takes rather a long time to get to the point, largely
+because of all the discussion of related work.  I recommend making the
+introduction more focused by presenting a simple compelling example that
+illustrates the high-level properties of your design, and leaving all
+discussion of related work to the end.
+
+* A short English summary alongside each reasoning principle (Theorems 4.5,
+4.6, 5.1) would make them much more accessible to the casual reader.
+
