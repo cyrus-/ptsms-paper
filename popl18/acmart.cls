@@ -1784,23 +1784,26 @@ Computing Machinery]
    \phantomsection\addcontentsline{toc}{section}{Abstract}%
    \ignorespaces\@abstract\par}%
   \fi\egroup}
-\def\@mkbibcitation{\bgroup
-  \def\footnotemark{}%
-  \par\medskip\small\noindent{\bfseries ACM Reference format:}\par\nobreak
-  \noindent\authors. \@acmYear. \@title.
-  \if@ACM@journal
-     \textit{\@journalNameShort}
-     \@acmVolume, \@acmNumber, Article~\@acmArticle\ (\@acmPubDate),
-     \ref{TotPages}~pages.
-  \else
-     In \textit{Proceedings of \acmConference@name, \acmConference@venue,
-       \acmConference@date
-       \ifx\acmConference@name\acmConference@shortname\else
-         \ (\acmConference@shortname)\fi
-         ,} \ref{TotPages}~pages.
-  \fi\par
-  \noindent DOI: \nolinkurl{\@acmDOI}
-\par\egroup}
+\def\@mkbibcitation{
+% TODO: uncomment this for final submission
+%\bgroup
+ % \def\footnotemark{}%
+  %\par\medskip\small\noindent{\bfseries ACM Reference format:}\par\nobreak
+  %\noindent\authors. \@acmYear. \@title.
+  %\if@ACM@journal
+  %   \textit{\@journalNameShort}
+  %   \@acmVolume, \@acmNumber, Article~\@acmArticle\ (\@acmPubDate),
+  %   \ref{TotPages}~pages.
+  %\else
+  %   In \textit{Proceedings of \acmConference@name, \acmConference@venue,
+  %     \acmConference@date
+  %     \ifx\acmConference@name\acmConference@shortname\else
+  %       \ (\acmConference@shortname)\fi
+  %       ,} \ref{TotPages}~pages.
+  %\fi\par
+  %\noindent DOI: \nolinkurl{\@acmDOI}
+%\par\egroup
+}
 \def\@printendtopmatter{\par\medskip
   \ifcase\ACM@format@nr
   \relax % manuscript
