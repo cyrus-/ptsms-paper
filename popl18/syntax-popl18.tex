@@ -38,7 +38,7 @@
 \definecolor{mygray}{rgb}{0.75,0.75,0.75}
 \usepackage{listings}
 \lstset{tabsize=2, 
-basicstyle=\ttfamily\fontsize{10pt}{1em}\selectfont, 
+basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont, 
 commentstyle=\itshape\ttfamily\color{gray}, 
 stringstyle=\ttfamily\color{red},
 mathescape=false,escapechar=~,
@@ -190,14 +190,14 @@ deletestring=[d]{"},
 %% before \maketitle command
 \begin{abstract}
 %Many languages define convenient list literal forms. This paper questions this common practice: why should an otherwise ordinary data structure be privileged in the definition of a general-purpose programming language? 
-When designing the surface syntax of a programming language, it is common practice to build in literal forms for a select few standard data structures, e.g. lists. The problem is that this practice neglects an unbounded assortment of other data structures for which literal forms might also be useful (consider, for example, sets, maps, matrices, regular expressions, HTML trees, URLs, SQL queries and chemical structures.) A less \emph{ad hoc} design would be one that allows library providers to define new literal forms in a decentralized manner. However, the mechanisms available to programmers today, e.g. \li{camlp4} \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, are \emph{unreasonable}. In particular, they do not support modular reasoning about syntactic determinism, so separately defined literal forms can and do conflict syntactically with one another. Moreover, clients cannot reason abstractly about types and binding when they encounter an unfamiliar literal form (like they can when they encounter an unfamiliar function being applied.) Instead, they must reason transparently, i.e. about the underlying expansion. This increases cognitive cost, defeating much of the purpose of convenient literal forms. %This makes it difficult to program ``in the large'', and these mechanisms have not been widely adopted.% Hygienic, typed term-rewriting systems, e.g. the Scala macro system \cite{ScalaMacros2013}, are only somewhat more reasonable, and do not offer direct syntactic control.
+When designing the surface syntax of a programming language, it is common practice to build in literal forms for a select few standard data structures, e.g. lists. The problem is that this practice neglects an unbounded assortment of other data structures for which literal forms might also be useful (consider, for example, sets, maps, matrices, regular expressions, HTML trees, URLs, SQL queries and chemical structures.) A less \emph{ad hoc} design would be one that allows library providers to define new literal forms in a decentralized manner. However, the mechanisms available to programmers today, e.g. Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, are \emph{unreasonable}. In particular, they do not support modular reasoning about syntactic determinism, so separately defined literal forms can and do conflict syntactically with one another. Moreover, clients cannot reason abstractly about types and binding when they encounter an unfamiliar literal form (like they can when they encounter an unfamiliar function being applied.) Instead, they must reason transparently, i.e. about the underlying expansion. This increases cognitive cost, defeating much of the purpose of convenient literal forms. %This makes it difficult to program ``in the large'', and these mechanisms have not been widely adopted.% Hygienic, typed term-rewriting systems, e.g. the Scala macro system \cite{ScalaMacros2013}, are only somewhat more reasonable, and do not offer direct syntactic control.
 
 This paper formally details a more reasonable alternative: \emph{typed literal macros} (TLMs). TLMs give library providers full programmatic control over both the parsing and expansion of expressions and patterns of \emph{generalized literal form} \cite{TSLs} at a specified type or parameterized family of types. Expansion is {strictly hygienic}, meaning that 1) expansions cannot make any assumptions about the application site context; and 2)  expansions do not reveal internal bindings to spliced terms or to the remainder of the program. 
 % Partial parameter application lowers the syntactic cost of this strict style. 
 This design ensures that clients are able to reason modularly about syntactic determinism and abstractly about the type and binding structure of the program. The system needs only to convey to clients (e.g. via secondary notation) the \emph{segmentation} of each literal, which gives the locations of the spliced segments. 
 %The system can determine this {segmentation} automatically and convey it to the client via syntax highlighting, or by presenting the client with a context-free grammar (without revealing the semantic actions associated with each production.) 
 % This mechanism captures many common syntactic idioms while avoiding the problem of syntactic conflicts by construction and supplying clients with clear abstract reasoning principles. 
-We establish these abstract reasoning principles formally with a calculus of expressions, patterns and ML-style modules.  This is the first detailed type-theoretic account of a typed, hygienic syntactic macro system for an ML-like language. % This calculus is the first such formalization of a typed macro system.
+We establish these abstract reasoning principles formally with a calculus of expressions, patterns and ML-style modules.  This is the first detailed type-theoretic account of a typed, hygienic term-rewriting macro system for an ML-like\todo{or Scala-like?} language. % This calculus is the first such formalization of a typed macro system.
 
 % \emph{Typed syntax matcros (TLMs)}, proposed in a recent short paper by Omar et al. \cite{sac15}, give library providers programmatic control over the parsing and expansion of only terms of {(generalized) literal form}. This appears to occupy a ``sweet spot'' in that it captures many common syntactic idioms while avoiding the problem of conflict. TLMs also maintain a reasonable type and binding discipline.% In particular, clients can use any combination of TLMs in a program without needing to consider conflicts between them, and the language validates each expansion that a TLM generates to maintain 1) a \emph{type discipline} (meaning clients can determine the type of an unexpanded expression without examining its expansion directly); 
 % %and 2) a \emph{hygienic binding discipline}.
@@ -254,12 +254,9 @@ The surface syntax of a programming language serves as the user interface betwee
 For example, in Standard ML (SML), the list expression literal \li{[x, y, z]} desugars to a term  semantically equivalent to \li{Cons(x, Cons(y, Cons(z, Nil)))} where \li{Nil} and \li{Cons} stand for the constructors of the standard \li{list} datatype \cite{mthm97-for-dart,harper1997programming}.\footnote{In SML, list literals work even in contexts where the list expression constructors have been shadowed by other bindings, i.e. the expansion of literal forms is \emph{context independent}. We will return to the concept of context independence throughout this work.} List pattern literals are analagous. Another example is Ur/Web, which extends Ur's textual syntax with expression and pattern literal forms for XHTML elements \cite{conf/popl/Chlipala15,conf/pldi/Chlipala10}. Figure \ref{fig:urweb} gives examles of XHTML literals containing ``spliced'' string expressions (Line 1) and XHTML expressions (Line 2). 
 The desugarings of these literals, not shown, are substantially more verbose and obscure. 
 
-Third-party library providers are quite justifiably envious of the privileged status of semantically ordinary types that have been equipped with convenient literal forms by the language designer. After all, it is not difficult to find other examples of types for which programmers have invented specialized syntax. For example, 1) clients of a ``collections'' library might like not just list literals, but also vector, matrix, finite set and finite map literals following standard mathematical conventions; 2) clients of a ``web programming'' library in SML might like Ur/Web style XHTML literals; 3) Ur/Web programmers might further like CSS literals, which Ur/Web does not provide; 4) a compiler writer might like ``quotation'' literals for the terms of the object language and various intermediate languages of interest; and 5) clients of a ``chemistry'' library might like chemical structure literals based on the SMILES standard \cite{anderson1987smiles}. Research by \citet{Bravenboer:2007:PIA:1289971.1289975} suggests that literal forms for structured encodings of SQL queries and other query types can reduce the temptation to use unstructured string encodings (``stringly-typed programming'') and therefore reduce the prevalence of string injection attacks, which are amongst the most common and serious security vulnerabilities on the web today \cite{owasp2017}. \citet{TSLs} sampled string literals from open source projects and found that at least 15\% of them were parseable according to some readily apparent type-specific grammar (e.g. for SQL queries, regexes, file system paths, URLs, IP addresses and others.) Taken together, there appears to be a clear need for mechanisms that allow library providers to introduce new type-specific literal forms into a general-purpose language in a decentralized manner.
+Third-party library providers are quite justifiably envious of the privileged status of semantically ordinary types that have been equipped with convenient literal forms by the language designer. After all, it is not difficult to find other examples of types for which programmers have invented specialized syntax. For example, 1) clients of a ``collections'' library might like not just list literals, but also vector, matrix, finite set and finite map literals following standard mathematical conventions; 2) clients of a ``web programming'' library in SML might like Ur/Web style XHTML literals; 3) Ur programmers might further like CSS literals, which Ur/Web does not provide; 4) a compiler writer might like ``quotation'' literals for the terms of the object language and various intermediate languages of interest; and 5) clients of a ``chemistry'' library might like chemical structure literals based on the SMILES standard \cite{anderson1987smiles}. Research by \citet{Bravenboer:2007:PIA:1289971.1289975} suggests that literal forms for structured encodings of SQL queries and other query types can reduce the temptation to use string encodings (``stringly-typed programming'') and therefore reduce the prevalence of string injection attacks, which are amongst the most common and serious security vulnerabilities on the web today \cite{owasp2017}. \citet{TSLs} sampled strings from open source projects and found that at least 15\% of them were parseable according to some readily apparent type-specific grammar (e.g. for SQL queries, regexes, file system paths, URLs and others.) 
 
-Unfortunately, the mechanisms available today are, to put it pithily, \emph{unreasonable}. The next two subsections flesh out this claim and thereby motivate the specific contribution of this paper, introduced in Sec. \ref{sec:contributions}: a decidedly more reasonable mechanism for defining new literals within an ML- or Scala-like general-purpose language (i.e. a language that has a rich static type system, support for pattern matching and an ML-style module system or Scala-style object system with support for type members.)
 
-\subsection{Syntax Dialects are Unreasonable}\label{sec:syntax-dialects-intro}
-One approach available to library providers is to use a syntax definition system to construct a library-specific \emph{syntax dialect}: a new syntax definition that extends the syntax definition given in the language definition with new forms, including literal forms. Ur/Web's syntax (Fig. \ref{fig:urweb}) is one example of a syntax dialect \cite{conf/popl/Chlipala15}.
 
 \begin{figure}
 \begin{lstlisting}
@@ -267,94 +264,17 @@ One approach available to library providers is to use a syntax definition system
   val body = SURL<xml><body>{EURLheading "World"SURL} ...</body></xml>EURL
 \end{lstlisting}
 \vspace{-6px}
-\caption{XHTML literals with support for splicing at two different types are built primitively into Ur/Web.}
+\caption{XHTML literals with support for splicing at two different types are built primitively into Ur/Web \cite{conf/popl/Chlipala15}.}
 \vspace{-6px}
 \label{fig:urweb}
 \end{figure}
- % Such dialects are sometimes qualitatively taxonomized as amongst the ``domain-specific language'' for this reason \cite{fowler2010domain}. %Syntactic cost is often assessed qualitatively \cite{green1996usability}, though quantitative metrics can be defined. 
-% Syntax definition systems , which we will discuss in Sec. \ref{sec:syntax-dialects}, have simplified the task of defining ``library-specific'' (a.k.a. ``domain-specific'') syntax dialects like Ur/Web, and have thereby contributed to their ongoing proliferation.
 
-% Many have argued that a proliferation of syntax dialects constructed using these tools is harmless or even desirable, because programmers can simply choose the right syntax dialect for each job at hand \cite{journals/stp/Ward94}. However, we argue that in fact 
-There are hundreds of syntax definition systems of various design, some integrated deeply into languages and build systems, others operating as standalone preprocessors. Examples include grammar-based systems like Camlp4 \cite{ocaml-manual}\todo{better citation?}, Copper \cite{conf/gpce/WykS07} or SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, parser combinator systems \cite{Hutton1992d} and somewhat less general systems built in to certain programming systems, like the system of fixity directives in Standard ML \cite{mthm97-for-dart}\todo{better citation?}~ or more elaborate mixfix systems \cite{5134,DBLP:conf/gpce/TahaJ03} built in to proof assistants like Agda \cite{DBLP:conf/ifl/DanielssonN08} and Coq \cite{Coq:manual}. 
-%library-specific (a.k.a. ``domain-specific'') 
-Unfortunately, the dialect-oriented approach is difficult to reconcile with the best practices of ``programming in the large'', i.e. developing large programs ``consisting of many small programs (modules), possibly written by different people'' \cite{DeRemer76}. The reasoning problems that arise are summarized below.%a more systematic treatment will follow in  Sec. \ref{sec:syntax-dialects}.
-
-\paragraph{Problem 1: Modular Reasoning About Syntactic Determinism}
-The first problem with the dialect-oriented approach is that clients cannot always deterministically combine different syntax dialects when they want to use the new forms that they define together. This is a significant problem because large programs use many separately developed libraries \cite{DBLP:conf/sac/LammelPS11} and often do not fall cleanly into a single preconceived ``problem domain''. 
-
-In some cases, the dialects in question cannot be combined simply because they have been defined under incompatible syntax definition systems. In other cases, there is no dialect combination operation available. And in other cases, the problem is one of \emph{conflict}: two dialects might define the same form, but determine different desugarings. For example, consider two syntax dialects defined under a system like \li{camlp4}: $\mathcal{D}_1$ defines literal forms for sets, and $\mathcal{D}_2$ defines literal forms for finite sets, both delimited by \verb~{<~ and \verb~>}~. Each dialect is deterministic (i.e. there are no possible syntactic conflicts), denoted $\mathrm{det}(\mathcal{D}_1)$ and $\mathrm{det}(\mathcal{D}_2)$, but when the grammars are combined by Camlp4, it is not the case that $\mathrm{det}(\mathcal{D}_1 \cup \mathcal{D}_2)$. In particular, \verb~{<>}~ can desugar to the empty set and the empty dictionary. Reasoning about determinism is therefore not modular. %(Indeed, this ambiguity arose when Python added set literals to its grammar.) %A recent version of Python added derived forms for mutable sets. Due to a conflict with dictionary syntax, however, there is no derived form for the empty set.)
- %A third syntax dialect might come along that uses the same forms that $\mathcal{D}_2$ defines, but for ordered finite maps.
-
-\citet{conf/pldi/SchwerdfegerW09} have developed a modular grammar analysis, implemented in Copper, that guarantees that determinism is conserved when syntax dialects of a certain restricted class are combined, the caveat being that the constituent dialects must prefix all newly introduced forms with marking tokens drawn from disjoint sets. To be confident that the marking tokens used are disjoint, providers must base them on the domain name system (or some other coordinating entity.) Because the mechanism operates at the level of the context-free grammar, it is difficult for the client to define scoped abbreviations for these verbose marking tokens (as one might do when, for example, deeply nested modules are used for namespacing in ML.)
-
-\paragraph{Problem 2: Abstract Reasoning About Literal Forms}
+Given this profusion of possible literal forms, it is not sensible to ask the designers of general-purpose languages to keep up. Instead, there has been considerable interest in mechanisms that allow programmers to introduce new type-specific literal forms in a decentralized manner. Unfortunately, existing mechanisms ... 
 
 
+{This paper addresses this established need by introducing a system of \emph{typed literal macros (TLMs)} that allows programmers to define new literal syntax of nearly arbitrary form within an ML- or Scala-like  language}, i.e. a language with a rich static type system (Sec. 2), support for pattern matching (Sec. 3) and an ML-style module system or Scala-style object system with support for type members and type abstraction (Sec. 5). The examples in this paper are written in VerseML, a new dialect of ML that features TLMs.
 
-
-\begin{figure}
-\begin{lstlisting}
-  val w = compute_w ()
-  val x = compute_x ()
-  val y = {|(!R)@&{&/x!/:2_!x}'!R}|}
-\end{lstlisting}
-\vspace{-8px}
-\caption{An example of unreasonable program text.}
-\vspace{-8px}
-\label{fig:K-dialect}
-\end{figure}
-
-Even putting aside the problem of syntactic conflict, there are questions about just how reasonable sprinkling many possibly unfamiliar library-specific literal forms  throughout a program may be. For example, consider the perspective of a programmer attempting to comprehend (i.e. reason about) the program fragment in Figure \ref{fig:K-dialect}, which is written in a syntax dialect constructed by combining various library-specific dialects of Standard ML's syntax. If the programmer happens to be familiar with the (intentionally terse) syntax of the stack-based database query processing language K \cite{Whitney:2001:LOR:376284.375783}, then Line 3 might pose few difficulties. If the programmer does not recognize this syntax, however, there are no simple, definitive protocols for answering questions like:
-
-\begin{enumerate}
-\item \textbf{(Responsibility)} Which constituent dialect defined the literal form that appears on Line 3?
-\item \textbf{(Segmentation)} Are the characters \li{x} and \li{R} on Line 3 parsed as spliced expressions \li{x} and \li{R} (i.e. expressions of variable form), or parsed in some other way peculiar to this literal form?
-\item \textbf{(Capture)} If \li{x} is in fact a spliced expression, does it refer to the binding of \li{x} on Line 2? Or might it capture an unseen binding introduced in the desugaring of Line 3?
-\item \textbf{(Context Dependence)} If \li{w}, on Line 1, is renamed, could that possibly break the program, or change its meaning? In other words, might the desugaring of Line 3 assume that some variable identified as \li{w} is in scope (even though \li{w} is not mentioned in the text of Line 3)?
-\item \textbf{(Typing)} What type does \li{y} have?
-\end{enumerate}
-
-In short, syntax dialects do not come equipped with reasonable principles of \emph{syntactic abstraction}: if the desugaring of the program text is held abstract, programmers can no longer reason about types and binding (i.e. answer questions like those above) in the usual disciplined manner. This is burdensome at all scales, but particularly when programming in the large, where it is common to encounter unfamiliar libraries. Forcing the programmer to examine the desugaring of the program text in order to reason about types and binding defeats the ultimate purpose of syntactic sugar -- decreasing cognitive cost \cite{Green89}.
-
-
-%In other words, encountering an unfamiliar derived form has made it difficult for the programmer to maintain the usual \emph{type discipline} and \emph{binding discipline}. %Compelling the programmer to examine the desugaring directly defeat the purpose of defining the derived form -- decreasing cognitive cost. Indeed, it substantially increases cognitive cost.
-
-% In contrast, when a programmer encounters, for example, a function call like the call to \li{read_data} on Line 3, the analagous questions can be answered by following clear protocols that become ``cognitive reflexes'' after sufficient experience with the language, even if the programmer has no experience with the library defining \li{read_data}:
-% \begin{enumerate}
-% \item The language's syntax definition determines that \li{read_data(a)} is an expression of function application form.
-% \item Similarly, \li{read_data} and \li{a} are definitively expressions of variable form.
-% \item The variable \li{a} can only refer to the binding of \li{a} on Line 1.
-% \item The variable \li{w} can be renamed without knowing anything about the values that \li{read_data} and \li{a} stand for.
-% \item The type of \li{x} can be determined to be \li{B} by determining that the type of \li{read_data} is \li{A -> B} for some \li{A} and \li{B}, and checking that \li{a} has type \li{A}. Nothing else needs to be known about the values that \li{read_data} and \li{a} stand for. In Reynolds' words \cite{B304}:
-% \begin{quote}
-% \emph{Type structure is a syntactic discipline for enforcing levels of abstraction.}
-% \end{quote}
-% \end{enumerate}
-
-
-\subsection{Term-Rewriting Systems Offer Limited Syntactic Control}
-An alternative approach that a library provider might consider when seeking to control syntactic cost is to leave the context-free syntax of the language unmodified and instead contextually repurpose select existing syntactic forms using a \emph{term rewriting system}.
-
-Na\"ive term rewriting systems suffer from problems analagous to those that plague syntax definition systems. In particular, there can be conflicts because separately defined rewriting rules might attempt to rewrite the same term differently. It can also be difficult to determine which rewriting rule, if any, is responsible for any particular term. Certain conventions have emerged, e.g. OCaml's textual syntax now includes \emph{preprocessor extension (ppx) points} used to identify terms that some presumably corresponding term rewriting preprocessor must rewrite \cite{ocaml-manual}, but a correspondence is not enforced. In any case, it is difficult to reason abstractly about types and binding given a program subject to a large number of context-free rewriting rules. 
-
-Modern \emph{term-rewriting macro systems}, however, have made some progress. In particular:
-\begin{enumerate}[nolistsep]
-\item Macro systems require that the client explicitly apply the intended rewriting (implemented by a macro) to the term that is to be rewritten, thereby addressing the problems of conflict and determining responsibility. However, it is often unclear whether a given macro  is repurposing the form of a given argument or sub-term thereof, as opposed to treating it parametrically by inserting it unmodified into the generated expansion. This is closely related to the problem of determining a {segmentation} discussed above.
-\item \emph{Hygienic} macro systems prevent variable {capture} and enforce {context-independence} \cite{Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92}.
-\item Although much of the research on macro systems has been for languages in the Lisp tradition \cite{mccarthy1978history}, some progress has also been made on reasoning about types with the design of \emph{typed macro systems} where annotations constrain the macro arguments and the generated expansions. Examples include Scala's macro system \cite{ScalaMacros2013}, formal calculi studied by \citet{DBLP:conf/esop/HermanW08} and \emph{staging macro systems} like MetaML \cite{Sheard:1999:UMS} and MacroML \cite{ganz2001macros} (which, it is worth noting, do not give the macro access to the syntax tree of arguments.)
-\end{enumerate}
-
-Perhaps the biggest problem, then, is that term-rewriting systems offer library providers only limited syntactic control. In other words many syntactic forms of interest will not particularly resemble those available in the host language. For example, consider the  XHTML and K examples above. In both cases, the syntactic conventions are quite distinct from those of ML-like languages (and, for that matter, languages that use S-expression.) 
-
-It is tempting in these situations to consider repurposing string literal forms. For example, we might wish to apply a macro \li{html!} (following Rust's convention of using a post-fix \li{!} to distinguish macro names from variables) to rewrite string literals containing Ur/Web-style XHTML syntax as follows:
-\begin{lstlisting}[numbers=none]
-  fun heading first_name = html! 'SSTR<h1>Hello, {[first_name]}!</p>ESTR'
-  val body = html! 'SSTR<body>{heading "World"} ...</body>ESTR'
-\end{lstlisting}
-
-The problem here is that there is no way to extract the spliced expressions from the supplied string literal forms while satisfying the hygiene conditions, because variables that come from these spliced terms (here, \li{first_name} and \li{heading}) are indistinguishable from variables that inappropriately appear free relative to the expansion. In addition, the problem of segmentation becomes even more pernicious: to a human or tool unaware of Ur/Web's syntax, it is not immediately apparent which particular subsequences of the string literals supplied to \li{html!} are segmented out as spliced expressions. Reader macros have essentially the same problem  \cite{DBLP:journals/jfp/FlattCDF12}.
-
-  Some languages build in \emph{string splicing} (a.k.a. \emph{string interpolation}) forms, e.g. Scala \cite{odersky2008programming}, or similar but more general \emph{fragmentary quotation forms} \cite{conf/icfp/Slind91}, e.g. the SML/NJ dialect of ML. These designate particular delimiters to allow escape out into the expression language. The problem with using these (dynamically, or in conjunction with term rewriting macros) as vehicles to introduce syntactic sugar at various types is 1) there is no ``one-size-fits-all'' escape delimiter, and 2) reasoning about typing is problematic because every escaped term is checked against the same type. In the example above, we spliced in two different types of expressions using two different delimiters. In general, e.g. when defining syntax for a programming language with many sorts of terms, the most appropriate choice of delimiters might depend on where each spliced term appears.
+Compared to existing approaches, TLMs are more \emph{reasonable}. We justify this claim by (1) developing a collection of relevant reasoning principles based on the reasoning principles already available to client programmers when using an ML-like or Scala-like language without such a mechanism; (2) formally operationalizing these reasoning principles as metatheorems about a series of type-theoretic \emph{TLM calculi} of increasing sophistication (Sec. 4-5); and (3) evaluating existing approaches -- including syntax definition systems like Camlp4 \cite{ocaml-manual}\todo{better citation}, SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework} and Copper \cite{conf/pldi/SchwerdfegerW09,schwerdfeger2010context}, term rewriting macro systems as found in a variety of languages, and the system of type-specific languages (TSLs) and typed syntax macros (TSMs) described by \citet{TSLs,sac15} -- relative to these reasoning principles (Sec. 6). We conclude by discussing limitations and future research directions in Sec. 7\todo{sec refs}. A complete set of definitions and associated proofs are available in the  supplemental material. This is the first detailed type-theoretic accout of a typed, hygienic term-rewriting macro system for an ML- or Scala-like language.\todo{refine and justify this claim}
 
 % These existing forms normally have other meanings, so this can be confusing \cite{pane1996usability}.
 
@@ -2801,6 +2721,113 @@ TLMs definitions can be exported by packages, but they cannot be exported from w
 %   \mExpandsPH{\uOmega}{\uPsi}{\uPhi}{\defpetsmH{\staticphase}{\tsmv}{\urho}{\ueparse}{\uM}}{M}{\sigma}{\Sigma}
 % }
 % \end{equation}
+
+\section{Reasoning Criteria and Existing Approaches}
+\subsection{Library-Specific Syntax Dialects}\label{sec:syntax-dialects-intro}
+One approach available to library providers is to use a syntax definition system to construct a library-specific \emph{syntax dialect}: a new syntax definition that extends the syntax definition given in the language definition with new forms, including literal forms. Ur/Web's syntax (Fig. 1) is a library-specific dialect of Ur's syntax.
+
+ % Such dialects are sometimes qualitatively taxonomized as amongst the ``domain-specific language'' for this reason \cite{fowler2010domain}. %Syntactic cost is often assessed qualitatively \cite{green1996usability}, though quantitative metrics can be defined. 
+% Syntax definition systems , which we will discuss in Sec. \ref{sec:syntax-dialects}, have simplified the task of defining ``library-specific'' (a.k.a. ``domain-specific'') syntax dialects like Ur/Web, and have thereby contributed to their ongoing proliferation.
+
+% Many have argued that a proliferation of syntax dialects constructed using these tools is harmless or even desirable, because programmers can simply choose the right syntax dialect for each job at hand \cite{journals/stp/Ward94}. However, we argue that in fact 
+There are hundreds of syntax definition systems of various design, some integrated deeply into language front-ends and build systems, others operating as standalone preprocessors. Examples include grammar-based systems like Camlp4 \cite{ocaml-manual}\todo{better citation?}, Copper \cite{conf/gpce/WykS07} or SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, parser combinator systems \cite{Hutton1992d} and less general operator-based systems, like the system of fixity directives in Standard ML \cite{mthm97-for-dart}\todo{better citation?}~ and the more elaborate mixfix systems \cite{5134,DBLP:conf/gpce/TahaJ03} built in to proof assistants like Agda \cite{DBLP:conf/ifl/DanielssonN08} and Coq \cite{Coq:manual}. 
+%library-specific (a.k.a. ``domain-specific'') 
+
+\paragraph{Criteria 1: Modular Reasoning About Syntactic Determinism}
+The first problem with this approach is that clients cannot always deterministically combine different library-specific syntax dialects when they want to use the new forms that they define together. This is a significant problem because large programs use many separately developed libraries \cite{DBLP:conf/sac/LammelPS11} and often do not fall cleanly into a single  ``problem domain''. 
+
+In some cases, the dialects in question cannot be combined simply because they have been defined under incompatible syntax definition systems. In other cases, the problem is one of \emph{conflict}: two dialects might define the same form, but determine different desugarings. For example, consider two syntax dialects defined under a system like Camlp4: $\mathcal{D}_1$ defines literal forms for sets, and $\mathcal{D}_2$ defines literal forms for finite sets, both delimited by \verb~{<~ and \verb~>}~. Each dialect is deterministic (i.e. there are no possible syntactic ambiguities), denoted $\mathrm{det}(\mathcal{D}_1)$ and $\mathrm{det}(\mathcal{D}_2)$. However, when the grammars are combined by Camlp4, it is not the case that $\mathrm{det}(\mathcal{D}_1 \cup \mathcal{D}_2)$ because \verb~{<>}~ can desugar to the empty set or the empty dictionary. Reasoning about determinism is therefore not modular. %(Indeed, this ambiguity arose when Python added set literals to its grammar.) %A recent version of Python added derived forms for mutable sets. Due to a conflict with dictionary syntax, however, there is no derived form for the empty set.)
+ %A third syntax dialect might come along that uses the same forms that $\mathcal{D}_2$ defines, but for ordered finite maps.
+
+\citet{conf/pldi/SchwerdfegerW09} have developed a modular grammar analysis, implemented in Copper, that guarantees that determinism is conserved when syntax dialects of a certain restricted class are combined, the caveat being that the constituent dialects must prefix all newly introduced forms with marking tokens drawn from disjoint sets. To be confident that the marking tokens used are disjoint, providers must base them on the domain name system or some other coordinating entity. Because the mechanism operates at the level of the context-free grammar, it is difficult for the client to define scoped abbreviations for these verbose marking tokens (as one might do when, for example, deeply nested modules are used for namespacing in ML.)
+
+\paragraph{Criteria 2: Abstract Reasoning About Literal Forms}
+
+
+
+
+\begin{figure}
+\begin{lstlisting}
+  val w = compute_w ()
+  val x = compute_x ()
+  val y = {|(!R)@&{&/x!/:2_!x}'!R}|}
+\end{lstlisting}
+\vspace{-8px}
+\caption{An example of unreasonable program text.}
+\vspace{-8px}
+\label{fig:K-dialect}
+\end{figure}
+
+Even putting aside the problem of syntactic conflict, there are questions about just how reasonable sprinkling many possibly unfamiliar library-specific literal forms  throughout a program may be. For example, consider the perspective of a programmer attempting to comprehend (i.e. reason about) the program fragment in Figure \ref{fig:K-dialect}, which is written in a syntax dialect constructed by combining various library-specific dialects of ML's (or Scala's) syntax. If the programmer happens to be familiar with the (intentionally terse) syntax of the stack-based database query processing language K \cite{Whitney:2001:LOR:376284.375783}, then Line 3 might pose few difficulties. If the programmer does not recognize this syntax, however, there are no simple, definitive protocols for answering questions like:
+
+\begin{enumerate}
+\item \textbf{(Responsibility)} Which constituent dialect defined the literal form that appears on Line 3?
+\item \textbf{(Segmentation)} Are the characters \li{x} and \li{R} on Line 3 parsed as spliced expressions \li{x} and \li{R} (i.e. expressions of variable form), or parsed in some other way peculiar to this literal form?
+\item \textbf{(Capture)} If \li{x} is in fact a spliced expression, does it refer to the binding of \li{x} on Line 2? Or might it capture an unseen binding introduced in the desugaring of Line 3?
+\item \textbf{(Context Dependence)} If \li{w}, on Line 1, is renamed, could that possibly break Line 3, or change its meaning? In other words, might the desugaring of Line 3 assume that some variable identified as \li{w} is in scope (even though \li{w} is not mentioned in the text of Line 3)?
+\item \textbf{(Typing)} What type does \li{y} have?
+\end{enumerate}
+
+In short, syntax dialects do not come equipped with  principles of \emph{syntactic abstraction}: if the desugaring of the program text is held abstract, programmers can no longer reason about types, binding and segmentation (i.e. answer questions like those above) in the usual disciplined manner. This is burdensome at all scales, but particularly when programming in the large, where it is common to encounter unfamiliar library constructs. Forcing the programmer to examine the desugaring of the program text, or the logic that produced that desugaring, in order to answer these sorts of basic questions about segmentation, binding and typing can defeat the ultimate purpose of syntactic sugar -- decreasing cognitive cost \cite{Green89}.
+
+
+%In other words, encountering an unfamiliar derived form has made it difficult for the programmer to maintain the usual \emph{type discipline} and \emph{binding discipline}. %Compelling the programmer to examine the desugaring directly defeat the purpose of defining the derived form -- decreasing cognitive cost. Indeed, it substantially increases cognitive cost.
+
+% In contrast, when a programmer encounters, for example, a function call like the call to \li{read_data} on Line 3, the analagous questions can be answered by following clear protocols that become ``cognitive reflexes'' after sufficient experience with the language, even if the programmer has no experience with the library defining \li{read_data}:
+% \begin{enumerate}
+% \item The language's syntax definition determines that \li{read_data(a)} is an expression of function application form.
+% \item Similarly, \li{read_data} and \li{a} are definitively expressions of variable form.
+% \item The variable \li{a} can only refer to the binding of \li{a} on Line 1.
+% \item The variable \li{w} can be renamed without knowing anything about the values that \li{read_data} and \li{a} stand for.
+% \item The type of \li{x} can be determined to be \li{B} by determining that the type of \li{read_data} is \li{A -> B} for some \li{A} and \li{B}, and checking that \li{a} has type \li{A}. Nothing else needs to be known about the values that \li{read_data} and \li{a} stand for. In Reynolds' words \cite{B304}:
+% \begin{quote}
+% \emph{Type structure is a syntactic discipline for enforcing levels of abstraction.}
+% \end{quote}
+% \end{enumerate}
+
+
+\subsection{Another Existing Approach: Term Rewriting}
+An alternative approach (and the approach that our mechanism is rooted in) is to leave the context-free syntax of the language unmodified and instead contextually repurpose existing forms using a \emph{term rewriting system}.
+
+For example, OCaml's textual syntax now includes \emph{preprocessor extension (ppx) points} used to identify terms that some term rewriting preprocessor must rewrite \cite{ocaml-manual}. We could attempt to mark a string literal containing Ur/Web-style HTML syntax with a ppx annotation, \li{xml}, as follows:
+\begin{lstlisting}[numbers=none]
+  [%xml "SSTR<h1>Hello, {[first_name]}!</h1>ESTR"]
+\end{lstlisting}
+Again, there are problems reasoning modularly and abstractly about such constructions. More than one applied preprocessor might recognize this annotation (there are, in practice, many XML/HTML libraries), so non-determinism can arise, and it is difficult to reason about \textbf{Responsibility}. It is also difficult to reason abstractly about \textbf{Segmentation}, \textbf{Capture}, \textbf{Context Dependence} and \textbf{Typing} because the code that the preprocessor generates is arbitrary. For these reasons, users of this mechanism warn that they should be used sparingly.\todo{citation}
+
+Term-rewriting macro systems address these problems -- the applied macro explicitly identifies the rewriting that wil 
+
+Template Haskell / Haskell quasiquotations / early macro systems / reader macros
+
+hygienic macro systems -- problem!
+
+typed macro systems, e.g. Scala. mention MacroML stuff, Herman and Wand 2008/2010 work
+
+string splicing / interpolation
+
+TSLs / TSMs
+
+Non-local rewriting systems suffer from problems analagous to those that plague syntax definition systems. In particular, there can be conflicts because separately defined rewriting rules might attempt to rewrite the same term differently. It can also be difficult to determine which rewriting rule, if any, is responsible for any particular term. Certain conventions have emerged, e.g. OCaml's textual syntax now includes \emph{preprocessor extension (ppx) points} used to identify terms that some presumably corresponding term rewriting preprocessor must rewrite \cite{ocaml-manual}, but a correspondence is not enforced. In any case, it is also difficult to reason abstractly about types and binding given a program subject to a large number of rewriting rules. 
+
+
+Modern \emph{term-rewriting macro systems}, however, have made some progress. In particular:
+\begin{enumerate}[nolistsep]
+\item Macro systems require that the client explicitly apply the intended rewriting (implemented by a macro) to the term that is to be rewritten, thereby addressing the problems of conflict and determining responsibility. However, it is often unclear whether a given macro  is repurposing the form of a given argument or sub-term thereof, as opposed to treating it parametrically by inserting it unmodified into the generated expansion. This is closely related to the problem of determining a {segmentation} discussed above.
+\item \emph{Hygienic} macro systems prevent variable {capture} and enforce {context-independence} \cite{Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92}.
+\item Although much of the research on macro systems has been for languages in the Lisp tradition \cite{mccarthy1978history}, some progress has also been made on reasoning about types with the design of \emph{typed macro systems} where annotations constrain the macro arguments and the generated expansions. Examples include Scala's macro system \cite{ScalaMacros2013}, formal calculi studied by \citet{DBLP:conf/esop/HermanW08} and \emph{staging macro systems} like MetaML \cite{Sheard:1999:UMS} and MacroML \cite{ganz2001macros} (which, it is worth noting, do not give the macro access to the syntax tree of arguments.)
+\end{enumerate}
+
+Perhaps the biggest problem, then, is that term-rewriting systems offer library providers only limited syntactic control. In other words many syntactic forms of interest will not particularly resemble those available in the host language. For example, consider the  XHTML and K examples above. In both cases, the syntactic conventions are quite distinct from those of ML-like languages (and, for that matter, languages that use S-expression.) 
+
+It is tempting in these situations to consider repurposing string literal forms. For example, we might wish to apply a macro \li{html!} (following Rust's convention of using a post-fix \li{!} to distinguish macro names from variables) to rewrite string literals containing Ur/Web-style XHTML syntax as follows:
+\begin{lstlisting}[numbers=none]
+  fun heading first_name = html! 'SSTR<h1>Hello, {[first_name]}!</p>ESTR'
+  val body = html! 'SSTR<body>{heading "World"} ...</body>ESTR'
+\end{lstlisting}
+
+The problem here is that there is no way to extract the spliced expressions from the supplied string literal forms while satisfying the hygiene conditions, because variables that come from these spliced terms (here, \li{first_name} and \li{heading}) are indistinguishable from variables that inappropriately appear free relative to the expansion. In addition, the problem of segmentation becomes even more pernicious: to a human or tool unaware of Ur/Web's syntax, it is not immediately apparent which particular subsequences of the string literals supplied to \li{html!} are segmented out as spliced expressions. Reader macros have essentially the same problem  \cite{DBLP:journals/jfp/FlattCDF12}.
+
+  Some languages build in \emph{string splicing} (a.k.a. \emph{string interpolation}) forms, e.g. Scala \cite{odersky2008programming}, or similar but more general \emph{fragmentary quotation forms} \cite{conf/icfp/Slind91}, e.g. the SML/NJ dialect of ML. These designate particular delimiters to allow escape out into the expression language. The problem with using these (dynamically, or in conjunction with term rewriting macros) as vehicles to introduce syntactic sugar at various types is 1) there is no ``one-size-fits-all'' escape delimiter, and 2) reasoning about typing is problematic because every escaped term is checked against the same type. In the example above, we spliced in two different types of expressions using two different delimiters. In general, e.g. when defining syntax for a programming language with many sorts of terms, the most appropriate choice of delimiters might depend on where each spliced term appears.
 
 \newcommand{\discussionSec}{Additional Related Work \& Concluding Discussion}
 \section{\protect\discussionSec}
