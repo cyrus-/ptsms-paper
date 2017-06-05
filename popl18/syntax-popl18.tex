@@ -271,15 +271,15 @@ Language designers cannot, of course, hope to accomodate all such types with pri
 For example, consider the perspective of a programmer attempting to comprehend (i.e. reason about) the program text in Figure \ref{fig:K-dialect}, which is written in a dialect of ML's (or Scala's) syntax where a large number of syntax extensions defining user-defined literal forms, some unfamiliar to the programmer, have been imported.
 
 \begin{figure}[h]
-\vspace{-9px}
+\vspace{-10px}
 \begin{lstlisting}
   val w = compute_w ()
   val x = compute_x ()
   val y = {|(!R)@&{&/x!/:2_!x}'!R}|}
 \end{lstlisting}
-\vspace{-12px}
+\vspace{-10px}
 \caption{An example of unreasonable program text.}
-\vspace{-8px}
+\vspace{-9px}
 \label{fig:K-dialect}
 \end{figure}
 
@@ -296,98 +296,65 @@ If the programmer happens to be familiar with the intentionally terse syntax of 
 
 In short, the problem is that library providers cannot reason modularly about syntactic determinism (because other extensions might define overlapping forms), and if the desugaring of the program text is held abstract, programmers can no longer reason about types, binding and segmentation (i.e. answer questions like those above.) This is burdensome at all scales, but particularly when programming in the large, where it is common to encounter a wide variety of libraries \cite{DBLP:conf/sac/LammelPS11}. Forcing the programmer to examine the desugaring of the program text, or the logic that produced that desugaring, in order to answer these sorts of basic questions about segmentation, binding and typing can defeat the ultimate purpose of syntactic sugar -- decreasing cognitive cost \cite{Green89}. Analagous problems do not arise when programming without syntax extensions in languages like ML and Scala -- the binding discipline of the language ensures that programmers can reason lexically about binding and renaming, and types mediate abstraction over function and module implementations.  %From this perspective, it is unsurprising that the use of Camlp4 has been deprecated in the OCaml system.
 
-This paper introduces a more reasonable approach: typed literal macros (TLMs). TLMs give library providers full programmatic control over the parsing and expansion of \emph{generalized literal forms}, whose bodies are left initially unparsed according to the fixed context free syntax of the language (i.e. they are initially parsed like raw string literals.) The applied TLM parses the literal body and generates an expansion during a phase known as typed expansion, which generalizes the usual typing phase. TLMs come equipped with uniquely powerful abstract reasoning principles. We will more precisely characterize these abstract reasoning principles as we proceed. For now, to develop some intuitions, consider Figure \ref{fig:K-tsm-example}, which applies a TLM to express the ``unreasonable'' example from Figure \ref{fig:K-dialect}. Without examining the expansion of Line 3, the client programmer can reason as follows:
-\begin{enumerate}
-\item \textbf{(Responsibility)} The applied TLM, \li{$kquery}, is solely responsible for typed expansion of the literal body. 
-\item \textbf{(Segmentation)} By examining the segmentation, we know that the two instances of \li{x} on Line 3 are parsed as spliced expressions, whereas \li{R} is parsed in some other way peculiar to this form.
-\item \textbf{(Capture)} The system prevents capture, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2 -- it cannot capture an unseen binding introduced in the expansion of Line 3.
-\item \textbf{(Context Dependence)} The system enforces context independence, so the expansion of Line 3 cannot  rely on the fact that, for example, \li{w} is in scope.
-\item \textbf{(Typing)} An explicit type annotation on the definition of \li{$kquery} determines the type that every expansion it generates will have. We will see an example of a TLM definition in the next section. 
+This paper introduces a more reasonable approach: typed literal macros (TLMs). TLMs give library providers full programmatic control over the parsing and expansion of \emph{generalized literal forms}, which syntactically subsume other literal forms because their bodies are left initially unparsed according to the fixed context free syntax of the language (i.e. they are initially parsed like raw string literals.) The applied TLM parses the literal body and generates an expansion during a phase known as typed expansion, which generalizes the usual typing phase. For example, Fig. \ref{fig:K-tsm-example} applies a TLM to express the ``unreasonable'' example from Fig. \ref{fig:K-dialect}.
 
-Moreover, each segment in the segmentation also comes paired with the type it is expected to have. This information is usually not necessary to reason about typing, but it can be conveyed to the programmer upon request by the program editor if desired. %TLM definitions follow the usual scoping rules, so it is easy to ``jump to the definition'' of \li{$kquery}.
+TLMs come equipped with uniquely powerful abstract reasoning principles. We will more precisely characterize these abstract reasoning principles as we proceed. For now, let us develop some informal intuitions -- the client programmer can reason about Line 3 as follows:
+\begin{enumerate}
+\item \textbf{(Responsibility)} The applied TLM, \li{$kquery}, is solely responsible for typed expansion of the literal body. The context-free syntax of the language is fixed, so the TLM provider can modularly establish that the syntax the TLM implements is deterministic.
+\item \textbf{(Segmentation)} The output that a TLM generates is structured so that the system can produce from it an accurate \emph{segmentation} of the literal body that distinguishes spliced segments, which appear directly in the expansion, from segments that are parsed in some other way by the TLM. This segmentation can be communicated by a pretty printer or code editor using secondary notation, e.g. colors in this document. By examining the segmentation of Line 3, we know that the two instances of \li{x} on Line 3 are parsed as spliced expressions, whereas \li{R} is parsed in some other way.
+\item \textbf{(Capture)} The system avoids capture, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2. It cannot capture an unseen binding of \li{x} in the expansion of Line 3.
+\item \textbf{(Context Dependence)} The system enforces context independence, so the expansion of Line 3 cannot  rely on the fact that, for example, \li{w} is in scope. The client is therefore free to rename \li{w}.
+\item \textbf{(Typing)} An explicit type annotation on the definition of \li{$kquery} determines the type that the expansion must have. We will see an example of a TLM definition in the next section. Moreover, each spliced segment in the segmentation also comes paired with the type it is expected to have. This information is usually not necessary to reason about typing, but it can be conveyed to the programmer upon request by the program editor if desired. %TLM definitions follow the usual scoping rules, so it is easy to ``jump to the definition'' of \li{$kquery}.
 \end{enumerate}
 
+%\footnote{In general, spliced expressions might themselves apply TLMs, in which case the convention is to use a distinct color for unspliced segments at each depth. For example, if strings were not primitive, we might write \li{`SURL<body>\{EURLheading ($str "SSTRWorld!ESTR")SURL\} ...</body>EURL`}.}
 
 \begin{figure}
+\vspace{-4px}
 \begin{lstlisting}[numbers=none,xleftmargin=0px]
   val w = compute_w ()
   val x = compute_x ()
   val y = $kquery `SURL(!R)@&{&/EURLxSURL!/:2_!EURLxSURL}'!R}EURL`
 \end{lstlisting}
-\vspace{-5px}
+\vspace{-8px}
 \caption{TLMs make examples like the one from Fig. \ref{fig:K-dialect} more reasonable.}
-\vspace{-5px}
+\vspace{-8px}
 \label{fig:K-tsm-example}
 \end{figure}
 
-WE WILL CONSIDER A VARIETY OF TERM REWRITING SYSTEMS, INCLUDING PPX, EARLY MACROS, READER MACROS, TEMPLATE HASKELL, QUASIQUOTES, HYGIENIC MACROS, TYPED HYGIENIC MACROS ALA SCALA, TYPE-SPECIFIC LANGUAGES, IN SEC 6. FOR NOW, LET US JUMP IMMEDIATELY TO OUR SYSTEM OF TYPED LITERAL MACROS AND DEVELOP AN INTUITION FOR HOW THEY ADDRESS THE PROBLEMS RAISED ABOVE. THE XHTML EXAMPLE CAN BE EXPRESSED IN OUR SYSTEM AS FOLLOWS:
+The remainder of this document is organized as follows.
+\begin{itemize}
+\item Sec. \ref{sec:setsms} begins by going through the mechanics of defining a {simple expression TLM} for XHTML and describes initial parsing, typed expansion and expansion validation in more detail.
+\item Sec. \ref{sec:sptsms} does the same for a {simple pattern TLM}, i.e. a TLM that generates patterns. %The hygiene condition for pattern TLMs is interesting.
+\item Sec. \ref{sec:setsms-formally} defines a calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above.
+
+% In the remaining chapters, we enrich the language developed in Chapter \ref{chap:uetsms} with advanced features based on those found in full-scale general-purpose languages like ML and Scala, and enhance our TLM mechanism with these new features.
+
+% We next develop a more sophisticated account of TLMs in Chapters \ref{chap:ptsms} and \ref{chap:static-eval}, with the aim of working out details necessary to integrate TLMs into full-scale general-purpose languages like ML or Scala. %These two chapters constitute Part \ref{part:parametric-tsms} of our contributions.
+\item Sec. \ref{sec:ptsms} adds parameterized types and an ML-style module system and introduces \emph{parametric TLMs} (pTLMs), i.e. TLMs that take type and module parameters. Parameters serve two purposes:
+\begin{enumerate}
+\item They allow for TLMs that operate not just at a single type, but over a type- and module-parameterized family of types. For example, we consider a parametric TLM for dictionaries that operates uniformly over different implementations of the abstract dictionary signature, and also over different choices of the co-domain type.
+\item Parameters also give expansions access to terms other than those explicitly spliced in. %This is particularly convenient for working with abstract types \emph{a la} ML. 
+Partial parameter application in TLM abbreviations lowers the cost of this parameter-passing discipline.
+\end{enumerate}
+This section culminates with a calculus that extends the calculus of Sec. \ref{sec:setsms-formally} with ML-style modules and parametric TLMs.
+\item Sec. \ref{sec:static-eval} considers the topic of term evaluation during the typed expansion phase, i.e. \emph{static evaluation}, in  more detail, and also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation.
+\item Sec. \ref{sec:related-work} compares TLMs to the related work, including closely related work by \citet{TSLs,sac15} on type-specific languages. \item Sec. \ref{sec:discussion} concludes with a summary of our contributions and a brief discussion of present limitations and future research directions.
+\end{itemize}
+
+Due to space limitations, many standard or straightforward technical details of the calculi defined in Sec. \ref{sec:setsms-formally} through Sec. \ref{sec:static-eval} are relegated to the supplemental material. For convenience, the examples that we give are written in a full-scale functional language under development called VerseML. % For the present purposes, we can consider VerseML as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %VerseML is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
+%The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of VerseML in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
+% We will not formally define these features mainly to avoid unnecessarily complicating our presentation with details that are not essential to the ideas presented herein. As such, 
+All examples written in VerseML should be understood to be informal motivating material for the subsequent formal material. %We anticipate that future full-scale language specifications will be able to combine the ideas  in the proposed work without trouble. %The purpose of the work being proposed is to serve as a reference for those interested in the new constructs we introduce, not to serve as a language specification. 
+%We will give a brief overview of these languages are organized in Sec. \ref{sec:VerseML}.
 
 
 
-BUT THAT DOESNT WORK BECAUSE OF HYGIENE! THERE ARE OTHER PROBLEMS AS WELL, 
 
-For example, OCaml's textual syntax now includes \emph{preprocessor extension (ppx) points} used to identify terms that some term rewriting preprocessor must rewrite \cite{ocaml-manual}. We could attempt to mark a string literal containing Ur/Web-style HTML syntax with a ppx annotation, \li{xml}, as follows:
-\begin{lstlisting}[numbers=none]
-  [%xml "SSTR<h1>Hello, {[first_name]}!</h1>ESTR"]
-\end{lstlisting}
-Again, there are problems reasoning modularly and abstractly about such constructions. More than one applied preprocessor might recognize this annotation (there are, in practice, many XML/HTML libraries), so the problems of \textbf{Responsibility} come up. It is also impossible to reason abstractly about \textbf{Segmentation}, \textbf{Capture}, \textbf{Context Dependence} and \textbf{Typing} because the code that the preprocessor generates is arbitrary. For these reasons, users of this mechanism warn that they should be used sparingly.\todo{citation}
-
-Term-rewriting macro systems are language-integrated local term rewriting systems that require that the client explicitly apply the intended rewriting, implemented by a macro, to the term that is to be rewritten\todo{readeer macros}. This addresses the issue of \textbf{Responsibility}. However, na\"ive macro systems, like the earliest variants of the Lisp macro system \cite{Hart63a}, Template Haskell \cite{SheardPeytonJones:Haskell-02} and GHC's quasiquotation system \cite{mainland2007s}, do not allow clients to reason abstractly about the remaining issues, again because the expansion that they produce is arbitrary.
-
-\emph{Hygienic} macro systems prevent, or abstractly account for \cite{DBLP:conf/esop/HermanW08,Herman10:Theory}, \textbf{Capture}, and they enforce application-site \textbf{Context Independence} \cite{Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92}. However, this turns out to make it difficult to use hygienic macros to introduce new literal forms of arbitrary design with support for splicing. Consider again our running XHTML example, which we might try to realize by applying a hygienic macro, \li{xml!}, to a string literal:
-\begin{lstlisting}[numbers=none]
-  (xml! "SSTR<h1>Hello, {[first_name]}!</h1>ESTR")
-\end{lstlisting}
-THIS IS BAD BECAUSE FIRSTNAME IS BAD HYGIENE GRAH. MAYBE TALK ABOUT STRING SPLICING AND FRAGMENT SYSTEM STUFF HERE.
-
-PUTTING THAT ASIDE, LET US CONSIDER TYPING. LISP IS DUMB NO TYPES. HERMAN AND WAND USED TYPES ONLY TO ACCOUNT FOR BINDING RELATIONSHIPS. SCALA HAS A TYPED MACRO SYSTEM, BUT THERE IS NO FORMAL ACCOUNT OF IT. MACROML IS ONLY A STAGING MACRO SYSTEM, NO WAY TO PARSE LITERALS. (It is not enough that with Template Haskell / GHC quasiquotation, the generated expansion is typechecked -- to satisfy the \textbf{Typing} criterion, it must be possible to reason abstractly about \emph{what the type of the generated expansion is}.) MAYBE BRING UP TSLS AND TSMS HERE.
-
-TRANSITION TO THE CONTRIBUTIONS OF THIS PAPER: TYPED LITERAL MACROS. REWRITE GENERALIZED LITERAL FORMS, KEEP TRACK OF SPLICED SEGMENTS SO THE HYGIENE MECHANISM IS COMPATIBLE, SEGMENTATION IS ALWAYS POSSIBLE. TYPED, INTEGRATED INTO ML SCALA-LIKE LANGUAGE (SECTION HEADINGS). FORMAL DEFINITION. REASONING PRINCIPLES ARE THEOREMS. THATS HOW WE EVALUATE OUR WORK. (USEFULNESS / USABILITY CONCERNS NEED TO BE ADDRESSED SOMEWHERES)
-
-Although much of the research on macro systems has been for languages in the Lisp tradition \cite{mccarthy1978history}, some progress has also been made on reasoning about types with the design of \emph{typed macro systems} where annotations constrain the macro arguments and the generated expansions. Examples include Scala's macro system \cite{ScalaMacros2013}, formal calculi studied by \citet{DBLP:conf/esop/HermanW08} and \emph{staging macro systems} like MetaML \cite{Sheard:1999:UMS} and MacroML \cite{ganz2001macros} (which, it is worth noting, do not give the macro access to the syntax tree of arguments.)
-
-Perhaps the biggest problem, then, is that term-rewriting systems offer library providers only limited syntactic control. In other words many syntactic forms of interest will not particularly resemble those available in the host language. For example, consider the  XHTML and K examples above. In both cases, the syntactic conventions are quite distinct from those of ML-like languages (and, for that matter, languages that use S-expression.) 
-
-It is tempting in these situations to consider repurposing string literal forms. For example, we might wish to apply a macro \li{html!} (following Rust's convention of using a post-fix \li{!} to distinguish macro names from variables) to rewrite string literals containing Ur/Web-style XHTML syntax as follows:
-\begin{lstlisting}[numbers=none]
-  fun heading first_name = html! 'SSTR<h1>Hello, {[first_name]}!</p>ESTR'
-  val body = html! 'SSTR<body>{heading "World"} ...</body>ESTR'
-\end{lstlisting}
-
-The problem here is that there is no way to extract the spliced expressions from the supplied string literal forms while satisfying the hygiene conditions, because variables that come from these spliced terms (here, \li{first_name} and \li{heading}) are indistinguishable from variables that inappropriately appear free relative to the expansion. In addition, the problem of segmentation becomes even more pernicious: to a human or tool unaware of Ur/Web's syntax, it is not immediately apparent which particular subsequences of the string literals supplied to \li{html!} are segmented out as spliced expressions. Reader macros have essentially the same problem  \cite{DBLP:journals/jfp/FlattCDF12}.
-
-  Some languages build in \emph{string splicing} (a.k.a. \emph{string interpolation}) forms, e.g. Scala \cite{odersky2008programming}, or similar but more general \emph{fragmentary quotation forms} \cite{conf/icfp/Slind91}, e.g. the SML/NJ dialect of ML. These designate particular delimiters to allow escape out into the expression language. The problem with using these (dynamically, or in conjunction with term rewriting macros) as vehicles to introduce syntactic sugar at various types is 1) there is no ``one-size-fits-all'' escape delimiter, and 2) reasoning about typing is problematic because every escaped term is checked against the same type. In the example above, we spliced in two different types of expressions using two different delimiters. In general, e.g. when defining syntax for a programming language with many sorts of terms, the most appropriate choice of delimiters might depend on where each spliced term appears.
-
-
-
-{This paper introducing a system of \emph{typed literal macros (TLMs)} that allows programmers to define new literal syntax of nearly arbitrary form within an ML- or Scala-like  language}, i.e. a language with a rich static type system (Sec. 2), support for pattern matching (Sec. 3) and an ML-style module system or Scala-style object system with support for type members and type abstraction (Sec. 5). The examples in this paper are written in VerseML, a new dialect of ML that features TLMs.
-
-Compared to existing approaches, TLMs are more \emph{reasonable}. We justify this claim by (1) developing a collection of relevant reasoning principles based on the reasoning principles already available to client programmers when using an ML-like or Scala-like language without such a mechanism; (2) formally operationalizing these reasoning principles as metatheorems about a series of type-theoretic \emph{TLM calculi} of increasing sophistication (Sec. 4-5); and (3) evaluating existing approaches -- including syntax definition systems like Camlp4 \cite{ocaml-manual}\todo{better citation}, SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework} and Copper \cite{conf/pldi/SchwerdfegerW09,schwerdfeger2010context}, term rewriting macro systems as found in a variety of languages, and the system of type-specific languages (TSLs) and typed syntax macros (TSMs) described by \citet{TSLs,sac15} -- relative to these reasoning principles (Sec. 6). We conclude by discussing limitations and future research directions in Sec. 7\todo{sec refs}. A complete set of definitions and associated proofs are available in the  supplemental material. This is the first detailed type-theoretic accout of a typed, hygienic term-rewriting macro system for an ML- or Scala-like language.\todo{refine and justify this claim}
-
-% These existing forms normally have other meanings, so this can be confusing \cite{pane1996usability}.
-
-\subsection{Contributions}\label{sec:contributions}
-This work introduces a system of \textbf{typed literal macros (TLMs)} that gives library providers substantially more syntactic control than existing typed term-rewriting macro systems while maintaining the ability to reason abstractly about types, binding and segmentation.% abstract reasoning principles. % comparable to the level of control they have when defining a syntax dialect.
+% \subsection{Contributions}\label{sec:contributions}
+% This work introduces a system of \textbf{typed literal macros (TLMs)} that gives library providers substantially more syntactic control than existing typed term-rewriting macro systems while maintaining the ability to reason abstractly about types, binding and segmentation.% abstract reasoning principles. % comparable to the level of control they have when defining a syntax dialect.
 
 % Clients apply TLMs to \emph{generalized literal forms}. 
-Our take on the running example is shown in Fig. \ref{fig:first-tsm-example}: we apply a TLM named 
-\li{$html} 
- to \emph{generalized literal forms} delimited by backticks. TLM names are prefixed by \li{$} 
- to clearly them from variables. The semantics delegates control over the parsing and expansion of each literal body to the applied TLM during a semantic phase called \emph{typed expansion}, which generalizes the usual typing phase. 
-\begin{figure}[ht!]
-\vspace{-10px}
-\begin{lstlisting}
-  fun heading first_name = $html `SURL<h1>Hello, {[EURLfirst_nameSURL]}!</h1>EURL`
-  val body = $html `SURL<body>{EURLheading "World!"SURL} ...</body>EURL`
-\end{lstlisting}
-\vspace{-10px}
-\caption{Two examples of a TLM being applied to a generalized literal form. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase. 
-We assume strings are primitive.}
-\vspace{-10px}
-\label{fig:first-tsm-example}
-\end{figure}
-
-Generalized literal forms, which first arose in related work by \citet{TSLs} that we will detail in Sec. \ref{sec:related-work}, subsume a variety of common syntactic forms because the context-free syntax of the language only defines which outer delimiters are available (in this paper, we will mostly use backticks, but in general, there can be many choices.) \emph{Literal bodies}, i.e. the characters between the delimiters, are otherwise syntactically unconstrained. Choices regarding internal delimitation of spliced terms is not imposed by the language definition. Notice, however, that Figure \ref{fig:first-tsm-example} reveals the locations of the spliced expressions by coloring them black. We have designed our system so that a figure like this, which presents a \emph{segmentation} of each literal body into spliced terms (in black) and characters parsed in some other way by the applied TLM (in green)\footnote{In general, spliced expressions might themselves apply TLMs, in which case the convention is to use a distinct color for unspliced segments at each depth. For example, if strings were not primitive, we might write \li{`SURL<body>\{EURLheading ($str "SSTRWorld!ESTR")SURL\} ...</body>EURL`}.}, can always be  generated.
 
 % Because the context-free syntax is never extended, syntactic conflicts are not a concern.
 
@@ -418,30 +385,6 @@ Generalized literal forms, which first arose in related work by \citet{TSLs} tha
 % In other words, TLMs maintain a useful notion of syntactic abstraction. %More specifically, TLMs maintain a \emph{hygienic binding discipline}, meaning that questions Questions 4 and 5 above were concerned with are disallowed entirely. 
 % We will, of course, make this notion more technically precise as we continue.
 
-The remainder of this document is organized as follows.
-\begin{itemize}
-\item Sec. \ref{sec:setsms} begins by going through the mechanics of defining a {simple expression TLM} and describes the process of typed expansion and expansion validation by example.
-\item Sec. \ref{sec:sptsms} does the same for a {simple pattern TLM}, i.e. a TLM that generates patterns that match values of a specified type. The hygiene condition for pattern TLMs is interesting.
-\item Sec. \ref{sec:setsms-formally} defines a calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above.
-
-% In the remaining chapters, we enrich the language developed in Chapter \ref{chap:uetsms} with advanced features based on those found in full-scale general-purpose languages like ML and Scala, and enhance our TLM mechanism with these new features.
-
-% We next develop a more sophisticated account of TLMs in Chapters \ref{chap:ptsms} and \ref{chap:static-eval}, with the aim of working out details necessary to integrate TLMs into full-scale general-purpose languages like ML or Scala. %These two chapters constitute Part \ref{part:parametric-tsms} of our contributions.
-\item Sec. \ref{sec:ptsms} adds parameterized types and an ML-style module system and introduces \emph{parametric TLMs} (pTLMs), i.e. TLMs that take type and module parameters. Parameters serve two purposes:
-\begin{enumerate}
-\item They allow for TLMs that operate not just at a single type, but over a type- and module-parameterized family of types. For example, we consider a parametric TLM for dictionaries that operates uniformly over different implementations of the dictionary signature, and also over different choices of the co-domain type.
-\item Parameters also give expansions access to terms other than those explicitly spliced in to the literal body. This is particularly convenient for working with abstract types \emph{a la} ML. Partial parameter application in TLM abbreviations lowers the cost of this explicit parameter-passing discipline.
-\end{enumerate}
-This section culminates with a calculus that extends the calculus of Sec. \ref{sec:setsms-formally} with ML-style modules and parametric TLMs.
-\item Sec. \ref{sec:static-eval} considers the topic of term evaluation during the typed expansion phase, i.e. \emph{static evaluation}, in  more detail, and also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation.
-\item Sec. \ref{sec:related-work} discusses additional related work, including closely related work by \citet{TSLs,sac15} on type-specific languages. We conclude with a brief discussion of present limitations and future directions.
-\end{itemize}
-
-Due to space limitations, many of the standard or straightforward technical details of the calculi defined in Sec. \ref{sec:setsms-formally} through Sec. \ref{sec:static-eval} are relegated to the supplemental material. For convenience, the examples that we give are written in a full-scale functional language under development called VerseML. % For the present purposes, we can consider VerseML as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %VerseML is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
-%The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of VerseML in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
-% We will not formally define these features mainly to avoid unnecessarily complicating our presentation with details that are not essential to the ideas presented herein. As such, 
-All examples written in VerseML should be understood to be informal motivating material for the subsequent formal material. %We anticipate that future full-scale language specifications will be able to combine the ideas  in the proposed work without trouble. %The purpose of the work being proposed is to serve as a reference for those interested in the new constructs we introduce, not to serve as a language specification. 
-%We will give a brief overview of these languages are organized in Sec. \ref{sec:VerseML}.
 
 % \begin{figure}[h]
 % \begin{lstlisting}[numbers=none,xleftmargin=0px]
@@ -491,6 +434,24 @@ All examples written in VerseML should be understood to be informal motivating m
 
 We will begin in this section by introducing \emph{simple expression TLMs} (seTLMs), i.e. TLMs where expansions are expressions of a single specified type. 
 
+Our take on the running example is shown in Fig. \ref{fig:first-tsm-example}: we apply a TLM named 
+\li{$html} 
+ to \emph{generalized literal forms} delimited by backticks. TLM names are prefixed by \li{$} 
+ to clearly them from variables. The semantics delegates control over the parsing and expansion of each literal body to the applied TLM during a semantic phase called \emph{typed expansion}, which generalizes the usual typing phase. 
+\begin{figure}[ht!]
+\vspace{-10px}
+\begin{lstlisting}
+  fun heading first_name = $html `SURL<h1>Hello, {[EURLfirst_nameSURL]}!</h1>EURL`
+  val body = $html `SURL<body>{EURLheading "World!"SURL} ...</body>EURL`
+\end{lstlisting}
+\vspace{-10px}
+\caption{Two examples of a TLM being applied to a generalized literal form. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase. 
+We assume strings are primitive.}
+\vspace{-10px}
+\label{fig:first-tsm-example}
+\end{figure}
+
+Generalized literal forms, which first arose in related work by \citet{TSLs} that we will detail in Sec. \ref{sec:related-work}, subsume a variety of common syntactic forms because the context-free syntax of the language only defines which outer delimiters are available (in this paper, we will mostly use backticks, but in general, there can be many choices.) \emph{Literal bodies}, i.e. the characters between the delimiters, are otherwise syntactically unconstrained. Choices regarding internal delimitation of spliced terms is not imposed by the language definition. Notice, however, that Figure \ref{fig:first-tsm-example} reveals the locations of the spliced expressions by coloring them black. We have designed our system so that a figure like this, which presents a \emph{segmentation} of each literal body into spliced terms (in black) and characters parsed in some other way by the applied TLM (in green)\footnote{In general, spliced expressions might themselves apply TLMs, in which case the convention is to use a distinct color for unspliced segments at each depth. For example, if strings were not primitive, we might write \li{`SURL<body>\{EURLheading ($str "SSTRWorld!ESTR")SURL\} ...</body>EURL`}.}, can always be  generated.
 
 % \section{Simple Expression TLMs By Example}\label{sec:tsms-by-example}
 % We begin in this section with a ``tutorial-style'' introduction to seTLMs in VerseML. %In particular, we will define an seTLM for constructing values of the recursive labeled sum type \li{rx} that was defined in Figure \ref{fig:datatype-rx}. 
@@ -2833,6 +2794,45 @@ Even putting aside the problem of syntactic conflict, there are questions about 
 
 
 \subsection{Another Existing Approach: Term Rewriting}
+For example, OCaml's textual syntax now includes \emph{preprocessor extension (ppx) points} used to identify terms that some term rewriting preprocessor must rewrite \cite{ocaml-manual}. We could attempt to mark a string literal containing Ur/Web-style HTML syntax with a ppx annotation, \li{xml}, as follows:
+\begin{lstlisting}[numbers=none]
+  [%xml "SSTR<h1>Hello, {[first_name]}!</h1>ESTR"]
+\end{lstlisting}
+Again, there are problems reasoning modularly and abstractly about such constructions. More than one applied preprocessor might recognize this annotation (there are, in practice, many XML/HTML libraries), so the problems of \textbf{Responsibility} come up. It is also impossible to reason abstractly about \textbf{Segmentation}, \textbf{Capture}, \textbf{Context Dependence} and \textbf{Typing} because the code that the preprocessor generates is arbitrary. For these reasons, users of this mechanism warn that they should be used sparingly.\todo{citation}
+
+Term-rewriting macro systems are language-integrated local term rewriting systems that require that the client explicitly apply the intended rewriting, implemented by a macro, to the term that is to be rewritten\todo{readeer macros}. This addresses the issue of \textbf{Responsibility}. However, na\"ive macro systems, like the earliest variants of the Lisp macro system \cite{Hart63a}, Template Haskell \cite{SheardPeytonJones:Haskell-02} and GHC's quasiquotation system \cite{mainland2007s}, do not allow clients to reason abstractly about the remaining issues, again because the expansion that they produce is arbitrary.
+
+\emph{Hygienic} macro systems prevent, or abstractly account for \cite{DBLP:conf/esop/HermanW08,Herman10:Theory}, \textbf{Capture}, and they enforce application-site \textbf{Context Independence} \cite{Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92}. However, this turns out to make it difficult to use hygienic macros to introduce new literal forms of arbitrary design with support for splicing. Consider again our running XHTML example, which we might try to realize by applying a hygienic macro, \li{xml!}, to a string literal:
+\begin{lstlisting}[numbers=none]
+  (xml! "SSTR<h1>Hello, {[first_name]}!</h1>ESTR")
+\end{lstlisting}
+THIS IS BAD BECAUSE FIRSTNAME IS BAD HYGIENE GRAH. MAYBE TALK ABOUT STRING SPLICING AND FRAGMENT SYSTEM STUFF HERE.
+
+PUTTING THAT ASIDE, LET US CONSIDER TYPING. LISP IS DUMB NO TYPES. HERMAN AND WAND USED TYPES ONLY TO ACCOUNT FOR BINDING RELATIONSHIPS. SCALA HAS A TYPED MACRO SYSTEM, BUT THERE IS NO FORMAL ACCOUNT OF IT. MACROML IS ONLY A STAGING MACRO SYSTEM, NO WAY TO PARSE LITERALS. (It is not enough that with Template Haskell / GHC quasiquotation, the generated expansion is typechecked -- to satisfy the \textbf{Typing} criterion, it must be possible to reason abstractly about \emph{what the type of the generated expansion is}.) MAYBE BRING UP TSLS AND TSMS HERE.
+
+TRANSITION TO THE CONTRIBUTIONS OF THIS PAPER: TYPED LITERAL MACROS. REWRITE GENERALIZED LITERAL FORMS, KEEP TRACK OF SPLICED SEGMENTS SO THE HYGIENE MECHANISM IS COMPATIBLE, SEGMENTATION IS ALWAYS POSSIBLE. TYPED, INTEGRATED INTO ML SCALA-LIKE LANGUAGE (SECTION HEADINGS). FORMAL DEFINITION. REASONING PRINCIPLES ARE THEOREMS. THATS HOW WE EVALUATE OUR WORK. (USEFULNESS / USABILITY CONCERNS NEED TO BE ADDRESSED SOMEWHERES)
+
+Although much of the research on macro systems has been for languages in the Lisp tradition \cite{mccarthy1978history}, some progress has also been made on reasoning about types with the design of \emph{typed macro systems} where annotations constrain the macro arguments and the generated expansions. Examples include Scala's macro system \cite{ScalaMacros2013}, formal calculi studied by \citet{DBLP:conf/esop/HermanW08} and \emph{staging macro systems} like MetaML \cite{Sheard:1999:UMS} and MacroML \cite{ganz2001macros} (which, it is worth noting, do not give the macro access to the syntax tree of arguments.)
+
+Perhaps the biggest problem, then, is that term-rewriting systems offer library providers only limited syntactic control. In other words many syntactic forms of interest will not particularly resemble those available in the host language. For example, consider the  XHTML and K examples above. In both cases, the syntactic conventions are quite distinct from those of ML-like languages (and, for that matter, languages that use S-expression.) 
+
+It is tempting in these situations to consider repurposing string literal forms. For example, we might wish to apply a macro \li{html!} (following Rust's convention of using a post-fix \li{!} to distinguish macro names from variables) to rewrite string literals containing Ur/Web-style XHTML syntax as follows:
+\begin{lstlisting}[numbers=none]
+  fun heading first_name = html! 'SSTR<h1>Hello, {[first_name]}!</p>ESTR'
+  val body = html! 'SSTR<body>{heading "World"} ...</body>ESTR'
+\end{lstlisting}
+
+The problem here is that there is no way to extract the spliced expressions from the supplied string literal forms while satisfying the hygiene conditions, because variables that come from these spliced terms (here, \li{first_name} and \li{heading}) are indistinguishable from variables that inappropriately appear free relative to the expansion. In addition, the problem of segmentation becomes even more pernicious: to a human or tool unaware of Ur/Web's syntax, it is not immediately apparent which particular subsequences of the string literals supplied to \li{html!} are segmented out as spliced expressions. Reader macros have essentially the same problem  \cite{DBLP:journals/jfp/FlattCDF12}.
+
+  Some languages build in \emph{string splicing} (a.k.a. \emph{string interpolation}) forms, e.g. Scala \cite{odersky2008programming}, or similar but more general \emph{fragmentary quotation forms} \cite{conf/icfp/Slind91}, e.g. the SML/NJ dialect of ML. These designate particular delimiters to allow escape out into the expression language. The problem with using these (dynamically, or in conjunction with term rewriting macros) as vehicles to introduce syntactic sugar at various types is 1) there is no ``one-size-fits-all'' escape delimiter, and 2) reasoning about typing is problematic because every escaped term is checked against the same type. In the example above, we spliced in two different types of expressions using two different delimiters. In general, e.g. when defining syntax for a programming language with many sorts of terms, the most appropriate choice of delimiters might depend on where each spliced term appears.
+
+
+
+{This paper introducing a system of \emph{typed literal macros (TLMs)} that allows programmers to define new literal syntax of nearly arbitrary form within an ML- or Scala-like  language}, i.e. a language with a rich static type system (Sec. 2), support for pattern matching (Sec. 3) and an ML-style module system or Scala-style object system with support for type members and type abstraction (Sec. 5). The examples in this paper are written in VerseML, a new dialect of ML that features TLMs.
+
+Compared to existing approaches, TLMs are more \emph{reasonable}. We justify this claim by (1) developing a collection of relevant reasoning principles based on the reasoning principles already available to client programmers when using an ML-like or Scala-like language without such a mechanism; (2) formally operationalizing these reasoning principles as metatheorems about a series of type-theoretic \emph{TLM calculi} of increasing sophistication (Sec. 4-5); and (3) evaluating existing approaches -- including syntax definition systems like Camlp4 \cite{ocaml-manual}\todo{better citation}, SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework} and Copper \cite{conf/pldi/SchwerdfegerW09,schwerdfeger2010context}, term rewriting macro systems as found in a variety of languages, and the system of type-specific languages (TSLs) and typed syntax macros (TSMs) described by \citet{TSLs,sac15} -- relative to these reasoning principles (Sec. 6). We conclude by discussing limitations and future research directions in Sec. 7\todo{sec refs}. A complete set of definitions and associated proofs are available in the  supplemental material. This is the first detailed type-theoretic accout of a typed, hygienic term-rewriting macro system for an ML- or Scala-like language.\todo{refine and justify this claim}
+
+% These existing forms normally have other meanings, so this can be confusing \cite{pane1996usability}.
 
 \newcommand{\discussionSec}{Additional Related Work \& Concluding Discussion}
 \section{\protect\discussionSec}
