@@ -565,7 +565,6 @@ type proto_expr = Var of var_t
                 | Ap of proto_expr * proto_expr
                 | (* ... *) 
                 | SplicedE of segment * proto_typ
-
 \end{lstlisting}
 \vspace{-5px}
 \caption[Definitions of various types used by TLM definitions.]{Definitions of various types used by TLM definitions. We assume that these are available ambiently.}
@@ -2836,13 +2835,17 @@ This brings us to the most closely related work, that of \citet{TSLs} on \emph{t
 \label{sec:related-work}
 \label{sec:discussion}
 \label{sec:conclusion}
-\vspace{-3px}
-{This paper introducing a system of \emph{typed literal macros (TLMs)} that allows programmers to define new literal syntax of nearly arbitrary form within an ML- or Scala-like  language}, i.e. a language with a rich static type system (Sec. 2), support for pattern matching (Sec. 3) and an ML-style module system or Scala-style object system with support for type members and type abstraction (Sec. 5). The examples in this paper are written in VerseML, a new dialect of ML that features TLMs.
 
-Compared to existing approaches, TLMs are more \emph{reasonable}. We justify this claim by (1) developing a collection of relevant reasoning principles based on the reasoning principles already available to client programmers when using an ML-like or Scala-like language without such a mechanism; (2) formally operationalizing these reasoning principles as metatheorems about a series of type-theoretic \emph{TLM calculi} of increasing sophistication (Sec. 4-5); and (3) evaluating existing approaches -- including syntax definition systems like Camlp4 \cite{ocaml-manual}\todo{better citation}, SugarJ/Sugar* \cite{erdweg2011sugarj,erdweg2013framework} and Copper \cite{conf/pldi/SchwerdfegerW09,schwerdfeger2010context}, term rewriting macro systems as found in a variety of languages, and the system of type-specific languages (TSLs) and typed syntax macros (TSMs) described by \citet{TSLs,sac15} -- relative to these reasoning principles (Sec. 6). We conclude by discussing limitations and future research directions in Sec. 7\todo{sec refs}. A complete set of definitions and associated proofs are available in the  supplemental material. This is the first detailed type-theoretic accout of a typed, hygienic term-rewriting macro system for an ML- or Scala-like language.\todo{refine and justify this claim}
+The importance of good notation as a ``tool for thought'' has long been recognized\todo{cite iverson}. A good notation, according to A. N. Whitehead, ``relieves the brain of [...] unnecessary work'' and ``sets it free to concentrate on more advanced problems''\todo{citation}. Indeed, advances in mathematics, science and software engineering have quite often been accompanied by new notation. Of course, this desire to ``relieve the brain of all unnecessary work'' has influenced not just the surface syntax but also the semantics of languages like ML and Scala, which maintain a strong type and binding discipline so that programmers, and their tools, can hold certain ``implementation details'' abstract when reasoning about program behavior.
+
+Previously, these  were in tension -- . 
 
 
-% Other related work was already described in Sec. \ref{sec:intro}.\todo{reader macros}
+Not all notation is good, and we make no empirical claims as to the value of any particular notation in this paper. TLMs leave essentially all choices about literal notation, and therefore the burden of establishing the value of any particular literal notation, to individual library providers, rather than to the language designer. This decentralization of control is justified by the fact that when the programmer encounters an unfamiliar or bad notation, it does not ruin their day. The programmer is in no worse a position...
+
+The broader empirical question of whether the capabilities that TLMs provide are of interest to programmers ``in the wild'' is well beyond the scope of a conference paper such as this. The intended audience for this paper is language designers who wish to decentralize control over literal forms but seek a detailed understanding, rooted in the first principles of type theory, of a reasonable mechanism by which to achieve that goal in the setting of an ML- or Scala-like language. This paper is the first such account of such a mechanism. More generally, this paper contributes the first detailed type-theoretic account of a typed, hygienic macro system for an ML-like language, i.e. one with a rich static type system, support for pattern matching and an ML-like module system with support for type functions and abstract type members. (To summarize Sec. \ref{sec:existing-approaches}, the closest existing typed, hygienic macro system -- the Scala macro system \cite{ScalaMacros2013} -- is not formally specified, the work of \cite{DBLP:conf/esop/HermanW08} uses types only to reason abstractly about binding, and the specification of TSLs in the work of \citet{TSLs} did not formalize hygiene nor handle these advanced language features.)
+
+It is trivial to observe that the literal forms already chosen to appear in various languages, including the examples in Sec. \ref{sec:intro}, 
 
 One important avenue has to do with automated refactoring. The unexpanded language does not come equipped with standard notions of renaming and substitution. Given a splice summary, it should be possible to ``backpatch'' refactorings into literal bodies, but the details are left as future work.
 
@@ -2851,9 +2854,11 @@ Haskell's \li{do}-notation for types with monadic structure cannot be expressed 
 
 At several points in the paper, we discussed editor integration. However, some important questions having to do with incremental parsing, error recovery and error reporting remain to be considered. Proto-expansions are context-independent and parametric, so they are likely to amenable to caching.
 
-Another interesting question is what this mechanism would look like in the setting of a projectional structure editor, i.e. one where the syntax is not textual but rather tree-shaped and projected in an interative manner to the programmer. This paper taken together with work by \citet{Omar:2012:ACC:2337223.2337324,DBLP:conf/popl/OmarVHAH17} can serve to guide such an effort.
+Other directions for future work are given in the supplement...
 
-To conclude, TLMs give substantial syntactic control to library providers while leaving programmers with strong abstract reasoning principles. We believe TLMs therefore occupy a ``sweet spot'' in the  design space. %This paper serves to guide those who hope to incorporate TLMs into their future language designs.
+% Another interesting question is what this mechanism would look like in the setting of a projectional structure editor, i.e. one where the syntax is not textual but rather tree-shaped and projected in an interative manner to the programmer. This paper taken together with work by \citet{Omar:2012:ACC:2337223.2337324,DBLP:conf/popl/OmarVHAH17} can serve to guide such an effort.
+
+% To conclude, TLMs give substantial syntactic control to library providers while leaving programmers with strong abstract reasoning principles. We believe TLMs therefore occupy a ``sweet spot'' in the  design space. %This paper serves to guide those who hope to incorporate TLMs into their future language designs.
 
 
 
