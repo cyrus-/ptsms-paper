@@ -1,0 +1,258 @@
+POPL '18 Paper #2 Reviews and Comments
+===========================================================================
+Paper #263 Reasonably Programmable Literal Forms
+
+
+Review #263A
+===========================================================================
+
+Overall merit
+-------------
+5. Accept - will argue for
+
+Reviewer expertise
+------------------
+Z. Outsider
+
+Paper summary
+-------------
+Summary: 
+
+This paper describes a general linguistic mechanism for introducing new, typed
+"literal forms" into a program.  An example of a literal form is the
+list notation [x, y, z] common to many functional programming languages.
+The authors set out some goals for their mechanism:
+
+* responsibility - you can tell who defines the new notation
+* segmentation - you can break up the notation and figure out which parts are
+    syntax and which parts are embedded expressions
+* capture - macro definitions can't capture variables
+* context independence - definitions can't rely on certain variables 
+    being in scope
+* typing -- an explicit annotation determines the type of the expansion
+
+The authors:
+
+* describe the design of their mechanism informally via examples
+* define two typed lambda calculi:  an unexpanded calculus and an
+    expanded calculus.  The former elaborates into the latter.  The latter is 
+    a very standard typed language with sums, products and recursive types.
+* prove theorems that correspond to each of the abstract criteria mentioned
+    above
+* define an extended language for analysis of the interaction of these 
+    ideas with an ML-style module system
+* discuss related work extensively
+
+The authors are (in the process of, it sounds like) integrating the 
+extensions into a new front end for OCaml.
+
+Pros:
+
++ the paper tells a very full, deep story
++ there are wrinkles in the theory that the authors reveal nicely
++ writing and examples are good
++ the description of the related work appears thoughtful
+
+Cons:
+
+- I can't really come up with anything except perhaps that it would be nice if
+the implementation were complete (a very minor complaint given the depth of
+work presented already)
+
+Analysis:
+
+I am outside reviewer without knowledge of macro systems or other
+linguistic syntax definition systems (but with some knowledge of type
+systems).  As far as I can tell, this is a very thoughtful, novel and
+thorough paper describing a substantial new mechanism for extending
+the syntax of a programming language.  I enjoyed reading the paper a
+great deal and would love to see it in the POPL program.
+
+Comments for author
+-------------------
+p 3 -- super minor:  "responsibility" "segmentation" "typing" are things that
+the system ensures.  However, the system ensures the negation of "capture"
+and the negation of "context dependence".  It might be nice to change those
+titles to "capture-avoidance" and "context independence".
+
+p 3 -- (5) Typing mentions the "an explicit type annotation on the definition
+of $kquery determines the type ..." However, there is no such explicit
+type annotation in Fig 3.  Perhaps one should be added?
+
+p 5-6 -- there is nothing particularly wrong with the writing when it
+comes to the discussion of the spliced terms spliced<13; 22; string>.
+I understand roughly why the indirect notation is used and yet the
+extremely low level character-by-character offsets surprised me (they
+seem out of place in a lambda calculus).  When it comes to the formal
+calculus, the spliced terms splicedt[m;n] reappear.  Is there no way
+to make these references more abstract?  Could one use some kind of
+abstract symbol as a label rather than a positional count?
+
+p 9 -- sec 4.1 perhaps inline in the text the fact that product types
+use angle brackets < > and sum types use square brackets [ ] to help
+the reader
+
+p 11 -- it is rare that I need someone to show me a typing derivation
+and explain the details of variable binding but the derivation in 
+on pg 11 was very helpful in illustrating the different treatments
+of variables/identifiers in the expanded/unexpanded langauges.  Nicely done.
+
+Many definitions and proofs are left to the supplementary materials.  I can
+imagine some readers complaining about this but I think the choices made
+by the authors are very good in general.  I had detail where I wanted it
+and the less necessary items were left for the appendix.  One minor quibble
+is that I would have liked to have seen a little more of the syntax of the
+module system (eg: the signature syntax) in the body of the paper to give 
+me an intuition as to what we were dealing with here.
+
+I gave up on trying to vet the correctness of this paper (ie, sanity
+check it) when it reached the section on the module system.
+
+
+
+Review #263B
+===========================================================================
+
+Overall merit
+-------------
+3. Weak reject - will not argue against
+
+Reviewer expertise
+------------------
+X. Expert
+
+Paper summary
+-------------
+This paper presents the motivation and model of "Typed Literal Macros"
+(TLMs), which enable macro expansion where the macro implementation
+recieves a free-form string embedded that it can parse into the
+language's abstract syntax. Crucially, the parsed form can include
+placeholders for portions of the input string that are to be parsed as
+spliced subexpressions; only those spliced subexpressions can refer to
+bindings in the environment of the macro use, which enables the macro
+expander to enforce restrictions on macro-introduced expressions. TLMs
+can be used in expression and pattern positions within an ML-like
+language.
+
+ + complete description of TLMs
+ - novelty relative to TSLs seems low
+ - expressiveness is low relative to existing systems
+
+The parsing strategy for TLMs is based on the "type-specific languages"
+(TSLs) of Omar et al. The type system is different here, and this
+paper provides a more detailed treatment of hygiene. Section 4 is thus
+the main contribution of this paper, explaining in detail how the
+expansion of a TLM is adjusted with fresh variables to ensure that no
+bindings from the environment are referenced and that no variables in
+spliced subexpressions are captured.
+
+While the paper appropriately uses the word "hygiene" for the binding
+guarantees of TLMs, it's a relatively straightforward variant of
+hygiene: macros cannot implement binding forms, and the expansion of a
+macro cannot be a macro-invocation form. As a result, many traditional
+hygiene questions do not arise.
+
+If TLMs were restricted to expression positions, then the model in
+section 4 would seem more complex than necessary. The restrictions on
+TLM expansion mean that an expression could be represented by the
+abstract syntax of a closed function (which is easy enough to check),
+and the spliced subexpressions could be supplied as thunked arguments
+to the function. Then, the usual lambda-calculus binding strategies
+would be sufficient for achieving the intended scoping results. Since
+TLMs are allowed in pattern positions, and a function doesn't work as
+a pattern abstraction, unpacking the handling of binding supports
+patterns as well as expressions in the model. Then again, some
+languages (notably Scala) support abstraction in a pattern position,
+so maybe the relevant machinery exists for patterns, too.
+
+The introduction's claims about segmentation are confusing and
+perhaps misleading. The model presented in the paper ensures that
+specific, non-overlapping portions of the string are treated as
+spliced subexpressions, but the model does not ensure that a TLM
+treats a spliced portion *only* as a subexpression. A TLM could could
+use the same text for other purposes as well, so without knowing more
+about `$kquery` as used in figure 3, a programmer cannot blindly
+alpha-rename `x`. Meanwhile, the introduction seems to suggest that
+it's important for programmers to be able, on their own, to distinguish
+subexpressions and binding uses of a syntactic extension, but
+segmentation with TLMs ultimately depends on running the TLM. Tool
+support for most any macro system can identify subexpressions and
+binding structure post-expansion.
+
+
+
+Review #263C
+===========================================================================
+
+Overall merit
+-------------
+3. Weak reject - will not argue against
+
+Reviewer expertise
+------------------
+X. Expert
+
+Paper summary
+-------------
+This paper is about macros that can "parse" their arguments, thereby allowing to express a variety of possible domain-specific syntaxes (with some serious restrictions: new binding constructs cannot be defined) by defining new macros. The focus of the topic is about modular reasoning about such extensions, such as the classical issue of variable capture and hygiene. A few examples and a formal calculus with an "expanded" and an "unexpanded" variant are given and defined and the desired "modular reasoning" properties are proven. No implementation of the macro system is presented (but there are plans to implement one), and consequently no experiences or case study from the implementation.
+
+Points in favor:
+- I agree that syntax is important and that it should be possible to add new syntax to a language.
+- I agree that hygiene, context independence etc. are quite useful and important for a syntax extension mechanism
+- Formal calculus with proofs of the desired properties, including some impressive-looking supplemental material
+
+Points against:
+- Weak motivation in relation to existing work in the area, discussion of related work in part not convincing
+- Formal development too complicated to shed much light on the issue
+- I was disappointed by the lack of an implementation and a more compelling case study. It is hard to get a feeling for the expressiveness and the limitations (which are barely discussed) of TLMs by these few small examples.
+
+Overall, I believe that the work is very promising and well motivated, but the presentation leaves so much to be desired that the paper should go through another major revision.
+
+About related work:
+
+I found the description of the relation to Copper unconvincing. If the main disadvantage of Copper is that I have to use domain names or the like instead of a macro name like in your work to avoid conflicts - that sounds like a rather small difference that wouldn't be hard to fix.
+
+What about Racket's reader macros? You give a reference, but they are not really discussed. The paragraph ("The first problem with syntax definition systems...") doesn't apply to reader macros because they don't extend the syntax of the base language. Racket is not a typed language, but your whole work doesn't really focus on typing. There's also work on hygiene and reader macros, see
+http://docs.racket-lang.org/hygienic-reader-extension/index.html
+
+In general, how about a kind of table where you list related work and discuss which properties those systems have in comparison to yours (including properties where other proposals would be stronger, e.g. in defining new binders)? I think that would help to make the relation to existing work more clear.
+
+Another related work: What about Coq's "notation" mechanism? 
+
+I also found the language design of the extension mechanism to be sometimes poorly motivated. For instance, TLMs that expand to patterns are "motivated" with "Let us now briefly consider the topic of TLMs that expand to patterns". But why do we need this? Do we also need twenty other expansion targets for TLMs?
+
+I found the formal definitions too complicated to get a lot out of them. So many syntactic forms and categories, so many types of judgements... . Is it not possible to condense the core of your idea down to a smaller calculus?
+
+A minor point: I found the title of the paper misleading. If I were looking for literature on syntactic extensibility, the title doesn't suggest that it is about this topic ("literal form" is to my knowledge not really a standard term).
+
+
+
+Review #263D
+===========================================================================
+
+Overall merit
+-------------
+4. Weak accept - will not argue for
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Paper summary
+-------------
+This paper presents Typed Literal Macros (TLMs), which enable syntax extensions (e.g. literal forms for lists, or HTML fragments) to be defined as libraries. The paper stresses some reasoning principles: responsibility, segmentation, capture, context independence, typing. TLMs support splicing, and come in three variants: simple expression, simple pattern, parametric. The paper presents TLMs by example and formally. The reasoning principles give rise to some formal theorems.
+
+Pros:
+- Paper is well-written.
+- Paper is thoughtful about principles, which are reasonable intuitively and carry through the formalism.
+- Paper is thoughtful about being applicable to a wide variety of languages, with a focus on typed languages like ML and Scala. The paper gives enough details for others to adopt the work.
+
+Cons:
+- While it's helpful (to the reader) to compare related work according to the principles identified by the paper, it seems a bit unfair (to not compare previous works on their own terms). In particular, the work does seem closely related to Omar et al.'s type specific languages (TSLs).
+- I would have liked to see a full example. In all examples, the defining body has been omitted.
+
+Comments for author
+-------------------
+- Why clutter with ""? Also italics seem to be (ab)used, e.g. why is "vice versa" in italics?
+
+- "can, in turn, can"
