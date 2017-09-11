@@ -1,0 +1,46 @@
+<TODO: thanks>
+
+= Novelty relative to our previous work (R2, R4)
+
+There are several novelties to this work relative to our own previous work on TSLs (ECOOP 2014). These were summarized in detail on p25 (bottom half).
+
+To briefly reiterate, there is no analog of the central "reasoning principles" theorem that we presented -- there is only an analog of the "Typed Expansion" theorem. Moreover, the previous paper did not carefully distinguish identifiers from variables, which is a technical detail that we consider critical. Furthermore, there was no prior consideration, even informally, of 
+(1) pattern matching (Sec. 3-4), nor 
+(2) integration into languages with parameterized types or modules (Sec. 5), nor 
+(3) static helpers (Sec. 6). 
+These are essential for integration into an ML- or Scala-like language. The technical development of these features is not obvious, requiring rather careful consideration of constructs like variable pattern forms (Sec. 3-4) and parameterized proto-expansions (Sec. 5).
+
+= "If TLMs were restricted to expression positions..." (R2)
+
+R2 is correct that for expressions TLMs, we could have reformulated the mechanism to ask the TLM provider to give a list of spliced segments together with an AST representing a function that takes the expansions of these segments as arguments. This would allow us to prove the same capture avoidance theorem, because it, like function application, relies on the standard notion of capture-avoiding substitution. However, as R2 notes, this would require the introduction of "pattern functions" of some sort to support pattern TLMs. Overall, it seems to us that this would complicate the use of TLMs for programmers by requiring them to insert mediating variables manually, but not substantially simplify our specification of the mechanism nor the metatheory.
+
+= "The introduction's claims about segmentation..." (R2)
+
+R2 is correct that a TLM need not use a spliced segment as *only* a spliced segment. Formally, this amounts to an unchecked side condition on TLMs -- that the proto-expansion produced should be invariant to alpha-renaming within spliced segments. This side condition can, however, be easily checked for any particular refactoring performed. We discussed refactoring tools as future work on p26 (lines 35-38), but we will make this particular point more clear in the final version.
+
+= Relationship to Copper (R3)
+
+R3 asks if "the main disadvantage of Copper is that I have to use domain names or the like instead of a macro name like in your work to avoid conflicts". That is far from the only disadvantage -- Copper does not maintain any of the other reasoning principles in the paper -- Typing, Capture Avoidance, Context Independence or Segmentation. This is stated in Sec. 7.1 as being true of all similar systems, but we are happy to make this point more specifically about Copper in the final version. (Note: Eric Van Wyk, who works on Copper, was on the first author's thesis committee and so he has thoroughly vetted this work.)
+
+= Relationship to Reader Macros (R3)
+
+Reader macros are a method of invoking an alternative reader+parser for the remainder of a file as mentioned on p23. The methods for maintaining hygiene linked by R3 are "opt in" -- hygiene is not enforced formally -- but we are happy to mention this in the final version. To formally enforce hygiene would require distinguishing spliced segments as we have described in this paper, so our work could be used to improve a reader macro system even if types are not brought into the language.
+
+= Relationship to Coq's notation mechanism (R3)
+
+Coq's notation mechanism is a syntax definition system that supports rewritings only of "mixfix" forms (i.e. those that have a fixed number of sub-terms). As such, there is no way to express any of the examples in the paper (HTML, regex, etc.), because these are not "mixfix" forms. We are happy to make this point more clear in the final version.
+
+= Related work table (R3)
+
+R3 suggests a "related work table". We agree that this would be useful, and would be happy to include one in the final version of the paper since we will have four additional pages to work with.
+
+= Concerns about complexity of the formal development (R3)
+
+The purpose of Sec. 4 was to present a "core calculus" that captures only the essential aspects of TLMs -- typed expansion and proto-expansion validation.
+
+= Complete example / more realistic case studies (R3, R4)
+
+A complete example is given in the supplemental material (see the last section). Unfortunately, there was no way to make room in the initial submission to give all of the details. However, in the final version we could use the additional 4 pages available to include this example, which would fit logically into Sec. 6.
+
+Many more examples and an empirical evaluation that produced additional use cases were given in our previous paper (ECOOP 2014). This submission was intended to be a follow-up technical paper for use by language designers interested in incorporating TLMs into their own ML- or Scala-like design.
+
