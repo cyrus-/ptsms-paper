@@ -1,58 +1,60 @@
-Thank you to the referees for the thoughtful readings! We respond to the major concerns  that were brought up below.
+Thank you to the referees for the thoughtful readings and reviews! We respond to the major concerns that were brought up below. We contend that a major revision is not necessary to address these concerns. 
 
-# Relationship to our previous work on TSLs (RB, RD)
+# Relationship to our prior work on TSLs (RB, RD)
 
-RB and RD questioned the novelty of this work relative to our own previous work on TSLs (Omar et al, ECOOP 2014). This was addressed in detail on p25 (bottom half), but let us briefly summarize here.
+RB and RD questioned the novelty of this work relative to our own prior work on TSLs (Omar et al, ECOOP 2014). This was addressed in detail on p25 (bottom half), but let us briefly highlight some key points.
 
-First, this paper completes what was fundamentally an incomplete theoretical treatment of this topic by developing and carefully proving the central "reasoning principles" theorems. There is only an analog of the straightforward "Typed Expansion" theorem in the previous work, and the previous work did not carefully distinguish identifiers from variables.
+First, this paper completes what was fundamentally an incomplete theoretical treatment  by developing and carefully proving the central "Reasoning Principles" theorems. There is only an analog of the straightforward "Typed Expansion" theorem in the prior work. Moreover, the prior work did not carefully distinguish identifiers from variables.
 
 Second, this paper provides the first treatment of:
   1. pattern matching (Sec. 3-4),
   2. parameterized types (Sec. 5), 
   3. modules (Sec. 5), and
-  3. static helpers (Sec. 6).
+  4. static helpers (Sec. 6).
 
-These are essential features in ML- or Scala-like languages and the technical development of these features is not obvious given the prior work, requiring rather careful consideration of constructs like variable pattern forms (Sec. 3-4) and parameterized proto-expansions (Sec. 5).
+These are essential features in ML- or Scala-like languages. The technical development of these features is not obvious given the prior work, requiring rather careful consideration of constructs like variable pattern forms (Sec. 3-4) and parameterized proto-expansions (Sec. 5).
 
-# Complete example / more case studies (RC, RD)
+# Examples / case studies (RC, RD)
 
 RC and RD expressed concern about the completeness and variety of examples in the paper. 
 
-First, note that a complete example is given in the supplemental material (last section). Unfortunately, there was no way to make room in the initial submission to include all of these details. However, in the final version we would use the additional 4 pages to include this example, which would fit logically into Sec. 6.
+First, note that a complete example is given in the supplemental material (last section). There was no room in the initial submission to detail even this example. However, in the final version we would use the four additional pages to include this example, which would fit logically into Sec. 6.
 
-Second, note that many more examples and an empirical evaluation that produced dozens of additional use cases were given in our previous paper (ECOOP 2014). This submission was intended to be a follow-up technical paper that, as just mentioned, completed the theoretical treatment of the topic so that language designers interested in incorporating TLMs into their own ML- or Scala-like design would be able to understand the technical issues that come up in a full-scale setting. The two papers together paint, we believe, a compelling case for the broad applicability of the basic design.
+Second, note that in our previous paper (ECOOP 2014) there were many more examples and an empirical code corpus analysis that produced dozens of additional use cases. This submission was intended to be a companion "theory paper" for the benefit of language designers interested in incorporating TLMs into their own full-scale ML- or Scala-like design. The two papers together make, we believe, a compelling case for the broad applicability of the basic design. (Together, these two papers cover the first author's completed PhD thesis, each covering disjoint chapters.)
 
 # Relationship to Related Work (RC)
 ## Copper
 
-RC asks if "the main disadvantage of Copper is that I have to use domain names". In fact, Copper does not maintain any of the other reasoning principles in the paper -- Typing, Capture Avoidance, Context Independence or Segmentation. This is stated in Sec. 7.1 as being true of all similar systems, but we are happy to make this point more specifically about Copper in the final version. (Note: Eric Van Wyk, who works on Copper, was on the first author's thesis committee and so he has thoroughly vetted this work.)
+RC asks if "the main disadvantage of Copper is that I have to use domain names...". In fact, Copper does not maintain any of the other reasoning principles in the paper -- Typing, Capture Avoidance, Context Independence or Segmentation. This is stated in Sec. 7.1 as being true of all similar systems, but we are happy to make this point  specifically about Copper in the final version. (Note: Eric Van Wyk, who works on Copper, was on the first author's thesis committee and so he has thoroughly vetted this work.)
 
 ## Reader Macros
 
-Reader macros are a method of invoking an alternative reader+parser for the remainder of a file as mentioned on p23. The methods for maintaining hygiene linked in RC are "opt in" -- hygiene is not enforced formally -- but we are happy to mention this in the final version. To formally enforce hygiene would require distinguishing spliced segments as we have described in this paper, so our work could be used to improve a reader macro system even if types are not brought into the language.
+Reader macros are a method of invoking an alternative reader+parser as mentioned on p23. The methods for maintaining a sort of hygiene linked in RC are "opt in" -- hygiene is not enforced formally -- but we are happy to mention them in the final version. To formally enforce hygiene would require distinguishing spliced segments as we have described in this paper, so our work could be used to improve a reader macro system even if types are not brought into the language.
 
 ## Coq's notation mechanism
 
-Coq's notation mechanism supports declarative rewritings only of "mixfix" forms (i.e. those that have a fixed number of sub-terms). As such, there is no way to express any of our examples of literal forms (HTML, regex, etc.), because these can have any number of sub-terms. We are happy to make this point more clear in the final version.
+Coq's notation mechanism supports declarative rewritings only of "mixfix" forms (i.e. those that have a fixed number of sub-terms) and a limited few other forms, not general literal forms. There is no way to express any of our examples (HTML, regex, etc.), because these can have any number of sub-terms. We are happy to make this clear in the final version.
 
 ## Related work table
 
-RC suggests a "related work table". We agree that this would be useful, and would be happy to include one in the final version since we will have four additional pages to work with.
+RC suggests a "related work table". We agree that this would be a good way to use the additional page budget in the final version.
 
 # "why do we need [pattern TLMs]?" (RC)
 
-Pattern literal forms are dual to expression literal forms in that expression literals support construction whereas pattern literals support deconstruction. (This is Gentzen's inversion principle.)
+Pattern literal forms are dual to expression literal forms in that expression literals support construction whereas pattern literals support deconstruction. This is Gentzen's inversion principle. We will add a couple sentences to this effect to the beginning of Sec. 3.
 
 # "If TLMs were restricted to expression positions..." (RB)
 
-R2 is correct that for expressions TLMs, we could have reformulated the mechanism to ask the TLM provider to give a list of spliced segments together with an AST representing a function that takes the expansions of these segments as arguments. This would allow us to prove the same capture avoidance theorem, because it, like function application, relies on the standard notion of capture-avoiding substitution. However, as R2 notes, this would require the introduction of "pattern functions" of some sort to support pattern TLMs. In any case, it seems to us that this would complicate the use of TLMs for programmers by requiring them to insert mediating variables manually, but it would not simplify our specification of the mechanism nor the metatheory.
+RB is correct that for expressions TLMs, we could have reformulated the mechanism to ask the TLM provider to give a list of spliced segments together with an AST representing a function that takes the expansions of these segments as arguments. This would allow us to prove the same capture avoidance theorem, because it, like function application, relies on the standard notion of capture-avoiding substitution. However, as RB notes, this would require the introduction of "pattern functions" of some sort to support pattern TLMs. In any case, it seems to us that this would complicate the use of TLMs for programmers by requiring them to insert mediating variables manually, but it would not simplify our specification of the mechanism nor the metatheory.
 
 # "Is it not possible to condense the core of your idea down to a smaller calculus?"  (RC)
 
-Sec. 4 presented the simplest possible "core calculus" that captures only the essential mechanisms -- typed expansion and proto-expansion validation. There is of course unavoidable complexity here, i.e. we cannot avoid distinguishing expanded from unexpanded expressions, nor can we avoid distinguishing spliced segments. However, we are confident that this core calculus will be of use to anyone interested in a deep understanding of the essential nature of the proposed mechanism, and of typed macro systems more generally.
+Sec. 4 presented the simplest possible "core calculus", capturing only two essential mechanisms -- typed expansion and proto-expansion validation. There is of course unavoidable syntactic complexity here, i.e. we cannot avoid distinguishing expanded from unexpanded expressions, nor can we avoid distinguishing spliced segments. However, the semantics are quite straightforward (esp. compared to other macro calculi), so we are confident that this core calculus will be of use to anyone interested in a deep understanding of the essential nature of the proposed mechanism, and of typed macro systems more generally.
 
 # "The introduction's claims about segmentation..." (RB)
 
-R2 is correct that a TLM need not use a spliced segment as *only* a spliced segment. Formally, this amounts to an unchecked side condition on TLMs -- that the proto-expansion produced should be invariant to alpha-renaming within spliced segments. This side condition can, however, be easily checked for any particular refactoring performed. We discussed refactoring tools as future work on p26 (lines 35-38), but we will make this particular point more clear in the final version.
+RB is correct that a TLM need not use a spliced segment as *only* a spliced segment, but note that we did not claim this as a component of the segmentation principle. Formally, this would require enforcing an additional condition on parse functions -- that the proto-expansion produced is invariant to identifier renaming (not alpha-renaming, which is not defined) within spliced segments. This condition can, however, be easily checked for any particular refactoring performed. We discussed refactoring tools as future work on p26 (lines 35-38), but we will make this particular point more clear in the final version.
 
+# "Tool support for most any macro system can identify subexpressions and binding structure post-expansion." (RB)
 
+This is not correct -- it is not at all trivial to trace sub-terms within the output of a macro to a location within a string literal within the input to the macro, especially if an arbitrary parser generator was used in between. Any mechanism to do so would look a lot like what we are doing. This paper provides a principled account of this approach for the benefit of these tool providers.
