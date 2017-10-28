@@ -55,7 +55,7 @@ basicstyle=\ttfamily\fontsize{8pt}{1em}\selectfont,
 commentstyle=\itshape\ttfamily\color{gray},
 stringstyle=\ttfamily\color{red},
 mathescape=false,escapechar=~,
-numbers=left, numberstyle=\scriptsize\color{mygray}, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=0pt, numbersep=-6pt, morekeywords=[1]{spliced,tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,string,datatype,new,toast,syntax,module,switch,where,using,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,by,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,exptsm,pattsm},deletekeywords={double},classoffset=0, xleftmargin=-10pt, 
+numbers=left, numberstyle=\scriptsize\color{mygray}, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=0pt, numbersep=-6pt, morekeywords=[1]{try,spliced,tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,string,datatype,new,toast,syntax,module,switch,where,using,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,by,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,exptsm,pattsm},deletekeywords={double},classoffset=0, xleftmargin=-10pt, 
 aboveskip=4pt,belowskip=2pt,
 moredelim=**[is][\color{red}]{SSTR}{ESTR},
 moredelim=**[is][\color{OliveGreen}]{SHTML}{EHTML},
@@ -350,6 +350,48 @@ For example, Figure \ref{fig:K-tsm-example} applies a TLM named \li{$kquery} to 
 \end{enumerate}
 
 %\footnote{In general, spliced expressions might themselves apply TLMs, in which case the convention is to use a distinct color for unspliced segments at each depth. For example, if strings were not primitive, we might write \li{`SURL<body>\{EURLheading ($str "SSTRWorld!ESTR")SURL\} ...</body>EURL`}.}
+\begin{figure*}[t]
+
+\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}
+  type html_attrs = list(string, string)
+  type html = BodyElement(html_attrs, list(html))
+            | H1Element(html_attrs, list(html))
+            | TextNode(string) 
+            | /* ... */;
+\end{lstlisting}
+\vspace{-5px}
+\caption{The \li{html} type, which classifies encodings of HTML data.}
+\label{fig:html-type-def}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\begin{lstlisting}[mathescape=|]
+  syntax $html at html by static {
+    fun(b : body) : parse_result(proto_expr) => 
+      try (parse_html b |> html_to_ast |> Success) {
+      | InvalidHTML msg loc => ParseError msg loc }
+  };
+\end{lstlisting}
+\vspace{-5px}
+\caption{The definition of the \li{$html} TLM. It calls into an existing HTML parser, then converts the result to an AST, extracting the spliced segments as it goes. Figure \ref{fig:candidate-exp-Reason} defines the  TLM-related types.}
+\label{fig:html-tlm-def}
+\end{subfigure}
+
+\begin{subfigure}[t]{\textwidth}
+\begin{lstlisting}
+  let heading first_name = $html [|SURL<h1>Hello, {[EURLfirst_nameSURL]}!</h1>EURL|]
+  let body = $html [|SURL<body>{EURLheading "World!"SURL} ...</body>EURL|]
+\end{lstlisting}
+\vspace{-5px}
+\caption{Two examples of the \li{$html} TLM being applied. Compare to Ur/Web's built in HTML literal notation from Figure \ref{fig:urweb}.  %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
+}
+\label{fig:first-tsm-example}
+\end{subfigure}
+\vspace{-8px}
+\caption{Case Study: HTML literals}
+\vspace{-5px}
+\end{figure*}
 
 
 \paragraph{Outline} 
@@ -372,6 +414,7 @@ Sec.~\ref{sec:discussion} concludes with a summary of the specific contributions
 % \item
 % \item 
 % \end{itemize}
+
 
 Due to the space limitations, certain technical details and extensions to the calculi described in this paper, as well as detailed proofs, are given in the supplemental material. Some notes on implementation and a fourth case study, involving an encoding of regular expressions as an abstract data type, are also both available in the supplement. 
 
@@ -465,20 +508,11 @@ Due to the space limitations, certain technical details and extensions to the ca
 \section{\protect\seTLMsSec}
 \label{sec:setsms}
 \vspace{-2px}
+
+
 We will start in this section by informally describing TLMs in Reason. It will suffice in this section to consider only \emph{simple expression TLMs (seTLMs)}, i.e. TLMs for abbreviating expressions of a single specified type. In particular, we will consider an seTLM named \li{$html} that implements Ur/Web style HTML literal notation for expressions of the \li{html} type that is defined in Figure \ref{fig:html-type-def}.
 
-\begin{figure}[ht!]
-\vspace{-10px}
-\begin{lstlisting}[numbers=none]
-  type html = BodyElement(list(html_attr), list(html))
-            | H1Element(list(html_attr), list(html))
-            | TextNode(string) | /* ... */;
-\end{lstlisting}
-\vspace{-10px}
-\caption{The \li{html} type, which classifies encodings of HTML data. The type \li{html_attr} is also straightforward and the type function \li{list} is standard, so neither are shown. Strings are primitive.}
-\label{fig:html-type-def}
-\vspace{-10px}
-\end{figure}
+
 
 \vspace{-4px}
 \subsection{TLM Definition and Application}
@@ -486,37 +520,13 @@ We will start in this section by informally describing TLMs in Reason. It will s
 The definition of the \lstinline{$html} TLM is outlined in Figure \ref{fig:html-tlm-def}. TLM names are prefixed by \li{$} 
  to distinguish them from variable identifiers. Every TLM definition also has a \emph{type annotation}, here \lstinline{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. The TLM definition is in scope until the end of the enclosing scope. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
 
-\begin{figure}[ht!]
-\vspace{-12px}
-\begin{lstlisting}[mathescape=|]
-  syntax $html at html by static {
-    fun(b : body) : parse_result(proto_expr) => 
-      /* ... Ur/Web-style HTML syntax parser ... */
-  };
-\end{lstlisting}
-\vspace{-15px}
-\caption{The definition of the seTLM named \li{$html}.}
-\label{fig:html-tlm-def}
-\vspace{-10px}
-\end{figure}
+
 
 Using the TLM defined in Figure \ref{fig:html-tlm-def}, we can express the example Ur/Web program from Figure \ref{fig:urweb} as shown in Figure \ref{fig:first-tsm-example}. On both lines, we apply 
 \li{$html} 
  to a \emph{generalized literal form} delimited by \li{[|} and \li{|]}. Generalized literal forms, which first arose in related work by \citet{TSLs} that we will detail in Sec. \ref{sec:existing-approaches}, subsume other literal forms because the context-free syntax of the language only specifies the outer delimiters (in this paper, we will use  \li{[|} and \li{|]}, but \citet{TSLs} formally specified several other choices, including layout-sensitive delimitation.) \emph{Literal bodies}, i.e. the characters between these delimiters, are constrained only in that occurrences of \li{[|} must be balanced by \li{|]}. %In particular, there is no pre-specified syntactic to splice out sub-terms.%The initial context-free parser therefore parses generalized literal forms in much the same way as parsers typically parse ``raw'' string literals (i.e. string literals where escape sequences like \li{\\n} have not yet been processed.) 
 
 
-\begin{figure}[t!]
-\vspace{-2px}
-\begin{lstlisting}
-  fun heading first_name = $html [|SURL<h1>Hello, {[EURLfirst_nameSURL]}!</h1>EURL|]
-  val body = $html [|SURL<body>{EURLheading "World!"SURL} ...</body>EURL|]
-\end{lstlisting}
-\vspace{-10px}
-\caption{Two examples of the \li{$html} TLM being applied. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
-}
-\vspace{-12px}
-\label{fig:first-tsm-example}
-\end{figure}
 
 
  The semantics delegates responsibility over parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{typed expansion}, which generalizes the usual typing phase. Because the {parse function}  is applied during the typed expansion process, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings (because those variables stand for run-time values.) For now, we will assume that static functions are completely closed, and that they do not themselves make use of TLMs (we will eliminate these impractical limitations by introducing distinct static phase bindings in Sec. \ref{sec:static-eval}.)
@@ -580,11 +590,12 @@ the TLM must indirectly refer to the spliced expression using the \li{SplicedE} 
 
 \begin{figure}
 \vspace{-2px}
-\begin{lstlisting}[numbers=none]
+\begin{lstlisting}[numbers=none,xleftmargin=0pt]
 type body = string;
-type segment = {startIdx : int, endIdx : int}; /* inclusive */
-type parse_result('a) = ParseError { msg : string, loc : segment }
-                      | Success('a);
+type segment = {startIdx : int, endIdx : int};
+type parse_result('a) 
+  = ParseError { msg : string, loc : segment }
+  | Success('a);
 type var_t = string;
 type proto_typ = TyVar(var_t)
                | Arrow(proto_typ, proto_typ)
@@ -598,7 +609,7 @@ type proto_expr = Var(var_t)
                 | SplicedE(segment, proto_typ);
 \end{lstlisting}
 \vspace{-10px}
-\caption[Definitions of various types used by TLM definitions.]{Definitions of various types used by TLM definitions. We assume that these are available ambiently.}
+\caption[Definitions of various types used by TLM definitions.]{Definitions of various types available ambiently to TLM definitions.}
 \label{fig:indexrange-and-parseresult}
 \label{fig:candidate-exp-Reason}
 \vspace{-12px}
