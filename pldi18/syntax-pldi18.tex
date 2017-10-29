@@ -74,7 +74,7 @@ deletestring=[d]{"},
 \lstset{morecomment=[n]{/*}{*/}}
 
 \newcommand{\liv}[1]{\lstinline{#1}}
-\newcommand{\li}[1]{\lstinline{#1}}
+\newcommand{\li}[1]{\lstinline[basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont]{#1}}
 
 
 \makeatletter\if@ACM@journal\makeatother
@@ -374,7 +374,7 @@ For example, Figure \ref{fig:K-tsm-example} applies a TLM named \li{$kquery} to 
   };
 \end{lstlisting}
 \vspace{-5px}
-\caption{The definition of the \li{$html} TLM. It calls into an existing HTML parser, then converts the result to an AST, extracting the spliced segments as it goes. Figure \ref{fig:candidate-exp-Reason} defines the  TLM-related types.}
+\caption{The \li{$html} TLM definition. Figure \ref{fig:candidate-exp-Reason} defines   TLM-related types.}
 \label{fig:html-tlm-def}
 \end{subfigure}
 
@@ -416,7 +416,7 @@ Sec.~\ref{sec:discussion} concludes with a summary of the specific contributions
 % \end{itemize}
 
 
-Due to the space limitations, certain technical details and extensions to the calculi described in this paper, as well as detailed proofs, are given in the supplemental material. Some notes on implementation and a fourth case study, involving an encoding of regular expressions as an abstract data type, are also both available in the supplement. 
+Due to the space limitations, certain technical details and extensions to the calculi described in this paper, as well as detailed proofs, are given in the supplemental material. Some notes on implementation and a fourth case study, involving an encoding of regular expressions as an abstract data type, are also both given in the supplement. 
 
 %  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
 %The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of Reason in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
@@ -504,41 +504,45 @@ Due to the space limitations, certain technical details and extensions to the ca
 %Maintaining a separation between the static (or ``compile-time'') phase and the dynamic (or ``run-time'') phase is an important facet of Reason's design. % static code generation. %We will  also introduce a simple variant of each of these primitives that leverages Reason's support for local type inference to further reduce syntactic cost in certain common situations. 
 
 \vspace{-4px}
-\newcommand{\seTLMsSec}{Simple Expression TLMs (seTLMs)}
+\newcommand{\seTLMsSec}{Expression TLMs}
 \section{\protect\seTLMsSec}
 \label{sec:setsms}
 \vspace{-2px}
 
 
-We will start in this section by informally describing TLMs in Reason. It will suffice in this section to consider only \emph{simple expression TLMs (seTLMs)}, i.e. TLMs for abbreviating expressions of a single specified type. In particular, we will consider an seTLM named \li{$html} that implements Ur/Web style HTML literal notation for expressions of the \li{html} type that is defined in Figure \ref{fig:html-type-def}.
+Let us begin by detailing the TLM mechanism by way of a case study: HTML literal notation for expressions of the \li{html} type defined in Figure \ref{fig:html-type-def}.
 
 
 
 \vspace{-4px}
 \subsection{TLM Definition and Application}
 \vspace{-2px}
-The definition of the \lstinline{$html} TLM is outlined in Figure \ref{fig:html-tlm-def}. TLM names are prefixed by \li{$} 
- to distinguish them from variable identifiers. Every TLM definition also has a \emph{type annotation}, here \lstinline{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. The TLM definition is in scope until the end of the enclosing scope. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
+The definition of the \li{$html} TLM is given in Figure \ref{fig:html-tlm-def}. TLM names are prefixed by \li{$} 
+ to distinguish them from variables. Every TLM definition also provides a \emph{type annotation}, here \li{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. % The TLM definition follows the same scoping rules as type definitions. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
 
 
 
 Using the TLM defined in Figure \ref{fig:html-tlm-def}, we can express the example Ur/Web program from Figure \ref{fig:urweb} as shown in Figure \ref{fig:first-tsm-example}. On both lines, we apply 
 \li{$html} 
- to a \emph{generalized literal form} delimited by \li{[|} and \li{|]}. Generalized literal forms, which first arose in related work by \citet{TSLs} that we will detail in Sec. \ref{sec:existing-approaches}, subsume other literal forms because the context-free syntax of the language only specifies the outer delimiters (in this paper, we will use  \li{[|} and \li{|]}, but \citet{TSLs} formally specified several other choices, including layout-sensitive delimitation.) \emph{Literal bodies}, i.e. the characters between these delimiters, are constrained only in that occurrences of \li{[|} must be balanced by \li{|]}. %In particular, there is no pre-specified syntactic to splice out sub-terms.%The initial context-free parser therefore parses generalized literal forms in much the same way as parsers typically parse ``raw'' string literals (i.e. string literals where escape sequences like \li{\\n} have not yet been processed.) 
+ to a \emph{generalized literal form} delimited by \li{[|} and \li{|]}. Generalized literal forms, which first arose in related work by \citet{TSLs} that we will detail in Sec. \ref{sec:existing-approaches}, subsume other literal forms because the context-free syntax of the language only specifies the outer delimiters. In this paper, we will use  \li{[|} and \li{|]}, but \citet{TSLs} formally specified several other choices, including layout-sensitive delimitation. \emph{Literal bodies}, i.e. the characters between these delimiters, are constrained only in that occurrences of \li{[|} must be balanced by \li{|]}. %In particular, there is no pre-specified syntactic to splice out sub-terms.%The initial context-free parser therefore parses generalized literal forms in much the same way as parsers typically parse ``raw'' string literals (i.e. string literals where escape sequences like \li{\\n} have not yet been processed.) 
 
 
 
 
- The semantics delegates responsibility over parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{typed expansion}, which generalizes the usual typing phase. Because the {parse function}  is applied during the typed expansion process, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings (because those variables stand for run-time values.) For now, we will assume that static functions are completely closed, and that they do not themselves make use of TLMs (we will eliminate these impractical limitations by introducing distinct static phase bindings in Sec. \ref{sec:static-eval}.)
+ The system delegates responsibility over the parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{typed expansion}, which generalizes the typing phase. Because the parse function is applied during this phase, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings (because those variables stand for run-time values.) Instead, there is a separate class of \emph{static bindings}. We will return to static bindings in Sec. \ref{sec:static-eval}.
 
- The parse function must have type \li{body -> parse_result(proto_expr)}. The input type, \lstinline{body}, classifies encodings of literal {bodies}. Literal bodies are sequences of characters, so it suffices to define \li{body} as an abbreviation for \li{string}, as shown in Figure \ref{fig:indexrange-and-parseresult}. The return type is a labeled sum type, defined by applying the type function \li{parse_result} defined in Figure \ref{fig:indexrange-and-parseresult}, that distinguishes between parse errors and successful parses.\footnote{We might alternatively have used an exception to signal a parse error, but sum types are formally simpler.} Let us consider these two possibilities in turn.
+ The parse function must have the following type: 
+ \begin{lstlisting}[numbers=none]
+      body -> parse_result(proto_expr)
+ \end{lstlisting}
+ The input type, \li{body}, classifies encodings of literal {bodies}. Literal bodies are sequences of characters, so we define \li{body} as a synonym of \li{string}, as shown in \autoref{fig:indexrange-and-parseresult}. The return type is a sum type, defined by applying the type function \li{parse_result} defined in \autoref{fig:indexrange-and-parseresult}, that distinguishes between parse errors and successful parses.\footnote{We might alternatively have used an exception to signal a parse error, but sum types are formally simpler.} Let us consider these two possibilities in turn.
 
  If the parse function determines that the literal body is not well-formed according to whatever syntax definition that it implements, it must return \li{ParseError \{msg=}$e_\text{msg}$\li{, loc=}$e_\text{loc}$\li{\}} 
-where $e_\text{msg}$ is a custom error message and $e_\text{loc}$ is a value of type \li{segment}, defined in Figure \ref{fig:indexrange-and-parseresult}, that designates a segment of the literal body as the origin of the error \cite{DBLP:journals/jsc/DeursenKT93}. This information is reported to the programmer by the Reason compiler or editor services.
+where $e_\text{msg}$ is a custom error message and $e_\text{loc}$ is a value of type \li{segment}, defined in Figure \ref{fig:indexrange-and-parseresult}, that designates a segment of the literal body as the origin of the error \cite{DBLP:journals/jsc/DeursenKT93}. This information is for use in reporting the problem to the programmer.
 
-If, on the other hand, parsing succeeds, the parse function returns \li{Success} ~$\ecand$, 
-where $\ecand$ is called the \emph{encoding of the proto-expansion}. For expression TLMs, the proto-expansions is a \emph{proto-expression}. These are encoded as values of the recursive sum type \lstinline{proto_expr} that is outlined in Figure \ref{fig:candidate-exp-Reason}.\footnote{More sophisticated encoding techniques for syntax trees would cause no fundamental problems; we have kept it simple here for the sake of clarity.} 
-Most of the constructors of \li{proto_expr} are individually uninteresting -- they encode Reason's various expression forms (just as in a self-hosted compiler, e.g. SML/NJ's Visible Compiler library.) 
+If instead parsing succeeds, the parse function returns \li{Success} ~$\ecand$, 
+where $\ecand$ is called the \emph{encoding of the proto-expansion}. For expression TLMs, the proto-expansion is a \emph{proto-expression} and it is encoded as a value of the recursive datatype \li{proto_expr} that is outlined in Figure \ref{fig:candidate-exp-Reason}. 
+Most of the constructors of \li{proto_expr} are individually uninteresting -- they encode OCaml's various expression forms. 
 Expressions can mention types, so we also need the type \li{proto_typ} also outlined in Figure \ref{fig:candidate-exp-Reason}. It is only the \li{SplicedE} and \li{SplicedT} constructors that are novel. These are discussed next.
 
 
@@ -592,9 +596,9 @@ the TLM must indirectly refer to the spliced expression using the \li{SplicedE} 
 \vspace{-2px}
 \begin{lstlisting}[numbers=none,xleftmargin=0pt]
 type body = string;
-type segment = {startIdx : int, endIdx : int};
+type segment = {startIdx: int, endIdx: int};
 type parse_result('a) 
-  = ParseError { msg : string, loc : segment }
+  = ParseError {msg: string, loc: segment}
   | Success('a);
 type var_t = string;
 type proto_typ = TyVar(var_t)
@@ -615,11 +619,8 @@ type proto_expr = Var(var_t)
 \vspace{-12px}
 \end{figure}
 
-For example, consider again the TLM application on Line 1 of Figure \ref{fig:first-tsm-example}, reproduced below:
-\begin{lstlisting}[numbers=none]
-  $html [|SURL<h1>Hello, {[EURLfirst_nameSURL]}</h1>EURL|]
-\end{lstlisting}
-The proto-expansion generated by \li{$html}, if written in a textual syntax for proto-expressions where references to spliced expressions are written \li{spliced<startIdx; endIndex; ty>}, is:
+For example, consider again the TLM application on Line 1 of Figure \ref{fig:first-tsm-example}:
+\li{$html [|SURL<h1>Hello, {[EURLfirst_nameSURL]}</h1>EURL|]}. The proto-expansion generated by \li{$html}, if written in a textual syntax for proto-expressions where references to spliced expressions are written \li{spliced<startIdx; endIndex; ty>}, is:
 \begin{lstlisting}[numbers=none]
   H1Element(Nil, Cons(TextNode "Hello, ", Cons(
                       TextNode spliced<13; 22; string>, Nil)))
