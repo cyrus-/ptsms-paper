@@ -1,0 +1,532 @@
+PLDI 2018 Paper #2 Reviews and Comments
+===========================================================================
+Paper #275 Reasonably Programmable Literal Notation
+
+
+Review #275A
+===========================================================================
+
+Overall merit
+-------------
+C. I would not accept this paper but will not argue strongly against
+   accepting it.
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Paper summary
+-------------
+This paper introduces typed literal macros (TLMs) as a mechanism to
+provide user-defined literal syntax.  TLMs provide a number of strong
+properties: Responsibility (identify the (unique) expander of a
+literal), Segmentation (identify use-site splices incorporated into
+the expansion), Capture (disallow capture of free-variables in
+slices), Context Independence (disallow capture of free-variables by
+non-splice expansions), Typing (identify the (unique) type of a
+literal).  These properties can allow a TLM client to reason about her
+use of literals without (always) resorting to considering the TLM's
+expansion of a literal.  The paper gives an informal description of
+TLMs, starting with simple expression TLMs and then extending with
+pattern TLMs and with parameterized TLMs, provides a formal calculus
+for expression TLMs with a (very) simple type system, states (without
+proof) the theorem establishing the above properties, and discusses
+related work.  [A supplementary document provides proofs for the
+formal calculus of expression and patterm TLMs with a simple type
+system and also provides a formal calculus for parameterized TLMs with
+a (standard, but non-trivial) module system and proofs.]  The
+mechanism is being incorporated into the Reason variant of OCaml.
+
+Comments for author
+-------------------
+Overall, this is a fair paper.  Incorporating specialized notation is
+an effective way to reduce the cognitive load of writing/reading code
+for a specialized domain.  There are a variety of mechanisms in
+languages that allow specialized notations (or clever repurposing of
+existing language notations).  The typed literal macros (TLMs)
+proposed by this paper offer a novel point (i.e., choices among
+various trade-offs) in this design space.
+
+Strengths:
+
+The paper does a good job of motivating the desirability of
+user-defined notation.  It is well written and I had no difficulty
+following the discussions and formalisms.  The properties provided by
+TLMs are interesting and the formalism seems to support the claim that
+TLMs indeed provide these properties.  I especially like the
+parameterized TLMs, because they offer a nice approach, exploiting ML
+modules, to the problem of resolving the environment at a macro's
+definition point (which the macro expansion would like to reference)
+with the environment at a macro's use point (which may not include the
+bindings expected by the expansion, or (worse), have different values
+bound to the expected names).
+
+Weaknesses:
+
+However, the paper does have some weaknesses.  The paper does not
+provide sufficient examples of TLMs, particularly defining TLMs.
+While TLMs seem concise to use, it is difficult to evaluate how
+difficult it is for a library writer to provide a TLM.  The paper
+spends too much time on simple-expression TLMs and too little time on
+the fully-featured parameterized TLMs; simple-expression TLMs are
+really too weak to justify some of the claims in the paper.  I do not
+feel that the paper adequately addresses the limitations of the
+mechanism; or, to put it another way, there are some subtle behavioral
+distinctions that the authors put forward as major "wins" for TLMs but
+others might counter as unreasonable restrictions.  Finally, for a
+language feature proposed for Reason/Ocaml, it seems to have a
+disappointing story for polymorphism and type inference.
+
+Overall Rating:
+
+I lean towards "weak reject" on the basis that I think a much stronger
+paper could be written that had a larger/more complete example of a
+TLM, focused more strongly on parametric TLMs, and better addressed
+the limitations of the current mechanism.
+
+
+Major comments:
+
+Title:  
+I almost don't like the use of the term "literal" in relation to the
+mechanism.  For the most part, literals provided by a programming
+language denote values, but there seems to be no restriction on TLMs
+that the expansion be a (syntactic) value; rather, it can be an
+arbitrary expression.  I understand the choice of "literal" from the
+perspective that the object provided at a TLM application is a raw
+string and a motivating use case is to define data structures, but the
+mechanism seems more general.
+
+Motivation/Problem:  
+The paper emphasizes being able to reason "abstractly" ("by inspecting
+only the surface syntax") rather than "transparently" ("inspecting the
+underlying expansion or the code responsible for producing the
+expansion").  A problem is that the paper sometimes considers this
+distinction in the context of unfamiliar literal notation and
+sometimes in the context of familiar literal notation.  Moreover, I
+don't agree with the (implicit) argument in the paper that expansions
+examined by a tool (e.g., IDE) are more abstract than expansions
+examined by a programmer.  Some examples:
+
+ * I don't understand how to think about the "segmentation" property
+   except in terms of the expansion.  The paper occasionally
+   references "secondary notation" (which isn't really explained).  As
+   presented in the paper, it seems that the splices referenced by a
+   literal are only determined by expansion.  If the literal is a
+   "familiar" one, then perhaps I can understand the splices without
+   consulting the expansion (but only if the TLM is actually for the
+   expected notation).  If the literal is an "unfamiliar" one, then I
+   (or my IDE) must reason by the expansion.
+
+ * On the other hand, "capture (avoidance)" and "context
+   (in)dependence" are properties that I can reason about *all* TLMs,
+   whether for familiar notation or not.  Though, they also represent
+   extreme points in the macro design space and, clearly, there are
+   some use cases for allowing capture.
+
+ * The paper (over) emphasizes binding as "reasoning".  From Section
+   2.3.1: "However, we ultimately decided to remove this feature
+   because it would disproportionately increase the reasoning burden
+   on clients when they encounter an unfamiliar literal: *might this
+   obscure literal also be introducing bindings?".  But, there are
+   many other questions that I might ask: might this obscure literal
+   non-terminate? perform I/O? mutate state? raise exceptions? be a
+   (generalizable) value?  TLMs provide no additional support for
+   reasoning about these behvaiors.
+
+ * In practice, I don't actually believe that the "responsibility"
+   property is significantly stronger in TLMs than in other related
+   systems.  From Section 6.2: "OCaml's textual syntax now includes
+   *preprocessor extension (ppx)* points used to identify terms that
+   some external term rewriting preprocessor must rewrite.  We could
+   mark a string literal as follows: `[%xml "<h1>Hello,
+   {[first_name]}!</h1>"]` More than one applied preprocessor might
+   recognize this annotation (there are, in practice, many XML/HTML
+   libraries, so the problems of Responsibility comes up."  The
+   implicit argument seems to be that a TLM `$xml` is resolved by
+   scoping, but a PPX `[%xml` is resolved by compiler flags.  But, the
+   set of modules in scope, required to resolve a TLM `$xml`, may
+   depend on compiler flags, so it isn't as though the responsibility
+   is any more or less manifest from just the source file alone.
+
+Complete Examples:  
+The paper does not provide a complete example of a TLM: full
+definition and uses.  In particular, the paper does not demonstrate
+how easy/hard it is to write the proto_expr that a TLM must generate.
+From a brief look at the supplementary material, it appears that the
+`$rx` TLM must make use of another `$grammar` TLM in its definition.
+Moreover, Section E.2 of the supplementary material suggests that the
+parser generator `P : PARSEGEN` and the static parametric TLMs
+`$grammar` are described in Section 6 of the paper, but they are not.
+
+I think that the paper drops some non-trivial information in the
+simplification and abbreviation of the proto_typ, proto_expr, and
+proto_pat types.  In particular, it doesn't include the details of how
+variables are represented, which would seem to be an interesting if
+not crucial bit of information.  I'm also curious about the choice of
+elements in proto_typ, especially in an ML-like language.  For
+example, the paper shows that proto_typ includes StringTy --- is this
+the compiler's primitive string type or is this the string type as
+exposed to the user (perhaps being an opaque type hiding the primitive
+type)?  What operations and types are built-in to proto_expr and
+proto_typ (because anything not will need to be provided via
+parameters)?
+
+Simple-Expression TLMs are too weak:  
+This leads to a concern that the simple-expression TLMs as presented
+in the paper are really much too weak to be considered a model for
+fully-featured languages like Reason/OCaml.  The biggest problem is
+that "Context (In)Dependence" seems to rule out all but the most
+trivial examples of TLMs.  For example, Section 2.2 states that the
+(pretty-printed) expansion generated is `H1Element(Nil, Cons(TextNode
+"Hello, ", Cons (TextNode spliced<13; 22; string>, Nil)))`.  How
+should the reader understand `H1Element` and `TextNode`?  I can
+believe that `Nil` and `Cons` and `string` are provided by proto_expr
+and proto_typ, but clearly `H1Element` and `TextNode` are constructors
+from the HTML datatype.  But, by Context Independence, the
+proto-expansion must have free variables/identifiers.  It doesn't seem
+that data constructors can be exempt from context independence.
+
+Section 2.3.2 concludes with: "Naïvely, this restriction, also present
+in the prior work on TSLs [50], is quite restrictive – expansions
+cannot access any library functions. At best, they can require the
+client to “pass in” required library functions via splicing at every
+application. In Sec. 4, we will introduce module parameters and
+partial parameter application to neatly resolve this problem."  But
+this significantly down-plays the restriction (and, similarly, the
+paper doesn't up-play parametric TLMs enough).  It isn't just helper
+functions that a simple-expression TLM can't access (without explicit
+use-site splicing), it is also the actual type/constructors/structure
+that the TLM is supposed to be making easier to write.  It seems that
+simple-expression (and simple-pattern) TLMs are unable to generate
+expressions for any type except those that are explicitly provided by
+proto-typ.
+
+I don't doubt that parametric TLMs provide a nice solution to this
+problem.  I just feel that the balance of the paper is off a bit ---
+too much time is spent on simple TLMs and not enough on parametric
+TLMs, which really seem to be necessary to develop any significant
+TLMs.
+
+Capture:  
+In Section 2.3.1: "There is no need for TLM providers to explicitly
+deploy a mechanism that generates fresh variables (as in, e.g., prior
+reader macro systems [17])."  It might be useful to expand on this
+point, particularly if there is evidence that requiring the
+macro-writer to provide a gensym mechanism is burdensome.  On the
+other hand, it seems that large, modular TLMs may still need to gensym
+to avoid clashes of generated temp variables.  That is, allowing a TLM
+writer to use strings as variable identifiers may actually be more
+error prone than providing a gensym.
+
+Formalism:  
+I don't really understand the necessity of the unexpanded typing
+contexts.  In particular, it is not clear why $\mathcal{G}$ maps
+expression identifiers to $\hat{x} \leadsto {x}$ (a pair of an
+expression identifier and an expression variable), rather than simply
+to $x$.  Moreover, it is not clear why it is necessary to have
+$\hat{\Gamma} = \langle \mathcal{G}; \Gamma \rangle$ instead of the
+simpler $\hat{\Gamma}(\hat{x}) = x : \tau$; that is, $\hat{\Gamma}$
+maps an expression identifier to its expression variable and type.
+The latter is fairly standard compiler-construction practice for
+elaboration (and I'd be surprised if the Reason implementation of
+TLMs were more like the calculus in the paper).
+
+In Section 5.6: "The final premise requires that the application site
+contexts are disjoint from the expansion-local type formation
+context. Because proto-expansions are ABTs identified up to
+alpha-equivalence, we can always discharge the final premise by
+alpha-varying the proto-expansion. This serves to enforce capture
+avoidance."  I agree that one can enforce capture avoidance by
+alpha-varying, but it is worth noting that (as presented) the
+alpha-varying must occur "globally", not simply "locally".  That is,
+the variables that must be alpha-varied are not bound in this rule.
+To satisfy $\Delta \cap \Delta_{\mathrm{app}} = \emptyset$ and $\Gamma
+\cap \Gamma_{\mathrm{app}} = \emptyset$, one would need to change the
+variables in $\Delta$ and $\Gamma$ --- but they have already been
+picked by the derivation leading up to the PEV-SPLICED rule.  It is
+"too late" when applying this rule if the side conditions do not hold.
+Rather, it is at the point that variables are added to $\Delta$ and
+$\Gamma$ (e.g., in a Lambda rule) that they should be chosen to be
+distinct from the application-site context.  The simple point is that
+the implementation would need to be somewhat different than a direct
+translation of the rules.  (Although, in practice, I might guess that
+a uniquifying transformation on proto-expression variables is used to
+ensure that they never conflict with other identifiers.)
+
+Returning to the point that simple-expression/pattern TLMs may not be
+suitable as a model for fully-featured languages like Reason/OCaml: It
+is worth noting that the formalism does admit defining non-trivial
+TLMs, but does so at the expense of only having structural types and
+anonymous sums, products, and recursive types.
+
+Integration with ML:
+Type inference and polymorphism are defining characteristics of ML, so
+it is disappointing that TLMs seem to interact poorly with these
+features.  As best I can understand from the paper, the result type of
+a TLM application must be determined by the TLM identifier and the
+parameters alone (i.e., ignoring the literal body).  Admittedly, this
+is a design choice to reason (and type check) a TLM application
+without examining its expansion, but it comes at the cost of losing
+type inference.  For example, while I might be able to write:
+
+    let sing (k, v) = HashDict.extend HashSet.empty (k,v)
+
+with inferred type `(string, 'a) -> HashDict.t('a)`, I cannot simply
+write:
+
+    let sing (k, v) = $dict' [| {k} => {v} |]
+
+but must instead write
+
+    let sing (k, v : 'a) = $dict' 'a [| {k} => {v} |]
+
+It is also unclear if TLMs support unknown types within an expansion
+(that may or may not be generalized).  For example, maybe I want
+custom "pipe" notation for streaming computations and want to write
+something like:
+
+    let mapToFloat (src: stream('a)) (f: 'a -> float) =
+      $stream float [| {src} ==> {f} |]
+
+    let map2ToFloat (src: stream('b)) (g: 'b -> 'a) (f: 'a -> float) =
+      $stream float [| {src} ==> {g} ==> {f} |]
+
+The result type of the TLM is known to be `stream(float)`, but the
+types of the splices are not known by the TLM, although I could
+conceive of expanding this to use type identifiers to connect the
+unknown types.
+
+
+Minor comments and edits:
+
+Color: The use of green (and red) colors is barely noticeable when
+viewing the paper on screen and entirely lost when printing grayscale.
+The gray box shading in Theorem 5.2 (p. 10) was also entirely lost
+when printing grayscale.
+
+p. 1., l. 34:  
+The list data constructors in SML are `nil` and `::` (not `Nil` and
+`Cons`).
+
+p. 2, l. 145:  
+"Forcing the programmer to reason transparently to answer basic
+questions like these".  
+I don't think the term "transparently" is quite right here; it is
+really reasoning "by expansion" that is being criticized.
+
+p. 3, l. 299:  
+"Instead there is are separate" ==>  
+"Instead there are separate"
+
+p. 4, l. 379:  
+"the proto-expansion generated for first TLM application in 4c" ==>  
+"the proto-expansion generated for the first TLM application in 4c"
+
+p. 5, l. 460:  
+"(as in, e.g., prior reader macro systems [17]." ==>
+"(as in, e.g., prior reader macro systems [17])."
+
+p. 5, l. 466:  
+"In our initial designs, we were able to express this example"  
+What example?  Haskell's do-notation?
+
+And, I'm somewhat confused, because it would seem that pattern TLMs
+would allow for something similar to Haskell's do-notation, though
+using a $do TLM feels as though it would be mostly made up of splices.
+
+p. 7, l. 677:  
+In the syntax of the expanded language, I didn't understand the choice
+of "parr" (rather than simply "arr") for the function type.  
+
+p. 9, l. 929, PEV-SPLICED rule:  
+$\emptyset \vdash^{\hat{\Delta}; b} \grave{\tau} \leadsto \tau ~ \mathsf{type}$ ==>  
+$\emptyset \vdash^{(\mathcal{D}; \Delta_{\mathrm{app}}); b} \grave{\tau} \leadsto \tau ~ \mathsf{type}$
+
+p. 9, l. 966, Theorem 5.1:  
+$\langle \mathcal{D}; \Delta \rangle \langle \mathcal{G}; \Gamma \rangle \vdash_{\langle \mathcal{A}; \Psi \rangle} \hat{e} \leadsto e : \tau$ ==>  
+$\langle \mathcal{D}; \Delta \rangle \langle \mathcal{G}; \Gamma \rangle \vdash_{\hat{\Psi}; \hat{\Phi}} \hat{e} \leadsto e : \tau$
+
+p. 9, l. 968, Theorem 5.1:  
+$\Delta \Gamma \vdash^{\langle \mathcal{D}; \Delta_{\mathrm{app}} \rangle \langle \mathcal{G}; \Gamma_{\mathrm{app}} \rangle; \langle \mathcal{A}; \Psi \rangle; b} \grave{e} \leadsto e: \tau$ ==>  
+$\Delta \Gamma \vdash^{\langle \mathcal{D}; \Delta_{\mathrm{app}} \rangle \langle \mathcal{G}; \Gamma_{\mathrm{app}} \rangle; \langle \hat{\Psi}; \hat{\Phi}; b} \grave{e} \leadsto e: \tau$
+
+
+
+Review #275B
+===========================================================================
+
+Overall merit
+-------------
+A. I will champion accepting this paper.
+
+Reviewer expertise
+------------------
+X. Expert
+
+Paper summary
+-------------
+This paper presents Typed Literal Macros (TLMs), which provide a means by which library designers can create their own syntax for literal expressions and patterns.  TLMs support five principles that make it easier for programmers to reason about literals created using TLMS: (1) Responsibility (Which extension owns which syntax extension?) (2) Segmentations (Which pieces of a literal are splices?) (3) Capture (Obvious static scoping for for variables in splices) (4) Context Dependence (Literal will have same meaning in any context), and (5) Typing (the type of the literal is evident).  The paper formalizes the type checking and expansion of TLMs and proves that well-typed TLMs guarantee the above five properties.  The paper illustrates the expressiveness of TLMs via a running case study of HTML literals.
+
+Comments for author
+-------------------
+Strengths.
+
++ Allowing library designers to develop literal syntax in a hygienic way is a great idea that should be a part of every modern programming language.  The fact that such support is not in every modern programming language points to why this paper is making an important contribution. 
+
++ The paper provides the first type-theoretic treatment of a hygienic macro system for an expressive type system with polymorphism, pattern matching, type functions, etc. 
+
++ The five design principles outlined in the paper are good ones. 
+
++ The type theory and proofs seem reasonable formalizations of TLMs as they are described in the paper. 
+
++ The paper does a good job explaining the intuition behind the typing judgments and typing rules. 
+
++ The paper includes a thoughtful discussion of related work.    
+
++ The system is being integrated into Reason, which is an alternative front-end for OCaml that is currently under development. 
+
+Weaknesses.
+
+- Users have to specify the instantiation type of polymorphic literals.  In the dictionary example, above, for example, the user had to say the dictionary stores ints even though it is evident from the literal.  It would be better if the system could infer this type. 
+
+- The paper claims to have case studies to evaluate the expressiveness of the design, but only offers two relatively brief examples: html literals and a dictionary.  The supplementary materials includes the implementation of regular expression literals, but doesn't give examples of the surface syntax. I would have expected to see more detailed studies.
+
+- The paper defers a lot of details to the supplement.  For example, the polymorphic system is entirely in the supplement, as is the treatment of patterns. I'm not sure how well this problem could be addressed as the paper should not be made any denser.
+
+- TLMs do not support type-dependent expansions.
+
+- There is a fair bit of syntactic overhead in using TLMs, 
+     eg, $dict HashDict int [|"key1"=>10; "key2"=>15|] 
+This overhead is necessary to establish Responsibility, but it could be sufficiently verbose to put off users.   
+
+
+
+How could the paper be improved?
+
+TLM cannot invent a spliced term, but only refer to a segment of the input.  Why is this important?   
+
+You say that the TLM provider can "modularly establish that the syntax that the TLM implements is unambiguous"?   Eventually I figured out what you meant by this statement, but it wasn't until almost the end fo the paper.  It would be good to make this point more clear at the beginning. 
+ Line 143.  What does it mean to force the programmer to reason "transparently"?
+
+Line 427.  The sentence "A program editor or pretty-printer can communicate the type of each spliced expression, also specified abstractly by the segmentation, upon request" is confusing.  Who is the program editor or pretty-printer communicating to?   Does this mean the program editor can print nested types in specific colors like it does with spliced variables?  Or does it mean the system can communicate the types of nested expressions back to the TLM? I suspect you mean the former, but you could make it easier on the reader. 
+
+Line 606.  Please discuss here how hard it is for the TLM designer to reason about the follow set of unexpanded expressions.  
+
+Line 618.  I'd like to see an example of how the TLM designer can use a polymorphic type parameter such as the type 'a in the HashDict example, as a type annotation on a spliced term. 
+
+Figures 6 and 7.  Please explain in more detail what the URule and Rule forms say.
+
+Line 731.  Is the distinction between identifiers and variables crucial because of the need to rename bound variables to avoid capturing variables in spliced terms?  It would be good to add a few words here about why this distinction is crucial. 
+
+Line 841.  What is the intuition behind the nam "seTLM"?  What does the "se" prefix denote?  Simple expression? 
+
+Line 1209.  The explanation of why staged macro systems are insufficient is too terse.  When you say "the syntax tree of the arguments cannot be inspected at all"  Do you mean a macro in one of these systems cannot inspect its arguments?  As it is written, it is unclear who is doing the inspecting and what the arguments are being passed to.  You could be saying that the TLM isn't going to be inspecting spliced terms.
+
+Questions for Authors
+---------------------
+What is the status of the implementation?  Will the system be made publicly available?
+
+
+
+Review #275C
+===========================================================================
+
+Overall merit
+-------------
+C. I would not accept this paper but will not argue strongly against
+   accepting it.
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Paper summary
+-------------
+The paper extends previous work on macro-based notations in languages with extensible syntax.It tries to solve the problem caused by having a multitude of such custom-defined syntax cases, where it becomes unclear to the programmer which literal notation belongs to which extension and the meanings of spliced expressions (= parts of the literal notation where references to variables or functions of the “host” language are made). The paper points out how existing solutions fail to achieve abstraction and how this failure harms reasoning (by human). Then, a solution is offered that combines the benefits of hygienic macro expansions with other desirable properties.
+
+Comments for author
+-------------------
+It is commendable that the presentation tackles such a “soft” usability issue by defining five criteria and then measuring up to meet them, as well as using them as a basis for comparison with existing systems. Of course the criteria may have been chosen as an afterthought but they definitely seem reasonable. The discussion of hygienic macros and where they fail to express spliced expressions in the presence of context access is illustrative. Non-hygienic systems are probably bad too, though the argument that type checking alone is insufficient because it does not allow abstract reasoning about the type of the generated expansion is a bit weak — since all that TLMs do in this respect is to tag every “$” keyword with a nominal type (+ possibly using parameters).
+
+A crucial limitation of the given static semantics is that literals cannot bind names. It is actually quite useful in notations to define local binders. Even in smallish literals like (extended) regexes, a group may be named in then referred to later. In query languages that are not K, names may be given to table columns for disambiguation. The technique solves the “capture” problem by not allowing it.
+
+Clearly, the color coding is not a good solution for presenting visual cues about notations, esp. nested ones, because it does not show which expression is nested in which and also can be confused with regular syntax highlighting. However this is not a paper about IDE UI so this point should not be counted against it. Also the use of keywords for disambiguation is a bit cumbersome, but again this is a separate issue having to do with parsing.
+
+Empirical evidence is virtual nonexistent. Beyond the general idea, which is very plausible, the paper’s contribution is the formalization and accompanying theorems. Those are badly presented in the paper, but looking at Appendix B, all the foundations are there. Some serious editing is required to squeeze the essentials into the paper format.
+
+= Minor Comments =
+
+Punctuation: I believe a full stop is supposed to appear **after** the close parenthesis in the case where the parenthesized text is a phrase rather than a sentence; but perhaps there are other style guides.
+
+[238] This is where the solution feels somewhat unsatisfactory. (See general comments about binders.)
+
+[299] “there is are”
+[302] “both informal and informal”
+
+[338] Markup is inconsistent between splicing using {[ ]} and just { }, within an HTML literal.
+
+[677-683] I understand that this is supposed to be pretty standard, but being more of a FPL (Mitchell) and FSPL (Winskel) person, I was surprised to see many things that are unfamiliar to me or familiar but having a different name. Where is my $\lambda$? Where is my $e_1 ~ e_2$? What are $\texttt{fold}$ and $\texttt{inj}[\ell]$? It is true that Harper defines ABTs as a natural extension to ASTs, but there is a reason we don’t write ASTs in our formalisms, and Lambda calculus is still a standard notation. It is even more spurious because “mirror-image” expressions in UL do use the Lambda syntax.
+
+[708] “The statics”: meaning static semantics?
+[709] What is the role of sans serif word “type”?
+
+[731] I like this point! But I still don’t understand what the difference is.
+
+[751] Need to explain what “expression TLM context” and “pattern TLM context” here or earlier.
+
+[778] This example tries to explain why it is important to allocate a fresh variable for every new binding of an expression identifier $\hat{x}$, but it fails to do so. The resulting expression, lam{τ}(x1.lam{τ}(x2.x2)), is equivalent (in XL) to the expression lam{τ}(x.lam{τ}(x.x)), which would result from associating every occurrence of $\hat{x}$ with the single variable x. (Alpha renaming can freely occur in XL, at this point.)
+
+[790] This definitions section is poorly edited and it makes following the rest of the formalism (both prior to 5.4 and following) incredibly hard. The contexts $\hat{\Psi}$ appears throughout as well as (the type constructor?) $\texttt{setlm}$.
+
+[1324] Question marks in bibliographic entry for Merlin.
+
+Questions for Authors
+---------------------
+ * Literals cannot occur in types (Figure 6). Is it not redundant then to have separate Typ and UTyp grammars and also expansion rules that just copy between them?
+ * It would seem that the delta between hygienic macro expansion and TLMs is (a) avoiding accidental capture by isolating the macro scope from the program context, and (b) providing explicit range indexes for spliced expressions. Is there anything else?
+
+
+
+Review #275D
+===========================================================================
+
+Overall merit
+-------------
+C. I would not accept this paper but will not argue strongly against
+   accepting it.
+
+Reviewer expertise
+------------------
+Y. Knowledgeable
+
+Paper summary
+-------------
+This paper introduces a macro facility of Reason/Ocaml, named “typed literal macros” (TLMs) that takes advantage of the full expressiveness of the host language by letting the user define expansion in terms of a low-level parsing function over raw strings. That way, almost arbitrary syntax can be defined. At the same time, macro invocation is syntactically constrained to achieve certain goals, such as preventing intransparent scoping and capture. All macro invocations have to explicitly include the macro’s name and the raw string to be expanded must be enclosed by a pair of delimiters that is fixed for all macros.
+
+Comments for author
+-------------------
+The formal theory behind this system has been worked out in detail, and is surprisingly complex. There is a ~140 page(!) technical appendix developing a complete calculus for a kernel of Ocaml, including simplified modules. However, the meta-theoretical results are not as deep, and mainly prove that the design meets its stated goals, most of which are straightforward properties that are more or less “obvious” by construction.
+
+One specific property of this system is that it limits itself to macros for “literals”. The paper does not really make clear what it means by that. The main limitation seems to be that macro definitions cannot produce binding constructs. This is motivated by the aforementioned design goals, but of course is an unfortunate loss of generality.
+
+The macro developer has to write her own parsing function from scratch, which has to return a proto-AST for the underlying language (with possible slices inserted). I see several practical disadvantages to such a low-level representation of a macro definition:
+
+1. Writing a parser from scratch is (error-prone) work, and highly unattractive for most convenience macros.
+2. It is not declarative, such that it will be hard to understand non-trivial macro definitions for users.
+3. At the same time, any form of checking can only occur after expansion, which makes dealing with errors (e.g., type errors) in uses of macros much harder for the programmer (elevated by the low-level definition).
+4. Dealing with an AST datatype instead of a more high-level quotation mechanism is brittle wrt language evolution.
+5. Macros require execution of arbitrary code at compile-time, and interleaving of parsing with compilation/interpretation.
+6. As the formalisation shows, the approach leads to a very complex semantic model.
+
+Ultimately, I’m not convinced that the approach proposed here is something that should be put into practical languages. However, the paper still is interesting for its exploration of this point in the design space and the detailed technical execution.
+
+Questions for Authors
+---------------------
+L302: “both informal and informal”
+
+L567: Disallowing local variables in patterns limits the utility of this mechanism. For example, you couldn’t define useful pattern expansions using guards.
+
+L668: What is the `fold` pattern?
+
+L764: “maps \hat{x} to \hat{x} ~> x”  — Did you mean “maps \hat{x} to x”?

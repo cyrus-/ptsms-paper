@@ -1,0 +1,47 @@
+Thank you for the detailed reviews! We respond to the main questions and concerns below, then address additional questions beyond 700 words.
+
+RA asked for more detailed examples in order to assess ease-of-use from the TLM provider’s perspective. The paper spoke to this perspective by pointing out that TLM parse functions are quite ordinary -- they take strings and produce ASTs represented as ordinary values -- so they can be generated using a parser generator of the provider’s choice, e.g. lex/yacc or a parser combinator library. Ease-of-use from the provider’s perspective is substantially a function of this choice. Including, e.g., a yacc grammar in the paper body would have consumed a large amount of space without conveying information relevant to the claims of the paper, which revolve around reasoning principles from the TLM client’s perspective.
+
+The paper does provide a complete example -- Figure 4 shows the full definition of $html and two example applications. The only omission was a straightforward helper function that was instead detailed in the text. This example also spoke to this question of ease-of-use by demonstrating how providers can repurpose off-the-shelf parsers.
+
+RB and RC expressed a more general desire for more examples. The prior work on TSLs presented a variety of examples and an empirical study that taxonomized additional possibilities, so in Sec1 we explicitly deferred to that paper in this regard. The case studies in the present paper were chosen to support our specific claims in consideration of the page limit. We will include additional examples in the final supplement.
+
+We use “literal notation” to mean “notation for terms within a specified parametric type family” and will make this explicit in the final version.
+
+RA said “I don't agree with the (implicit) argument in the paper that expansions
+examined by a tool (e.g., IDE) are more abstract than expansions examined by a programmer”. The tool needs only examine the proto-expansion at the lowest level. It can then pass along only the type annotation and segmentation (a finite set) to other services, and ultimately to the programmer. The service/programmer can then reason about, e.g., the type of expression that is expected at a splice site. By analogy, a function’s type determines the type of its argument without requiring that the programmer inspect how that argument is used inside the function.
+
+RA questioned the progression through simple TLMs before arriving at parametric TLMs. Simple TLMs are certainly not themselves practical (further discussion below the fold). Instead, they serve a pedagogical purpose: they allow us to tackle all five reasoning principles without bringing in the full complexity of the ML module system. Moreover, the impracticalities revealed by considering simple TLMs nicely motivate the introduction of parametric TLMs, which is why that section may seem concise relative to its practical importance.
+
+RC says “all that TLMs do in this respect is to tag every “$” keyword with a nominal type”. The type need not be nominal (e.g. structural types like arrows are supported). Moreover, each spliced segment also has a type.
+
+RC suggested that strict capture avoidance discipline we settled on prevents the expression of, e.g., regex backreferences. This is not the case -- TLMs can send values into spliced functions by application. Reason3 introduces concise function notation -- x => e -- that decreases the cost of this technique. The characteristic argument of this paper is that simpler reasoning principles justify these small syntactic costs.
+
+RD wonders why we define the mechanism using arbitrary parse functions. Note that the reasoning principles we formulate would be equally relevant to designs that privilege a particular syntax definition formalism. Regarding AST representation, the ML type system is not powerful enough to express an intrinsically typed AST in the parametric setting, but if it were, the necessary invariants are exactly those maintained by proto-expansion validation.
+
+RA and RB asked about inferring TLM parameters. It should be possible to infer those type parameters that appear in the TLM’s type annotation by unification at type-constrained  application sites. However, it would violate the Typing criterion to use the expansion itself to infer the type parameters. This might be acceptable if the editor reveals inferred parameters upon request, but we leave that to future work on editor design.
+
+--- (additional responses below go beyond 700 words) --
+
+RA brought up properties that clients cannot reason about abstractly, e.g. non-termination. However, we claim only to support the sort of abstract reasoning otherwise possible in the language, i.e. reasoning supported by the type system.
+
+Several reviewers asked why we used “maps \hat{x} to \hat{x} ~> x” and similar instead of “maps \hat{x} to x”. This was an admittedly awkward way to show what the mapping connective looks like (“~>”). We will make this less awkward in the final version.
+
+RA said “it is not clear why it is necessary to have $\hat{\Gamma} = \langle \mathcal{G}; \Gamma \rangle$ [...]” and RC had related questions. The point is that \hat{x} might be shadowed, which will cause it to be remapped, but we still need to track the “old” mapping (assumed unique by alpha-renaming in the XL) in \Gamma because it may have appeared elsewhere in the expansion. Figure 8 and the discussion around it gives such an example.
+
+RA says that “one would need to change the variables in $\Delta$ and $\Gamma$ --- but they have already been picked”. Right -- an implementation strategy that would pre-empt the need to “backtrack” is one that generates fresh variables relative to \Delta/\Gamma_{app} each time \Delta/\Gamma is extended. The formalism is not meant to uniquely determine an implementation strategy, only to constrain it.
+
+RC asks “is it not redundant then to have separate Typ and UTyp grammars”. The two grammars differ in that Typ contains variables and UTyp contains identifiers. The distinction is important because types can appear within expressions, including spliced expressions.
+
+RC comments that “there is a reason we don’t write ASTs in our formalisms”. We used ABT notation deliberately because it is important to distinguish between terms that are and are not identified up to alpha variation. Moreover, UL terms are those that are exposed to the programmer, so we used conventional idioms, while XL terms are only ever manipulated as ABTs by parse functions, so we used ABT notation.
+
+RC said that “markup is inconsistent between splicing using {[ ]} and just { }, within an HTML literal”. Those are different splicing forms -- the first for string splicing and the second for HTML splicing (see Figure 1 and accompanying text).
+
+RD says “you couldn’t define useful pattern expansions using guards”. In OCaml, guards are not part of the syntax of patterns (they can appear only at the outermost level of a match rule). If guards were part of patterns, then the mechanisms already considered for expression TLMs would become relevant to the guard portion of a pattern expansion as well.
+
+RC asked about the “fold” operation and RD asks “what is the `fold` pattern?” These are the introductory form for recursive types. Similarly, the “inj[\ell]” operation is the introductory form for sum types. We based our terminology on Harper’s PFPL, but the same or similar notation is common in other textbooks (e.g. Pierce) and in the literature.
+
+RA says “I think that the paper drops some non-trivial information in the simplification and abbreviation of the proto_typ, proto_expr, and proto_pat types.” Yes, these datatypes were simplified as acknowledged in the text. In practice, we use the existing OCaml AST, with a special variable “__tlm_spliced” that takes a pair of number literals to represent spliced segments. We will mention this implementation detail in the final version.
+
+The $grammar TLM in the supplement, and related definitions, were shown only to outline how a parser generator could be formulated as a mode of use of TLMs. A full parser generator implementation would span thousands of lines of code. There is certainly no requirement that the programmer use this method, and we expect in practice that existing parser generators will be used to generate parse functions.
+
