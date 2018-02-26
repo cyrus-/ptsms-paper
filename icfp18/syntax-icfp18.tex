@@ -372,13 +372,13 @@ An approach that has made some headway toward this ideal is Omar et al.'s \emph{
 \begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont]
   let y : KQuery.t = `((!R)@&{&/x!/:2_!x}'!R)`
 \end{lstlisting}
-The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free syntax of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism proposed in this paper, so let us analyze TSLs from the perspective of the five reasoning criteria just outlined.
-\begin{enumerate}[leftmargin=12px]
+The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free syntax of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism that we will propose, so let us analyze TSLs from the perspective of the five reasoning criteria just outlined.
+\begin{enumerate}[leftmargin=12px,nolistsep,noitemsep]
   \item[\LEFTcircle] \textbf{Responsibility}: The type-directed dispatch mechanism allows the client to easily determine which parser is responsible for each literal form: the parser that was associated with the type when it was defined. Clients do not need to worry about different TSLs conflicting syntactically because the context-free syntax of the language remains fixed and composition is mediated by splicing. The main limitation here is that it is impossible to define literal notation after a type has been defined, and it is also impossible to define multiple notations at a single type.
-  \item[\LEFTcircle] \textbf{Segmentation}: The parser can splice expressions out of the literal body, but there is no clear way to associate each spliced term with some particular segment (i.e. subsequence) of the literal body, nor is there a guarantee that spliced terms are non-overlapping.
+  \item[\LEFTcircle] \textbf{Segmentation}: The parser can splice expressions out of the literal body, but there is no clear way to associate each spliced term with some particular segment (i.e. subsequence) of the literal body, nor is there a guarantee that spliced terms are non-overlapping. As such, there is no way to indicate to the programmer where base language expressions are located within a literal form.
   \item[\LEFTcircle] \textbf{Capture}: The TSL mechanism as described enforces complete capture avoidance, though the formal specification given in the paper did not adequately enforce this constraint.
   \item[\LEFTcircle] \textbf{Context Dependence}: The TSL mechanism as described requires that the expansion be completely closed, so it is trivially context independent. However, this comes at a significant expressive cost: the generated expansions cannot make use of any libraries whatsoever.
-  \item[\LEFTcircle] \textbf{Typing}: Each parser is associated with a type, and the generated expansion must necessarily be of that type, so abstract reasoning about the type of the expansion is possible. However, there is no easy way to determine the type expected for each spliced expression. In addition, the prior work considered only a monomorphic, nominally-typed language with local type inference, leaving open a number of problems that came up as we considered integrating TSLs into Reason, which is a syntactic layer over all of OCaml's semantics \cite{ocaml-manual}:
+  \item[\LEFTcircle] \textbf{Typing}: The expansion must necessarily be of the associated type, so abstract reasoning about the type of the expansion is straightforward. However, there is no easy way to determine the type expected for each spliced expression. In addition, the prior work considered only a monomorphic, nominally-typed language with local type inference, leaving open a number of problems that came up as we considered integrating TSLs into Reason/OCaml:
 \begin{enumerate}[leftmargin=15px,nolistsep,noitemsep]
   \item \textbf{Structural Types}: There is no way to define literal notation at structural types, e.g. tuple and arrow types, because there is no ``definition site'' for such types.
   \item \textbf{Parameterized \& Abstract Types}: There is no way to define literal notation over a type-parameterized family of types, e.g. at all types \li{list('a)}. Similarly, there is no way to define literal notation over a module-parameterized family of abstract types, e.g. at every abstract type defined by a module implementing the \li{QUEUE} signature. Parameterized and abstract type families are ubiquitous in ML-family languages.% Programmers in ML-family languages commonly define various implementations of abstract data types in this way.
@@ -386,6 +386,8 @@ The parser associated with the type \li{KQuery.t} is statically invoked to lex, 
   \item \textbf{ML-Style Type Inference}: It is not clear that a type-directed dispatch scheme can be cleanly  reconciled with ML-style type inference.
 \end{enumerate}
 \end{enumerate}
+
+
 We consider other existing approaches against these criteria in Sec.~\ref{sec:existing-approaches}. Taken together, we found that no existing approach was reasonable and expressive enough for integration into Reason/OCaml.
 
 \paragraph{Contributions} This paper introduces \emph{typed literal macros} (TLMs): the first system for defining new literal notation that (1) provably maintains all five of the abstract reasoning principles just outlined; and (2) is semantically expressive enough for integration into Reason/OCaml and other full-scale statically typed functional languages. We evaluate these claims with (1) a series of increasingly ML-like calculi that are equipped with proofs of these abstract reasoning principles; and (2) a number of non-trivial examples that appear throughout the paper and involve the language features mentioned above. In describing these examples, we also demonstrate that literal parsing logic can be defined using off-the-shelf parser generators, so the burden on notation providers is comparable to that of existing systems. % From the client's perspective, which is the focus of our contributions, TLMs are uniquely reasonable. 
@@ -449,12 +451,14 @@ We begin in Sec.~\ref{sec:setsms} by introducing TLMs with a detailed case study
 % \item 
 Sec.~\ref{sec:sptsms} then introduces {pattern TLMs}, i.e. TLMs that generate patterns, and describes the special hygiene conditions in pattern position. %The hygiene condition for pattern TLMs is interesting.
 % \item 
-Sec.~\ref{sec:ptsms} adds type functions and an ML-style module system and introduces \emph{parametric TLMs} (pTLMs), i.e. TLMs that can take type and module parameters, which solve several problems. 
-Sec.~\ref{sec:setsms-formally} presents a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above. 
+Sec.~\ref{sec:ptsms}  introduces \emph{parametric TLMs} (pTLMs), i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. Sec.~\ref{sec:ptsms} also reveals that the \li{expansions require} clause is syntactic sugar for parameterization followed immediately by partial parameter application. 
+Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with additional examples that demonstrate both the expressive power of this approach and certain alternative parser implementation strategies that notation providers might consider. 
+Sec.~\ref{sec:setsms-formally} presents a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above, in the formally simplest setting. 
+Sec.~\ref{sec:ptlms-formally} adds type functions and an ML-style module system to this calculus, and gives the most general variant of the reasoning principles theorem. 
 % \item 
-Sec.~\ref{sec:existing-approaches} compares TLMs to related work using the rubric of five reasoning principles just discussed. 
+Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of five reasoning principles just discussed. 
 % \item 
-Sec.~\ref{sec:discussion} concludes with a summary of the specific contributions of this paper and a discussion.
+Sec.~\ref{sec:discussion} concludes with a summary of the contributions of this paper and a discussion of future work.
 
 % Parameters serve two important purposes. First, they allow a TLM to operate not just at a single type, but over a type- and module-parameterized family of types. We give as an example a parametric TLM for string-keyed dictionaries that operates uniformly over different implementations of the abstract dictionary signature, and also over different choices of the range type. Second, parameters lower the syntactic cost of the strict context independence discipline that TLMs enforce because they give expansions access to terms other than those explicitly spliced in to the literal body by the client, and because %This is particularly convenient for working with abstract types \emph{a la} ML. 
 % partial parameter application is possible. % Sec. \ref{sec:ptsms} culminates with a calculus that extends the calculus of Sec. \ref{sec:setsms-formally} with type functions, ML-style modules and parametric TLMs.
@@ -463,7 +467,7 @@ Sec.~\ref{sec:discussion} concludes with a summary of the specific contributions
 % \end{itemize}
 
 
-Due to the space limitations, certain technical details and extensions to the calculi presented in this paper, as well as detailed proofs, are given in the supplemental material. Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
+Due to the space limitations, certain technical details and extensions to the calculi presented in this paper, as well as detailed proofs, are available in the supplemental material. % Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
 
 %  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
 %The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of Reason in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
@@ -858,6 +862,15 @@ In Sec. \ref{sec:context-dependence} we discussed the problem of the strict cont
 This explicit parameter passing discipline is reminiscent of work on explicit capture for distributed functions \cite{DBLP:conf/ecoop/MillerHO14}. By not implicitly giving expansions access to all definition-site bindings, we need not examine parse functions to reason about, e.g., renaming. Consequently, encodings of proto-terms can be values of standard datatypes (e.g. \li{proto_expr}) with variables represented simply as, e.g., strings, and quasiquotation notation can be expressing using TLMs (see supplement). A central design goal of Reason is to leave the OCaml semantics unchanged, so building quasiquotation in primitively, to integrate the free variables in term encodings into the overall binding discipline \cite{Bawd99a}, was in any case infeasible.
 
 
+\newcommand{\moreExamplesSec}{Additional Examples}
+\section{\protect\moreExamplesSec}
+\label{sec:more-examples}
+
+\subsection{HTML}
+
+\subsection{Quotation}
+
+\subsection{More Examples, Briefly}
 % 
 
 \begin{figure}[t!]
@@ -1986,6 +1999,247 @@ Notice that we were able to state the hygiene properties (\textbf{Capture Avoida
 The reasoning principles theorem for pattern TLMs is in the supplement. The key clause establishes that the hypotheses generated by the TLM application form are exactly the union of the hypothesis generated by the spliced patterns. % No additional hypotheses can be produced by the TLM.
 
 In the full calculus, which supports parametric TLMs, the context independence clause allows reference to the variables standing for parameters.
+
+\newcommand{\pTLMsFormallySec}{Parametric TLMs, Formally}
+\section{\protect\pTLMsFormallySec}
+\label{sec:ptlms-formally}
+
+% \begin{figure}[p]
+% \[\begin{array}{llcl}
+% \mathsf{UMType} & \urho & ::= 
+% %& \autype{\utau} 
+% & \utau & \text{type annotation}\\
+% % &&
+% %& \aualltypes{\ut}{\urho} 
+% % & \alltypes{\ut}{\urho} & \text{type parameterization}\\
+% &&
+% %& \auallmods{\usigma}{\uX}{\urho} 
+% & \allmods{\uX}{\usigma}{\urho} & \text{module parameterization}\\
+% \mathsf{UMExp} & \uepsilon & ::= 
+% %& \abindref{\tsmv} 
+% & \tsmv & \text{TLM identifier reference}\\
+% % &&
+% %& \auabstype{\ut}{\uepsilon} 
+% % & \abstype{\ut}{\uepsilon} & \text{type abstraction}\\
+% &&
+% %& \auabsmod{\usigma}{\uX}{\uepsilon} 
+% & \absmod{\uX}{\usigma}{\uepsilon} & \text{module abstraction}\\
+% % &&
+% %& \auaptype{\utau}{\uepsilon} 
+% % & \aptype{\uepsilon}{\utau} & \text{type application}\\
+% &&
+% %& \auapmod{\uM}{\uepsilon} 
+% & \apmod{\uepsilon}{\uX} & \text{module application}\ECC
+% \end{array}
+% \]
+% \caption{Syntax of unexpanded TLM types and expressions.}
+% \label{fig:P-macro-expressions-types-u}
+% \end{figure}
+
+We will now outline $\miniVerseParam$, a calculus that extends $\miniVersePat$ with parametric TLMs. This calculus is organized, like $\miniVersePat$, as an unexpanded language (UL) defined by typed expansion to an expanded language (XL). There is not enough space to describe $\miniVerseParam$ with the same level of detail as in Sec. \ref{sec:setsms-formally}, so we highlight only the most important concepts below. The details are in the supplement.
+
+The XL consists of 1) module expressions, $M$, classified by signatures, $\sigma$; 2) constructions, $c$, classified by kinds, $\kappa$; and 3) expressions classified by types, which are constructions of kind $\akty$ (we use metavariables $\tau$ instead of $c$ for types by convention.) Metavariables $X$ ranges over module variables and $u$ or $t$ over construction variables. The module and construction languages are based closely on those defined by \citet{pfple1}, which in turn are based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. A complete account of these developments is unfortunately beyond the scope of this paper. The expression language extends the language of $\miniVersePat$ only to allow projection out of modules.
+
+The main conceptual difference between $\miniVersePat$ and $\miniVerseParam$ is that $\miniVerseParam$ introduces the notion of unexpanded and expanded TLM expressions and types, as shown in Fig. \ref{fig:P-macro-expressions-types}. 
+
+\begin{figure}[h]
+\small
+\begin{minipage}{0.38\textwidth}
+$\arraycolsep=3pt\begin{array}{llcl}
+\mathsf{UMType} & \urho & ::= & \utau ~\vert~ \allmods{\uX}{\usigma}{\urho}\\
+\mathsf{UMExp} & \uepsilon & ::= & \tsmv ~\vert~ \absmod{\uX}{\usigma}{\uepsilon}~\vert~ \apmod{\uepsilon}{\uX}
+\end{array}$
+\end{minipage}
+\begin{minipage}{0.6\textwidth}
+$\arraycolsep=3pt\begin{array}{llcl}
+\mathsf{MType} & \rho & ::= & \aetype{\tau} ~\vert~ \aeallmods{\sigma}{X}{\rho} \\
+\mathsf{MExp} & \epsilon & ::= & \adefref{a} ~\vert~ \aeabsmod{\sigma}{X}{\epsilon} ~\vert~\aeapmod{X}{\epsilon} 
+\end{array}$
+\end{minipage}
+\caption{Syntax of unexpanded and expanded TLM types and expressions in $\miniVerseParam$}
+\label{fig:P-macro-expressions-types}
+\end{figure}
+The TLM type $\aeallmods{\sigma}{X}{\rho}$ classifies TLM expressions that have one module parameter matching $\sigma$. For simplicity, we formalize only module parameters. Type parameters can be expressed as module parameters having exactly one abstract type member.
+
+The rule governing expression TLM application, reproduced below, touches all of the main ideas in $\miniVerseParam$, so we will refer to it throughout the remainder of this section.%It might be useful to compare this rule to Rule \textsc{ee-ap-sptsm}.
+{\small\begin{mathpar}
+\inferrule[ee-ap-petsm]{
+  \uOmega = \uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \uPsi=\uAS{\uA}{\Psi}\\\\
+  \tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aetype{\tau_\text{final}}}\\
+  \tsmexpEvalsExp{\Omega_\text{app}}{\Psi}{\epsilon}{\epsilon_\text{normal}}\\\\
+  \tsmdefof{\epsilon_\text{normal}}=a\\
+  \Psi = \Psi', \petsmdefn{a}{\rho}{\eparse}\\\\
+  \encodeBody{b}{\ebody}\\
+  \evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessE}}{e_\text{pproto}}}\\
+  \decodePCEExp{e_\text{pproto}}{\pce}\\\\
+  \prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}\\\\
+  \segOK{\segof{\ce}}{b}\\
+  \cvalidEP{\Omega_\text{params}}{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}}{\ce}{e}{\tau_\text{proto}}
+}{
+  \expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{[\omega]e}{[\omega]\tau_\text{proto}}
+}
+\end{mathpar}}
+
+The first two premises simply deconstruct the (unified) unexpanded context $\uOmega$ (which tracks the expansion of expression, constructor and module identifiers, as $\uDelta$ and $\uGamma$ did in $\miniVersePat$) and peTLM context, $\uPsi$. Next, we expand $\uepsilon$ according to straightforward unexpanded peTLM expression expansion rules. The resulting TLM expression, $\epsilon$, must be defined at a type (i.e. no quantification over modules must remain once the literal body is encountered.)
+
+The fourth premise performs \emph{peTLM expression normalization}, $\tsmexpEvalsExp{\Omega_\text{app}}{\Psi}{\epsilon}{\epsilon_\text{normal}}$. This is defined in terms of a structural operational semantics \cite{DBLP:journals/jlp/Plotkin04a} with two stepping rules:
+% \begin{equation*}\tag{\ref{rule:tsmexpEvalsExp}}
+% \inferrule{
+%   \tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}\\
+%   \tsmexpNormalExp{\Omega}{\Psi}{\epsilon'}
+% }{
+%   \tsmexpEvalsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+% }
+% \end{equation*}
+% where the multistep judgement, $\tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$, is defined as the reflexive, transitive closure of the stepping judgement defined by the following rules:
+% \begin{equation*}\tag{\ref{rule:tsmexpStepsExp-aptype-1}}
+% \inferrule{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+% }{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\aeaptype{\tau}{\epsilon}}{\aeaptype{\tau}{\epsilon'}}
+% }
+% \end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpStepsExp-aptype-2}}
+% \inferrule{ }{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\aeaptype{\tau}{\aeabstype{t}{\epsilon}}}{[\tau/t]\epsilon}
+% }
+% \end{equation*}
+{\small\begin{mathpar}
+\inferrule[eps-dyn-apmod-subst-e]{ }{
+  \tsmexpStepsExp{\Omega}{\Psi}{\aeapmod{X}{\aeabsmod{\sigma}{X'}{\epsilon}}}{[X/X']\epsilon}
+}
+
+\inferrule[eps-dyn-apmod-steps-e]{
+  \tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+}{
+  \tsmexpStepsExp{\Omega}{\Psi}{\aeapmod{X}{\epsilon}}{\aeapmod{X}{\epsilon'}}
+}
+\end{mathpar}}
+% The peTLM expression normal forms are defined as follows:
+% \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-defref}}
+% \inferrule{ }{
+%   \tsmexpNormalExp{\Omega}{\Psi, \petsmdefn{a}{\rho}{\eparse}}{\adefref{a}}
+% }
+% \end{equation*}
+% % \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-abstype}}
+% % \inferrule{ }{
+% %   \tsmexpNormalExp{\Omega}{\Psi}{\aeabstype{t}{\epsilon}}
+% % }
+% % \end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-absmod}}
+% \inferrule{ }{
+%   \tsmexpNormalExp{\Omega}{\Psi}{\aeabsmod{\sigma}{X}{\epsilon}}
+% }
+% \end{equation*}
+% % \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-aptype}}
+% % \inferrule{
+% %   \epsilon \neq \aeabstype{t}{\epsilon'}\\
+% %   \tsmexpNormalExp{\Omega}{\Psi}{\epsilon}
+% % }{
+% %   \tsmexpNormalExp{\Omega}{\Psi}{\aeaptype{\tau}{\epsilon}}
+% % }
+% % \end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-apmod}}
+% \inferrule{
+%   \epsilon \neq \aeabsmod{\sigma}{X'}{\epsilon'}\\
+%   \tsmexpNormalExp{\Omega}{\Psi}{\epsilon}
+% }{
+%   \tsmexpNormalExp{\Omega}{\Psi}{\aeapmod{X}{\epsilon}}
+% }
+% \end{equation*}
+\vspace{-5px}
+
+Normalization eliminates parameters introduced in higher-order abbreviations, leaving only those parameter applications specified by the original TLM definition. Normal forms and progress and preservation theorems are established in the supplement.
+
+The third row of premises looks up the applied TLM's definition by invoking a simple metafunction to extract its name, $a$, then looking up $a$ within the peTLM definition context, $\Psi$.
+% \begin{align}
+% \tsmdefof{\adefref{a}} & = a \tag{\ref{eqn:tsmdefof-adefref}}\\
+% % \tsmdefof{\aeabstype{t}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-abstype}}\\
+% \tsmdefof{\aeabsmod{\sigma}{X}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-absmod}}\\
+% % \tsmdefof{\aeaptype{\tau}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-aptype}}\\
+% \tsmdefof{\aeapmod{X}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-apmod}}
+% \end{align}
+
+
+The fourth row of premises 1) encodes the body as a value of the type $\tBody$; 2) applies the parse function; and 3) decodes the result, producing a \emph{parameterized proto-expression}, $\pce$. Parameterized proto-expressions, $\pce$, are ABTs that serve simply to introduce the parameter bindings into an underlying proto-expression, $\ce$. The syntax of parameterized proto-expressions is given below.
+
+\vspace{-4px}{\small\[\begin{array}{llcl}
+% \textbf{Sort} & & & \textbf{Operational Form} & \textbf{Stylized Form} & \textbf{Description}\\
+% \LCC \color{Yellow}&\color{Yellow}&\color{Yellow}& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+\mathsf{PPrExp} & \pce & ::= & \apceexp{\ce} ~\vert~ \apcebindmod{X}{\pce}
+\end{array}\]}%
+\vspace{-6px}%
+
+There must be one binder in $\pce$ for each TLM parameter specified by $a$. (In Reason, we can insert these binders automatically as a convenience.) 
+
+The judgement on the fifth row of Rule \textsc{ee-ap-petsm} then \emph{deparameterizes} $\pce$ by peeling away these binders to produce 1) the underlying proto-expression, $\ce$, with the variables that stand for the parameters free; 2) a corresponding deparameterized type, $\tau_\text{proto}$, that uses the same free variables to stand for the parameters; 3) a \emph{substitution}, $\omega$, that pairs the applied parameters from $\epsilon_\text{normal}$ with the corresponding variables generated when peeling away the binders in $\pce$; and 4) a corresponding \emph{parameter context}, $\Omega_\text{params}$, that tracks the signatures of these variables. The two rules governing the proto-expression deparameterization judgement are below:
+{\small\begin{mathpar}
+\inferrule{ }{
+  \prepce{\Omega_\text{app}}{\Psi, \petsmdefn{a}{\rho}{\eparse}}{\apceexp{\ce}}{\ce}{\adefref{a}}{\rho}{\emptyset}{\emptyset}
+}
+
+\vspace{-4px}\inferrule{
+  \prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon}{\aeallmods{\sigma}{X}{\rho}}{\omega}{\Omega}\\
+  X \notin \domof{\Omega_\text{app}}
+}{
+  \prepce{\Omega_\text{app}}{\Psi}{\apcebindmod{X}{\pce}}{\ce}{\aeapmod{X'}{\epsilon}}{\rho}{(\omega, X'/X)}{(\Omega, X : \sigma)}
+}
+\end{mathpar}}%
+This judgement can be pronounced ``when applying peTLM $\epsilon$, $\pce$ has deparameterization $\ce$ leaving $\rho$ with parameter substitution $\omega$''. 
+Notice based on the second rule that every module binding in $\pce$ must pair with a corresponding module parameter application. Moreover, the variables standing for parameters must not appear in $\Omega_\text{app}$, i.e. $\domof{\Omega_\text{params}}$ must be disjoint from $\domof{\Omega_\text{app}}$ (this requirement can always be discharged by alpha-variation.)
+
+The final row of premises checks that the segmentation of $\ce$ is valid and  performs proto-expansion validation under the parameter context, $\Omega_\text{param}$ (rather than the empty context, as was the case in $\miniVersePat$.) The conclusion of the rule applies the parameter substitution, $\omega$, to the resulting expression and the deparameterized type.
+
+Proto-expansion validation operates conceptually as in $\miniVersePat$. The only subtlety has to do with the type annotations on references to spliced terms. As described at the end of Sec. \ref{sec:ptsms-by-example}, these annotations might refer to the parameters, so the parameter substitution, $\omega$, which is tracked by the splicing scene, must be applied to the type annotation before proceeding recursively to expand the referenced unexpanded term. However, the spliced term itself must treat parameters parametrically, so the substitution is not applied in the conclusion of the following rule:
+\begin{mathpar}\label{rule:cvalidE-P-splicede}
+\inferrule{
+  \parseUExp{\bsubseq{b}{m}{n}}{\ue}\\
+    \cvalidC{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\ctau}{\tau}{\akty}\\
+  \expandsP{\uOmega}{\uPsi}{\uPhi}{\ue}{e}{[\omega]\tau}\\\\
+  \uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \domof{\Omega} \cap \domof{\Omega_\text{app}} = \emptyset
+}{
+  \cvalidEP{\Omega}{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}}{\acesplicede{m}{n}{\ctau}}{e}{\tau}
+}
+\end{mathpar}
+(This is only sensible because we maintain the invariant that $\Omega$ is always an extension of $\Omega_\text{params}$.)
+
+The calculus enjoys metatheoretic properties analagous to those described in Sec. \ref{sec:s-metatheory}, modified to account for the presence of modules, kinds and parameterization. The following theorem establishes the abstract reasoning principles available when applying a parametric expression TLM. The clauses are directly analagous to those of Theorem \ref{thm:setlm-reasoning}, so for reasons of space we do not repeat the inline descriptions. The \textbf{Kinding} clauses can be understood by analogy to the \textbf{Typing} clauses. The details of parametric pattern TLMs (ppTLMs) are analagous (see supplement.)
+\vspace{-3px}
+\begin{theorem}[peTLM Reasoning Principles]
+If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
+\begin{enumerate}[nolistsep,noitemsep]
+  \item $\uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}$
+  \item $\uPsi=\uAS{\uA}{\Psi}$
+  \item (\textbf{Typing 1}) $\tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aetype{\tau}}$ and $\hastypeP{\Omega_\text{app}}{e}{\tau}$
+  \item $\tsmexpEvalsExp{\Omega_\text{app}}{\Psi}{\epsilon}{\epsilon_\text{normal}}$
+  \item $\tsmdefof{\epsilon_\text{normal}}=a$
+  \item $\Psi = \Psi', \petsmdefn{a}{\rho}{\eparse}$
+  \item $\encodeBody{b}{\ebody}$
+    \item $\evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessE}}{e_\text{pproto}}}$
+  \item $\decodePCEExp{e_\text{pproto}}{\pce}$
+  \item $\prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}$
+  \item (\textbf{Segmentation}) $\segOK{\segof{\ce}}{b}$
+  \item $\cvalidEP{\Omega_\text{params}}{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}}{\ce}{e'}{\tau_\text{proto}}$
+  \item $e = [\omega]e'$
+  \item $\tau = [\omega]\tau_\text{proto}$
+  \item $
+    \segof{\ce} = \sseq{\acesplicedk{m_i}{n_i}}{\nkind} \cup \sseq{\acesplicedc{m'_i}{n'_i}{\cekappa'_i}}{\ncon} \cup $ \\
+     ~~~~$          \sseq{\acesplicede{m''_i}{n''_i}{\ctau_i}}{\nexp}
+    $
+  \item (\textbf{Kinding 1}) $\sseq{\kExpands{\uOmega}{\parseUKindF{\bsubseq{b}{m_i}{n_i}}}{\kappa_i}}{\nkind}$ and \\ ~~~~$\sseq{\iskind{\Omega_\text{app}}{\kappa_i}}{\nkind}$
+  \item (\textbf{Kinding 2}) $\sseq{\cvalidK{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\cekappa'_i}{\kappa'_i}}{\ncon}$ and $\sseq{\iskind{\Omega_\text{app}}{[\omega]\kappa'_i}}{\ncon}$
+  \item (\textbf{Kinding 3}) $\sseq{\cExpands{\uOmega}{\parseUConF{\bsubseq{b}{m'_i}{n'_i}}}{c_i}{[\omega]\kappa'_i}}{\ncon}$ and $\sseq{\haskind{\Omega_\text{app}}{c_i}{[\omega]\kappa'_i}}{\ncon}$
+  \item (\textbf{Kinding 4}) $\sseq{\cvalidC{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\ctau_i}{\tau_i}{\akty}}{\nexp}$ and $\sseq{\haskind{\Omega_\text{app}}{[\omega]\tau_i}{\akty}}{\nexp}$
+  \item (\textbf{Typing 2}) $\sseq{\expandsP{\uOmega}{\uPsi}{\uPhi}{\parseUExpF{\bsubseq{b}{m''_i}{n''_i}}}{e_i}{[\omega]\tau_i}}{\nexp}$ and $\sseq{\hastypeP{\Omega_\text{app}}{e_i}{[\omega]\tau_i}}{\nexp}$
+  \item (\textbf{Capture Avoidance}) $e = [\sseq{\kappa_i/k_i}{\nkind}, \sseq{c_i/u_i}{\ncon}, \sseq{e_i/x_i}{\nexp}, \omega]e''$ for some $e''$ and fresh $\sseq{k_i}{\nkind}$ and fresh $\sseq{u_i}{\ncon}$ and fresh $\sseq{x_i}{\nexp}$
+  \item (\textbf{Context Independence}) $\mathsf{fv}(e'') \subset \sseq{k_i}{\nkind} \cup \sseq{u_i}{\ncon} \cup \sseq{x_i}{\nexp} \cup \domof{\OParams}$
+  % $\hastypeP{\sseq{\Khyp{k_i}}{\nkind} \cup \sseq{u_i :: [\omega]\kappa'_i}{\ncon} \cup \sseq{x_i : [\omega]\tau_i}{\nexp}}{[\omega]e''}{\tau}$\todo{maybe restate this in terms of free variables of e'' here and elsewhere, because context isn't technically well-formed here?}
+\end{enumerate}
+\end{theorem}
+
+\vspace{-6px}
 
 % The following theorem summarizes the abstract reasoning principles available to programmers when applying a pattern TLM. Most of the labeled clauses are analagous to those described above, so we omit their descriptions.
 % % \begingroup
