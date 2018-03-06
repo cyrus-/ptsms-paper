@@ -63,7 +63,7 @@
 \lstset{tabsize=2, 
 basicstyle=\ttfamily\fontsize{8pt}{1em}\selectfont, 
 commentstyle=\itshape\ttfamily\color{gray},
-stringstyle=\ttfamily\color{red},
+stringstyle=\ttfamily\color{purple},
 mathescape=false,escapeinside={(~}{~)},
 numbers=left, numberstyle=\scriptsize\color{mygray}, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=0pt, numbersep=-6pt, morekeywords=[1]{try,spliced,tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,string,lexer,parser,datatype,new,toast,notation,module,switch,where,expansions,require,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,by,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,exptsm,pattsm},deletekeywords={double,structure,of},classoffset=0, xleftmargin=0pt, 
 aboveskip=3pt,belowskip=2pt,
@@ -79,7 +79,7 @@ moredelim=**[is][\color{SeaGreen}]{SQT}{EQT},
 moredelim=**[is][\color{Periwinkle}]{SGRM}{EGRM},
 moredelim=**[is][\color{YellowGreen}]{SID}{EID},
 moredelim=**[is][\color{Sepia}]{SUS}{EUS},
-deletestring=[d]{"},
+% deletestring=[d]{"},
 }
 \lstset{morecomment=[n]{/*}{*/}}
 
@@ -410,6 +410,7 @@ TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the m
 
 \begin{figure}[t]
 \begin{subfigure}[t]{0.45\textwidth}
+\vspace{-1px}
 \begin{lstlisting}[mathescape=~]
   module Regex = {
     type t = AnyChar | Str(string)
@@ -423,6 +424,7 @@ TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the m
 \end{subfigure}
 \hfill
 \begin{subfigure}[t]{0.53\textwidth}
+\vspace{-1px}
 \begin{lstlisting}[mathescape=|]
   notation $regex at Regex.t
     lexer   RegexLexer
@@ -440,8 +442,8 @@ TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the m
 \begin{lstlisting}
   let any_base = $regex `(SURLA|T|G|CEURL)`;
   let bisA = $regex `(SURLGC$(EURLany_baseSURL)GCEURL)`;
-  let gene_restriction_template(gene_sequence) => 
-    $regex `(SURL$(EURLbisASURL)$(EURLany_baseSURL)*$$(EURLgene_sequenceSURL)$(EURLany_baseSURL)*$(EURLbisASURL)EURL)`
+  let gene_restriction_template(gene) => 
+    $regex `(SURL$(EURLbisASURL)$(EURLany_baseSURL)*$$(EURLgeneSURL)$(EURLany_baseSURL)*$(EURLbisASURL)EURL)`
 \end{lstlisting}
 \vspace{-5px}
 \caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
@@ -450,7 +452,7 @@ TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the m
 \end{subfigure}
 \vspace{3px}
 \caption{Case Study: POSIX-style regex literal notation, with support for string and regex splicing.}
-\vspace{-3px}
+\vspace{-5px}
 \end{figure}
 
 
@@ -462,9 +464,9 @@ Sec.~\ref{sec:setsms} introduces expression TLMs with a detailed case study.
 Sec.~\ref{sec:sptsms} then introduces {pattern TLMs}, i.e. TLMs that generate patterns, and describes the special reasoning conditions in pattern position. %The hygiene condition for pattern TLMs is interesting.
 % \item 
 Sec.~\ref{sec:ptsms} then introduces the more general \emph{parametric TLMs}, i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. This section also reveals that the \li{expansions require} clause is but syntactic sugar for parameterization followed immediately by partial parameter application. 
-Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with examples that further demonstrate the expressive power of this approach and various parser implementation strategies that notation providers can consider. 
-Sec.~\ref{sec:setsms-formally} presents a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above, in the simplest setting. 
-Sec.~\ref{sec:ptlms-formally} adds type functions and an ML-style module system to this calculus, and gives the most general variant of the reasoning principles theorem. 
+Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with examples that further demonstrate the expressive power of this approach and various parser implementation strategies that notation providers can consider. This notably includes our take on the example from  Fig.~\ref{fig:urweb} of Ur/Web-style HTML literals. 
+Next, Sec.~\ref{sec:setsms-formally} defines a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above in their simplest form. 
+Sec.~\ref{sec:ptlms-formally} adds type functions and an ML-style module system to this calculus, and gives a more general variant of the reasoning principles theorem. 
 % \item 
 Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of five reasoning principles just discussed. 
 % \item 
@@ -580,9 +582,9 @@ In Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex
 
 \vspace{-3px}
 \subsection{TLM Definition and Application}
-Figure \ref{fig:regex-tlm-def} defines a TLM named \li{$regex} that supports a POSIX-style literal notation, extended with splice forms, for values of type \li{Regex.t}. Line 1 of Fig. \ref{fig:first-tlm-example} applies this TLM to construct the regex \li{any_base} just described. Line 2 of Fig. \ref{fig:first-tlm-example} then applies \li{$regex} again, using its regex splicing notation to construct a regex \li{bisA} matching the DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines 3-4 of Fig. \ref{fig:first-tlm-example} define a function that constructs a more complex regex from these two regexes and a given gene sequence represented as a string. 
+Figure \ref{fig:regex-tlm-def} defines a TLM named \li{$regex} for values of type \li{Regex.t} that supports a POSIX-style literal notation extended with splice forms for regexes and strings. Line 1 of Fig. \ref{fig:first-tlm-example} applies this TLM to construct the regex \li{any_base} just described. Line 2 of Fig. \ref{fig:first-tlm-example} then applies \li{$regex} again, using its regex splice form to construct a regex \li{bisA} matching the DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines 3-4 of Fig. \ref{fig:first-tlm-example} define a function that constructs a more complex regex from these two regexes and a given gene sequence represented as a string, which is spliced in using a string splice form delimited by \li{$$(} and \li{)}. 
 
-Let us consider the second of these TLM applications more closely:
+Let us consider the second of these three TLM applications more closely:
 \begin{lstlisting}[numbers=none]
     $regex `(GC$(any_base)GC)`
 \end{lstlisting}
@@ -595,24 +597,47 @@ Notice that in the unexpanded expression above, we did not distinguish the splic
 \subsection{Abstract Reasoning Principles} 
 Rather than looking immediately at Fig. \ref{fig:lexer-and-parser}, which defines the lexer and parser specified by \li{$regex}, let us first consider the perspective of a client programmer who does not want to delve into the details of lexing and parsing for each piece of literal notation that they encounter. What can this programmer deduce just by reasoning from the information presented in Figures \ref{fig:Regex-module-def} through \ref{fig:first-tlm-example}? 
 
- TLM definitions follow the same scoping rules as other definitions, so the client programmer can follow the binding structure of the language in the usual manner (manually or assisted by a ``go to definition'' editor service) to determine which TLM is uniquely responsible for each literal form. In Sec. \ref{sec:ptsms}, we will see an example of TLM synonyms (as a trivial case of partial parameter application).
+% TLM definitions follow well-defined scoping rules, so the client programmer can follow the binding structure of the language in the usual manner (manually or assisted by a ``go to definition'' editor service) to determine which TLM is uniquely responsible for each literal form. In Sec. \ref{sec:ptsms}, we will see an example of TLM synonyms (as a trivial case of partial parameter application).
 
-Having arrived at the definition of \li{$regex}, the client can immediately determine the type of the expansion being generated at each application site because it is specified explicitly by the clause \li{at Regex.t} on Line 1 of Fig. \ref{fig:regex-tlm-def}. This is analagous to the return type of a function. The identity of \li{Regex.t} is determined relative to the TLM definition site, not at each application site (so the module \li{Regex} need not be in scope at the application site, or it can be shadowed by a different module).
+From the definition of the \li{$regex} TLM, the client can immediately determine the type of the expansion being generated at each application site because it is specified explicitly by the clause \li{at Regex.t} on Line 1 of Fig. \ref{fig:regex-tlm-def}. This is analagous to the return type of a function. The identity of \li{Regex.t} is determined relative to the TLM definition site, not at each application site (so the module \li{Regex} need not be in scope at the application site, or it can be shadowed by a different module).
 
 The TLM mechanism enforces an similarly strong context independence property on generated expansions by requiring that the TLM explicitly specify the modules that the expansions it generates might internally depend on. In this case, Lines 4-5 of Fig. \ref{fig:regex-tlm-def} specify that generated expansion might use the module \li{Regex}, again as it is bound at the definition site, using the module variable \li{Regex} internally. These happen to coincide in this case, but in general, the dependency can be an arbitrary module path while internally it must be bound to a module variable, for example:
 \begin{lstlisting}[numbers=none]
-  expansions require module Core.List as L
+  expansions require 
+    module Regex as Regex
+    module Core.List as L
 \end{lstlisting}
 The module variable \li{L} will be bound internally to \li{Core.List} in all expansions generated by this TLM, including those where \li{L} or \li{Core.List} are not bound, or otherwise bound. All other bindings, whether at the TLM definition site or the TLM application site, are not internally available to the expansion. This allows client programmers to freely rename and shadow variables as they are used to, without needing to inspect each parser to determine whether it requires certain modules be bound to particular names at each use site (as is common with, e.g., syntax extensions based on \li{camlp4} or Sugar*, or when using unhygienic term rewriting approaches like OCaml's PPX system or Template Haskell \cite{SheardPeytonJones:Haskell-02}, as further discussed in Sec. \ref{sec:existing-approaches}).
 
-Enforcing this context independence property is actually quite subtle because TLM parsers can extract spliced expressions from the literal body. Na\"ively checking that the final expansion is closed except for the explicitly named dependencies would inappropriately enforce the same context independence property on client-side spliced expressions. For example, consider the final expansion of the example from Line 2 of Fig. \ref{fig:first-tlm-example} above:
+Enforcing this strong context independence condition is quite subtle because TLM parsers need to be able to extract spliced expressions from the literal body and place them in the final expansion. Na\"ively checking that the final expansion is closed except for the explicitly named dependencies would inappropriately enforce context independence on application site spliced expressions, which should certainly not be prevented from referring to variables in the application site context. For example, consider the final expansion of the example from Line 2 of Fig. \ref{fig:first-tlm-example} above:
 \begin{lstlisting}[numbers=none]
   Regex.Seq(Regex.Str "GC", Regex.Seq(any_base, Regex.Str "GC"))
 \end{lstlisting}
-In this term, both \li{Regex} and \li{any_base} are free variables. The origin of the sub-expression \li{any_base} -- i.e. that it is a spliced expression in the literal body at the application site, and not based on an inappropriate assumption that the parser is making about the application site -- is not apparent from the final expansion. As we will discuss more extensively in Sec. \ref{sec:existing-approaches}, this is why existing hygienic macro systems cannot be used to repurpose string literals for literal notation at other types.
+In this term, both \li{Regex} and \li{any_base} are free variables. There is nothing to indicate which free variables came from the literal body via an intentional act of splicing by the TLM. 
+%\footnote{An exhaustive search would not be feasible because final expansions are abstract syntax trees. There is not a unique mapping back to concrete syntax, e.g. because whitespace can be inserted arbitrarily.} 
+As we will discuss more extensively in Sec. \ref{sec:existing-approaches}, this is why traditional hygienic term-rewriting macro systems, like those available in various Lisp-family languages \cite{mccarthy1978history} and in Scala \cite{ScalaMacros2013}, cannot be used to repurpose string literals for literal notation at other types.
 
-To address this problem, 
+To address this problem, the TLM parser does not generate the final expansion directly. Instead, the parser generates a \emph{proto-expansion} that refers to spliced expressions indirectly by location relative to the start of the provided literal body. For example, the proto-expansion generated by \li{$regex} for the example above can be expressed as follows:
+\begin{lstlisting}[numbers=none]
+  Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4; 11; Regex.t>, Regex.Str "GC"))
+\end{lstlisting}
 
+Here, \li{spliced<4; 11; Regex.t>} is a reference to the spliced expression \li{any_base} by its location relative to the start of the literal body being expanded. The context independence condition can be enforced straightforwardly on the proto-expansion -- the only free variable in the proto-expansion is \li{Regex}, which is an explicitly listed dependency.
+% Requiring that TLMs refer to spliced expressions indirectly in this manner ensures that a TLM cannot ``forge'' spliced terms, i.e. mark some sub-term as being spliced when it does not in fact appear at some specified segment of the literal body.
+
+The set of splice references in the proto-expansion generated for a literal body is called the \emph{segmentation} of that literal body. The system checks that the segmentation does indeed segment the literal body, i.e. that the segments are non-overlapping. For the purposes of abstract reasoning, only the segmentation needs to be reported to downstream editor services, and ultimately to the programmer. The rest of the proto-expansion can be held abstract. In this paper, spliced segment locations are reported using colors, with segments that are not part of spliced segment shown in color (green, so far) while spliced segments start out black. When TLM applications are nested, a distinct color can be used at each depth. For example, in Sec. \ref{sec:more-examples}, we will describe a TLM \li{$html} for HTML notation in the style of Ur/Web (see Fig.~\ref{fig:urweb}). We might apply it, together with another TLM \li{$smiles} for chemical structures described using the SMILES standard \cite{anderson1987smiles}, as follows:
+\begin{lstlisting}[numbers=none]
+    $html `(SURL<div>Chemical structure of sucrose: {EURL
+      Smiles.to_svg
+        $smiles `(SCOLOR{ECOLORmono_glucoseSCOLOR}-O-{ECOLORmono_fructoseSCOLOR}ECOLOR)` 
+    SURL}</div>EURL)`
+\end{lstlisting}
+
+Each splice reference in the segmentation gives not just the location of the spliced segment but also a type annotation. Returning to the regex example above, the specified type annotation is \li{Regex.t}. This type annotation, which must also be context independent, constrains the spliced expression. Consequently, type inference can be performed using only the segmentation together with the type annotation on the applied TLM's definition. For example, consider the function \li{gene_restriction_template} on Lines 3-4 of Fig. \ref{fig:first-tlm-example}. The return type of this function can be determined to be \li{Regex.t} because of the type annotation on the \li{$regex} TLM. The type of the argument, \li{gene}, can be inferred to be \li{string} because the segmentation specifies the type \li{string} for the spliced segment where it appears. Context independence implies that \li{gene} cannot appear elsewhere in the expansion, and so no further typing constraints could possibly be collected from examining the portions of the expansion held abstract. Spliced segment types can be communicated directly to the programmer upon request by an editor service, e.g. \li{merlin} for OCaml/Reason \cite{Merlin}.
+
+
+
+---------------------- {\color{red} stuff below is notes / not yet revised}
 
 When a TLM definition appears inside a module, it must also appear in the signature with the same specification, up to the usual notions of type and module path equivalence in the type annotation and module dependencies (like datatype definitions in ML). Note that even when a TLM needs only a single helper function, it must be placed into a named module. This is to avoid needing to reason about the equivalence of arbitrary expressions when determining whether two signatures are compatible. 
 
