@@ -66,7 +66,7 @@ commentstyle=\itshape\ttfamily\color{gray},
 stringstyle=\ttfamily\color{red},
 mathescape=false,escapeinside={(~}{~)},
 numbers=left, numberstyle=\scriptsize\color{mygray}, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=0pt, numbersep=-6pt, morekeywords=[1]{try,spliced,tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,string,lexer,parser,datatype,new,toast,notation,module,switch,where,expansions,require,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,by,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,exptsm,pattsm},deletekeywords={double,structure,of},classoffset=0, xleftmargin=0pt, 
-aboveskip=4pt,belowskip=2pt,
+aboveskip=3pt,belowskip=2pt,
 moredelim=**[is][\color{red}]{SSTR}{ESTR},
 moredelim=**[is][\color{OliveGreen}]{SHTML}{EHTML},
 moredelim=**[is][\color{purple}]{SCSS}{ECSS},
@@ -372,9 +372,9 @@ An approach that has made some headway toward this ideal is Omar et al.'s \emph{
 \begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont]
   let y : KQuery.t = `((!R)@&{&/x!/:2_!x}'!R)`
 \end{lstlisting}
-The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free syntax of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism that we will propose, so let us analyze TSLs from the perspective of the five reasoning criteria just outlined.
-\begin{enumerate}[leftmargin=12px,nolistsep,noitemsep]
-  \item[\LEFTcircle] \textbf{Responsibility}: The type-directed dispatch mechanism allows the client to easily determine which parser is responsible for each literal form: the parser that was associated with the type when it was defined. Clients do not need to worry about different TSLs conflicting syntactically because the context-free syntax of the language remains fixed and composition is mediated by splicing. The main limitation here is that it is impossible to define literal notation after a type has been defined, and it is also impossible to define multiple notations at a single type.
+The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free grammar of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism that we will propose, so let us analyze TSLs from the perspective of the five reasoning criteria just outlined.
+\begin{enumerate}[leftmargin=12px]
+  \item[\LEFTcircle] \textbf{Responsibility}: The type-directed dispatch mechanism allows the client to easily determine which parser is responsible for each literal form: the parser that was associated with the type when it was defined. Clients do not need to worry about different TSLs conflicting syntactically because the context-free grammar of the language remains fixed and composition is mediated by splicing. The main limitation here is that it is impossible to define literal notation after a type has been defined, and it is also impossible to define multiple notations at a single type.
   \item[\LEFTcircle] \textbf{Segmentation}: The parser can splice expressions out of the literal body, but there is no clear way to associate each spliced term with some particular segment (i.e. subsequence) of the literal body, nor is there a guarantee that spliced terms are non-overlapping. As such, there is no way to indicate to the programmer where base language expressions are located within a literal form.
   \item[\LEFTcircle] \textbf{Capture}: The TSL mechanism as described enforces complete capture avoidance (though the formal specification given in the paper did not adequately enforce this constraint).
   \item[\LEFTcircle] \textbf{Context Dependence}: The TSL mechanism as described requires that the expansion be completely closed, so it is trivially context independent. However, this comes at a significant expressive cost: the generated expansions cannot make use of any libraries whatsoever.
@@ -390,18 +390,18 @@ The parser associated with the type \li{KQuery.t} is statically invoked to lex, 
 
 We consider other existing approaches against these criteria in Sec.~\ref{sec:existing-approaches}. Taken together, we found that no existing approach was reasonable and expressive enough for integration into Reason/OCaml.
 
-\paragraph{Contributions} This paper introduces \emph{typed literal macros} (TLMs): the first system for defining new literal notation that (1) provably maintains all five of the abstract reasoning principles just outlined; and (2) is semantically expressive enough for integration into Reason/OCaml and other full-scale statically typed functional languages. We evaluate these claims with (1) a series of increasingly ML-like calculi equipped with proofs of these abstract reasoning principles; and (2) a number of non-trivial examples that appear throughout the paper and involve the language features mentioned above. In describing these examples, we also demonstrate that literal parsing logic can be defined using standard, unmodified parser generators, so the burden on notation providers is comparable to that of existing systems despite the stronger client-side reasoning principles. % From the client's perspective, which is the focus of our contributions, TLMs are uniquely reasonable. 
+\paragraph{Contributions} This paper introduces \emph{typed literal macros} (TLMs): the first system for defining new literal notation that (1) provably maintains all five of the abstract reasoning principles just outlined; and (2) is semantically expressive enough for integration into Reason/OCaml and other full-scale statically typed functional languages. We evaluate these claims with (1) a series of increasingly ML-like calculi equipped with proofs of these abstract reasoning principles; and (2) a number of non-trivial examples that appear throughout the paper and involve the language features mentioned above. In describing these examples, we also demonstrate that literal parsing logic can be defined using standard, unmodified parser generators, so the burden on notation providers is comparable to that of existing systems despite these stronger client-side reasoning principles. % From the client's perspective, which is the focus of our contributions, TLMs are uniquely reasonable. 
 
 %Unique to our approach in this paper is the focus, both formal and informal, on maintaining client-side abstract reasoning principles.
 
 % The empirical study in the prior work on TSLs \cite{TSLs} supports the claim that a macro-based mechanism for defining new literal notation is broadly useful, so This paper is targeted at language designers that seek a deeper understanding of the reasoning principles at play, particularly as they relate to features common to ML and other full-scale statically typed languages (e.g. Haskell, Scala, Rust, etc.)
 
-The most obvious point of departure between TSLs, described above, and TLMs is that we separate out the mechanism for defining new literal notation from the type definition mechanism of the language. TLMs are instead explicitly named and applied. For example, Line 9 of Figure \ref{fig:K-tsm-example} applies a TLM named \li{$kq} to a generalized literal form delimited by \li{`(} and \li{)`} to express the K query example. The programmer can reason abstractly as follows:
+TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the mechanism for defining new literal notation is not tied up with the type definition mechanism of the language. TLMs are instead explicitly named and applied. For example, Line 9 of Figure \ref{fig:K-tsm-example} applies a TLM named \li{$kq} to a generalized literal form delimited by \li{`(} and \li{)`} to express the K query example. The programmer can reason abstractly as follows:
 \begin{enumerate}[leftmargin=12pt]
-\item[\CIRCLE] \textbf{Responsibility}: The lexer and parser specified by the applied TLM on Lines 2-3 is exclusively responsible for lexing, parsing and expanding the literal body. We will give more details on constructing a TLM lexer and parser in the next section. Due to this explicit dispatch mechanism, there can be any number of TLMs defined at a given type. As with TSLs, the context-free syntax of the language is fixed, so the TLM provider can modularly establish that the notation that the TLM implements is unambiguous (even in situations where a spliced term itself applies another TLM, which we will show in a later example).
+\item[\CIRCLE] \textbf{Responsibility}: The lexer and parser specified by the applied TLM on Lines 2-3 is exclusively responsible for lexing, parsing and expanding the literal body. We will give more details on constructing a TLM lexer and parser in the next section. Due to this explicit dispatch mechanism, there can be any number of TLMs defined at a given type. As with TSLs, the context-free grammar of the language is fixed, so the TLM provider can modularly establish that the notation that the TLM implements is unambiguous (even in situations where a spliced term itself applies another TLM, which we will show in a later example).
 \item[\CIRCLE] \textbf{Segmentation}: The intermediate output that the TLM generates is structured so that the system can infer from it an accurate \emph{segmentation} of the literal body that distinguishes spliced terms from segments that are parsed in some other way by the TLM. The segmentation is all that needs to be communicated to editor services downstream of the expander, and ultimately to the programmer using secondary notation, e.g. colors in this document. So by examining Figure \ref{fig:K-tsm-example}, the programmer knows that the two instances of \li{x} on Line 3 are parsed as spliced expressions (because they are black), whereas the \li{R}'s must be parsed in some other way, e.g. as operators in the K language (because they are green).
-\item[\CIRCLE] \textbf{Capture}: Splicing is capture-avoiding, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2. It cannot capture a coincidental binding of \li{x} in the expansion.
-\item[\CIRCLE] \textbf{Context Dependence}: The system enforces context independence, so the expansion of Line 3 cannot  rely on the fact that, e.g., \li{w} is in scope. The client is free to rename \li{w}. The external dependencies of the generated expansion are explicit -- here, Lines 4-5 specify that the expansion requires the module \li{KQuery} -- and the system ensures that this dependency is properly bound as specified even if the identifier \li{KQuery} has been shadowed at the application site.
+\item[\CIRCLE] \textbf{Capture}: Splicing is capture-avoiding, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2. It cannot capture a coincidental binding of \li{x} in the expansion. We will say more about capture later on.
+\item[\CIRCLE] \textbf{Context Dependence}: The system enforces context independence, so the expansion of Line 3 cannot  rely on the fact that, e.g., \li{w} is in scope. The client is free to rename \li{w}. The external dependencies of the generated expansion are explicit -- here, Lines 4-5 specify that expansions generated by \li{$kq} require the module \li{KQuery} -- and the system ensures that this dependency is  bound as specified even if the identifier \li{KQuery} has been shadowed at the application site.
 \item[\CIRCLE] \textbf{Typing}: The type annotation on the definition of \li{$kq} (Line 1) determines the type that the expansion is validated against, here \li{KQuery.t} (not shown). Moreover, each spliced segment in the inferred segmentation also has  a type annotation. This, together with the context independence property, ensures that type inference at the TLM application site can be performed (by editor services or in the programmer's mind) abstractly, i.e. given only the inferred segmentation rather than the full expansion. We will see examples of TLMs that make use of more advanced features of the OCaml type system -- notably, pattern matching, parameterized types and modules -- later. %This information is usually not necessary to reason about typing, but it can be conveyed to the programmer upon request by the program editor if desired. %TLM definitions follow the usual scoping rules, so it is easy to ``jump to the definition'' of \li{$kq}.
 \end{enumerate}
 
@@ -432,7 +432,7 @@ The most obvious point of departure between TSLs, described above, and TLMs is t
 \end{lstlisting}
 \vspace{-5px}
 \caption{The definition of the \li{$regex} TLM. Figure \ref{fig:candidate-exp-Reason} defines \li{RegexLexer} and \li{RegexParser}.}
-\label{fig:html-tlm-def}
+\label{fig:regex-tlm-def}
 \end{subfigure}
 
 \begin{subfigure}[t]{\textwidth}
@@ -443,32 +443,33 @@ The most obvious point of departure between TSLs, described above, and TLMs is t
   let gene_restriction_template(gene_sequence) => 
     $regex `(SURL$(EURLbisASURL)$(EURLany_baseSURL)*$$(EURLgene_sequenceSURL)$(EURLany_baseSURL)*$(EURLbisASURL)EURL)`
 \end{lstlisting}
-\vspace{-2px}
+\vspace{-5px}
 \caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
 }
-\label{fig:first-tsm-example}
+\label{fig:first-tlm-example}
 \end{subfigure}
-\vspace{5px}
+\vspace{3px}
 \caption{Case Study: POSIX-style regex literal notation, with support for string and regex splicing.}
+\vspace{-3px}
 \end{figure}
 
 
 \paragraph{Outline} 
 % \begin{itemize}
 % \item 
-We begin in Sec.~\ref{sec:setsms} by introducing expression TLMs with a more detailed case study. 
+Sec.~\ref{sec:setsms} introduces expression TLMs with a detailed case study. 
 % \item 
 Sec.~\ref{sec:sptsms} then introduces {pattern TLMs}, i.e. TLMs that generate patterns, and describes the special reasoning conditions in pattern position. %The hygiene condition for pattern TLMs is interesting.
 % \item 
-Sec.~\ref{sec:ptsms}  introduces \emph{parametric TLMs} (pTLMs), i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. This section also reveals that the \li{expansions require} clause is syntactic sugar for parameterization followed immediately by partial parameter application. 
-Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with additional examples that demonstrate both the expressive power of this approach and various parser implementation strategies that notation providers can consider. 
-Sec.~\ref{sec:setsms-formally} presents a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above, in the formally simplest setting. 
+Sec.~\ref{sec:ptsms} then introduces the more general \emph{parametric TLMs}, i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. This section also reveals that the \li{expansions require} clause is but syntactic sugar for parameterization followed immediately by partial parameter application. 
+Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with examples that further demonstrate the expressive power of this approach and various parser implementation strategies that notation providers can consider. 
+Sec.~\ref{sec:setsms-formally} presents a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above, in the simplest setting. 
 Sec.~\ref{sec:ptlms-formally} adds type functions and an ML-style module system to this calculus, and gives the most general variant of the reasoning principles theorem. 
 % \item 
 Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of five reasoning principles just discussed. 
 % \item 
 Sec.~\ref{sec:discussion} concludes with a summary of the contributions of this paper and a discussion of future work.
-Due to the space limitations, certain technical details, proofs and extensions to the calculi presented in this paper are available in the anonymized supplemental material. % Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
+Certain technical details, proofs and extensions to the calculi presented in this paper are given in the supplement. % Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
 
 %  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
 %The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of Reason in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
@@ -555,17 +556,36 @@ Due to the space limitations, certain technical details, proofs and extensions t
 %TLMs, like other macro systems, perform \emph{static code generation} (also sometimes called \emph{static} or \emph{compile-time metaprogramming}), meaning that the relevant rules in the static semantics of the language call for the evaluation of \emph{static functions} that generate term encodings. Static functions are functions that are evaluated statically, i.e. during typing. %Library providers write these static functions using the Reason \emph{static language} (SL).  
 %Maintaining a separation between the static (or ``compile-time'') phase and the dynamic (or ``run-time'') phase is an important facet of Reason's design. % static code generation. %We will  also introduce a simple variant of each of these primitives that leverages Reason's support for local type inference to further reduce syntactic cost in certain common situations. 
 
+\vspace{-3px}
 \newcommand{\seTLMsSec}{Expression TLMs}
 \section{\protect\seTLMsSec}
 \label{sec:setsms}
+\vspace{-2px}
+
+Consider the recursive datatype \li{Regex.t} defined by the module in Fig.~\ref{fig:Regex-module-def}, which encodes \emph{regular expressions} (regexes) into Reason \cite{Thompson:1968:PTR:363347.363387}. Regular expressions are  common in fields like bioinformatics, where they are used to express patterns in DNA sequences. For example, we can construct a regex that matches the strings \li{"A"}, \li{"T"}, \li{"G"} or \li{"C"}, which represent the four bases in DNA, as follows:
+\begin{lstlisting}[numbers=none]
+  let any_base = Regex.(Or(Str "A", Or(Str "T", Or(Str "G", Or(Str "C")))))
+\end{lstlisting}
+In Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex} for use within the expression $e$, so we do not need to qualify the constructors \li{Regex.Or} and \li{Regex.Str}. Even allowing for this shorthand, however, this notation for constructing regexes is rather unwieldy. Instead, we would like to be able to use the common POSIX-style notation for constructing values of type \li{Regex.t} \cite{STD95954}.
+
+% One approach would be to simply define a function \li{parse_rx : string -> Regex.t} that parses a string at run-time to produce a regex. This approach works for simple expressions like the one above -- we can write \li{parse_rx "A|T|G|C"}. However, this approach breaks down when one needs to construct regexes compositionally. For example, the DNA pattern that the BisI restriction enzyme recognizes is \li{AT}$x$\li{GC}, where $x$ is any of the four DNA bases. However, one cannot pass \li{any_base} to the string concatenation operator, because \li{any_base} is already of type \li{Regex.t}. These kinds of situations cause programmers to engage in \emph{stringly-typed programming}, as discussed in Sec.~\ref{sec:intro} -- they simply use strings to encode regexes throughout their application, rather than structured encodings like \li{Regex.t}. This can be catastrophic if the programmer is not extremely careful with string concatenation because strings that happen to contain special characters recognized by the POSIX notation can be misinterpreted because they are not distinguished in any way from strings that intentionally use POSIX notation. When some of these strings come from untrusted sources, e.g. web forms as is common in bioinformatics applications, the result can be a breach in privacy. 
 
 
-We start in this section by describing the TLM mechanism in detail by way of a substantial case study: literal notation, like that built in to Ur/Web (see Figure \ref{fig:urweb}) and also, presently, Reason, for expressions of the type  \li{html} in Figure \ref{fig:html-type-def}.
 
 
 
+% Moreover, there already exists a broadly adopted shorthand notational standard -- the POSIX standard for regular expressions \cite{STD95954}. For the purposes of this section, we will stick to the subset of the POSIX standard that applies to the encoding in Fig.~\ref{fig:Regex-module-def}, but there is nothing that would fundamentally prevent us from implementing the full POSIX standard using TLMs.
+
+
+
+\vspace{-3px}
 \subsection{TLM Definition and Application}
-The definition of the \li{$html} TLM is given in Figure \ref{fig:html-tlm-def}. TLM names are prefixed by \li{$} 
+Figure \ref{fig:regex-tlm-def} defines a TLM named \li{$regex} that supports a POSIX-style literal notation, extended with splice forms, for values of type \li{Regex.t}. Line 1 of Fig. \ref{fig:first-tlm-example} applies this TLM to construct the regex \li{any_base} just described. Line 2 of Fig. \ref{fig:first-tlm-example} then applies \li{$regex} again, using its regex splicing notation to construct a regex \li{bisA} matching the DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines 3-4 of Fig. \ref{fig:first-tlm-example} define a function that constructs a more complex regex from these two regexes and a given gene sequence represented as a string. 
+
+
+Notice that regexes are spliced in using \li{$(}$e$\li{)}, where $e$ is any expression of type \li{Regex.t}, while strings are spliced in using \li{$$(}$e${\li)}, where $e$ is any expression of type \li{string}. These choices are made entire
+
+TLM names are prefixed by \li{$} 
  to distinguish them from variables. Every TLM definition also includes a \emph{type annotation}, here \li{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. % The TLM definition follows the same scoping rules as type definitions. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
 
 
@@ -577,7 +597,7 @@ Using this TLM, we can express the Ur/Web example from Figure \ref{fig:urweb} as
 
  The system delegates responsibility over the parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{expansion}, which starts just before and continues into the typing phase. 
 
- Because the parse function is applied during this phase, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings because those variables stand for run-time values. Instead, there is are separate \emph{static bindings} marked by the \li{static} keyword that populate a \emph{static environment} that is discarded after expansion finishes. A more detailed account of static evaluation, both informal and informal, is available in the supplement. An alternative design that allows for the explicit lowering of standard-phase modules to the static phase has also been proposed for OCaml \cite{Ocaml/macros}. %\ificfp We are closely following this work in our implementation. \else \fi
+ Because the parse function is applied during this phase, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings because those variables stand for run-time values. Instead, there is are separate \emph{static bindings} marked by the \li{static} keyword that populate a \emph{static environment} that is discarded after expansion finishes. A more detailed account of static evaluation, both informal and informal, is given in the supplement. An alternative design that allows for the explicit lowering of standard-phase modules to the static phase has also been proposed for OCaml \cite{Ocaml/macros}. %\ificfp We are closely following this work in our implementation. \else \fi
   % return to in Sec. \ref{sec:static-eval}.
 
  The input type of the parse function, \li{body}, classifies encodings of literal {bodies}. Literal bodies are sequences of characters, so we define \li{body} as a synonym of \li{string} in \autoref{fig:indexrange-and-parseresult}. The return type is a sum type, defined by applying the parameterized type \li{parse_result} defined in \autoref{fig:indexrange-and-parseresult}, that distinguishes between parse errors and successful parses. Let us consider these two possibilities in turn.
@@ -868,6 +888,8 @@ This explicit parameter passing discipline is reminiscent of work on explicit ca
 \label{sec:more-examples}
 
 \subsection{HTML}
+We start in this section by describing the TLM mechanism in detail by way of a substantial case study: literal notation, like that built in to Ur/Web (see Figure \ref{fig:urweb}) and also, presently, Reason, for expressions of the type  \li{html} in Figure \ref{fig:html-type-def}.
+
 \begin{figure*}[t]
 
 \begin{subfigure}[t]{0.48\textwidth}
