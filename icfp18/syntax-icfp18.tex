@@ -431,7 +431,7 @@ TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the m
       module Regex as Regex;
 \end{lstlisting}
 \vspace{-5px}
-\caption{The definition of the \li{$regex} TLM. Figure \ref{fig:candidate-exp-Reason} defines \li{RegexLexer} and \li{RegexParser}.}
+\caption{The definition of the \li{$regex} TLM. Figure \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}.}
 \label{fig:regex-tlm-def}
 \end{subfigure}
 
@@ -582,18 +582,50 @@ In Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex
 \subsection{TLM Definition and Application}
 Figure \ref{fig:regex-tlm-def} defines a TLM named \li{$regex} that supports a POSIX-style literal notation, extended with splice forms, for values of type \li{Regex.t}. Line 1 of Fig. \ref{fig:first-tlm-example} applies this TLM to construct the regex \li{any_base} just described. Line 2 of Fig. \ref{fig:first-tlm-example} then applies \li{$regex} again, using its regex splicing notation to construct a regex \li{bisA} matching the DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines 3-4 of Fig. \ref{fig:first-tlm-example} define a function that constructs a more complex regex from these two regexes and a given gene sequence represented as a string. 
 
+Let us consider the second of these TLM applications more closely:
+\begin{lstlisting}[numbers=none]
+    $regex `(GC$(any_base)GC)`
+\end{lstlisting}
+According to the context-free grammar of the language, this form is simply a leaf of the unexpanded syntax tree, like a string literal would be. TLM names are prefixed by \li{$} 
+ to distinguish them from variables. There are no lexical constraints on the body of the generalized literal form except that any occurrences of \li{`(} must be balanced by \li{)`}, much like nested comments in OCaml, Reason and other languages. Generalized literal forms, which first arose in the prior work on TSLs \cite{TSLs}, therefore syntactically subsume other literal forms. The prior work specified several other choices of outer delimitation, including layout-sensitive delimitation, but for the purposes of this work, we will use \li{`(} and \li{)`} exclusively. The fact that the context-free grammar of the base language is fixed ensures that notation providers can reason modularly about syntactic ambiguity in their own grammars.
+
+Notice that in the unexpanded expression above, we did not distinguish the spliced expression from the rest of the literal. This is to emphasize that it is only during the subsequent \emph{expansion} phase that the body of the generalized literal form is lexed, parsed and expanded to produce an expanded syntax tree where spliced expressions, like \li{any_base}, have been revealed. Responsibility for lexing, parsing and expanding the literal body is delegated to the lexer and parser specified by the applied TLM by the clauses \li{lexer} and \li{parser}, respectively.
+
+\vspace{-4px}
+\subsection{Abstract Reasoning Principles} 
+Rather than looking immediately at Fig. \ref{fig:lexer-and-parser}, which defines the lexer and parser specified by \li{$regex}, let us first consider the perspective of a client programmer who does not want to delve into the details of lexing and parsing for each piece of literal notation that they encounter. What can this programmer deduce just by reasoning from the information presented in Figures \ref{fig:Regex-module-def} through \ref{fig:first-tlm-example}? 
+
+ TLM definitions follow the same scoping rules as other definitions, so the client programmer can follow the binding structure of the language in the usual manner (manually or assisted by a ``go to definition'' editor service) to determine which TLM is uniquely responsible for each literal form. In Sec. \ref{sec:ptsms}, we will see an example of TLM synonyms (as a trivial case of partial parameter application).
+
+Having arrived at the definition of \li{$regex}, the client can immediately determine the type of the expansion being generated at each application site because it is specified explicitly by the clause \li{at Regex.t} on Line 1 of Fig. \ref{fig:regex-tlm-def}. This is analagous to the return type of a function. The identity of \li{Regex.t} is determined relative to the TLM definition site, not at each application site (so the module \li{Regex} need not be in scope at the application site, or it can be shadowed by a different module).
+
+The TLM mechanism enforces an similarly strong context independence property on generated expansions by requiring that the TLM explicitly specify the modules that the expansions it generates might internally depend on. In this case, Lines 4-5 of Fig. \ref{fig:regex-tlm-def} specify that generated expansion might use the module \li{Regex}, again as it is bound at the definition site, using the module variable \li{Regex} internally. These happen to coincide in this case, but in general, the dependency can be an arbitrary module path while internally it must be bound to a module variable, for example:
+\begin{lstlisting}[numbers=none]
+  expansions require module Core.List as L
+\end{lstlisting}
+The module variable \li{L} will be bound internally to \li{Core.List} in all expansions generated by this TLM, including those where \li{L} or \li{Core.List} are not bound, or otherwise bound. All other bindings, whether at the TLM definition site or the TLM application site, are not internally available to the expansion. This allows client programmers to freely rename and shadow variables as they are used to, without needing to inspect each parser to determine whether it requires certain modules be bound to particular names at each use site (as is common with, e.g., syntax extensions based on \li{camlp4} or Sugar*, or when using unhygienic term rewriting approaches like OCaml's PPX system or Template Haskell \cite{SheardPeytonJones:Haskell-02}, as further discussed in Sec. \ref{sec:existing-approaches}).
+
+Enforcing this context independence property is actually quite subtle because TLM parsers can extract spliced expressions from the literal body. Na\"ively checking that the final expansion is closed except for the explicitly named dependencies would inappropriately enforce the same context independence property on client-side spliced expressions. For example, consider the final expansion of the example from Line 2 of Fig. \ref{fig:first-tlm-example} above:
+\begin{lstlisting}[numbers=none]
+  Regex.Seq(Regex.Str "GC", Regex.Seq(any_base, Regex.Str "GC"))
+\end{lstlisting}
+In this term, both \li{Regex} and \li{any_base} are free variables. The origin of the sub-expression \li{any_base} -- i.e. that it is a spliced expression in the literal body at the application site, and not based on an inappropriate assumption that the parser is making about the application site -- is not apparent from the final expansion. As we will discuss more extensively in Sec. \ref{sec:existing-approaches}, this is why existing hygienic macro systems cannot be used to repurpose string literals for literal notation at other types.
+
+To address this problem, 
+
+
+When a TLM definition appears inside a module, it must also appear in the signature with the same specification, up to the usual notions of type and module path equivalence in the type annotation and module dependencies (like datatype definitions in ML). Note that even when a TLM needs only a single helper function, it must be placed into a named module. This is to avoid needing to reason about the equivalence of arbitrary expressions when determining whether two signatures are compatible. 
+
 
 Notice that regexes are spliced in using \li{$(}$e$\li{)}, where $e$ is any expression of type \li{Regex.t}, while strings are spliced in using \li{$$(}$e${\li)}, where $e$ is any expression of type \li{string}. These choices are made entire
 
-TLM names are prefixed by \li{$} 
- to distinguish them from variables. Every TLM definition also includes a \emph{type annotation}, here \li{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. % The TLM definition follows the same scoping rules as type definitions. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
+ Every TLM definition also includes a \emph{type annotation}, here \li{at html}, and a \emph{parse function} between \li{by static \{} and \li{\}}. % The TLM definition follows the same scoping rules as type definitions. We will describe how TLM definitions are packaged into libraries in Sec \ref{sec:static-eval}.
 
 
 
 Using this TLM, we can express the Ur/Web example from Figure \ref{fig:urweb} as shown in Figure \ref{fig:first-tsm-example}. On both Lines 1 and 2, we apply 
 \li{$html} 
  to a \emph{generalized literal form} delimited by \li{[|} and \li{|]}. Generalized literal forms, which first arose in the prior work on TSLs \cite{TSLs}, syntactically subsume other literal forms because the context-free syntax of the language only specifies the outer delimiters. In this paper, we will use  \li{[|} and \li{|]}, but \citet{TSLs} formally specified several other choices, including layout-sensitive delimitation. \emph{Literal bodies} are constrained only in that \li{[|} and \li{|]} must be balanced.  %In particular, there is no pre-specified syntactic to splice out sub-terms.%The initial context-free parser therefore parses generalized literal forms in much the same way as parsers typically parse ``raw'' string literals (i.e. string literals where escape sequences like \li{\\n} have not yet been processed.) 
-
 
  The system delegates responsibility over the parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{expansion}, which starts just before and continues into the typing phase. 
 
