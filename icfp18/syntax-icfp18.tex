@@ -218,7 +218,7 @@ moredelim=**[is][\color{Sepia}]{SUS}{EUS},
 \begin{abstract}
 \vspace{-5px}
 %Many languages define convenient list literal forms. This paper questions this common practice: why should an otherwise ordinary data structure be privileged in the definition of a general-purpose programming language? 
-General-purpose programming languages typically define literal notation for only a small number of common data structures, e.g. lists. This is unsatisfying because there are many other data structures for which literal notation might be useful, e.g. hash tables, regular expressions, HTML data, SQL queries, syntax trees and chemical structures. There may also be different implementations of each of these data structures, e.g. with different performance characteristics, that could all benefit from common literal notation. %A less \emph{ad hoc} design would be one that allows library providers to define new literal forms in a decentralized manner. However, the mechanisms available to programmers today, e.g. Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, are \emph{unreasonable}. In particular, they do not support modular reasoning about syntactic determinism, so separately defined literal forms can and do conflict syntactically with one another. Moreover, clients cannot reason abstractly about types and binding when they encounter an unfamiliar literal form (like they can when they encounter an unfamiliar function being applied.)% Instead, they must reason transparently, i.e. about the underlying expansion. This increases cognitive cost, defeating much of the purpose of convenient literal forms. %This makes it difficult to program ``in the large'', and these mechanisms have not been widely adopted.% Hygienic, typed term-rewriting systems, e.g. the Scala macro system \cite{ScalaMacros2013}, are only somewhat more reasonable, and do not offer direct syntactic control.
+General-purpose programming languages typically define literal notation for only a small number of common data structures, e.g. lists. This is unsatisfying because there are many other data structures for which literal notation might be useful, e.g. finite maps, regular expressions, HTML data, SQL queries, syntax trees and chemical structures. There may also be different implementations of each of these data structures, perhaps with different performance characteristics, that could all benefit from common literal notation. %A less \emph{ad hoc} design would be one that allows library providers to define new literal forms in a decentralized manner. However, the mechanisms available to programmers today, e.g. Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, are \emph{unreasonable}. In particular, they do not support modular reasoning about syntactic determinism, so separately defined literal forms can and do conflict syntactically with one another. Moreover, clients cannot reason abstractly about types and binding when they encounter an unfamiliar literal form (like they can when they encounter an unfamiliar function being applied.)% Instead, they must reason transparently, i.e. about the underlying expansion. This increases cognitive cost, defeating much of the purpose of convenient literal forms. %This makes it difficult to program ``in the large'', and these mechanisms have not been widely adopted.% Hygienic, typed term-rewriting systems, e.g. the Scala macro system \cite{ScalaMacros2013}, are only somewhat more reasonable, and do not offer direct syntactic control.
 This paper introduces \emph{typed literal macros (TLMs)}, which allow library providers to define new literal notation of nearly arbitrary design at any specified type or parameterized family of types. 
 % TLMs give library providers programmatic control over the parsing and expansion of expressions and patterns of a flexible \emph{generalized literal form} at {a} specified type or parameteric family of types. % The mechanism is {strictly hygienic}, meaning that 1) the expansion must be context-independent; and 2)  splicing is capture avoiding. 
 % Partial parameter application lowers the syntactic cost of this strict style. 
@@ -281,14 +281,14 @@ We are integrating TLMs into Reason, an emerging alternative front-end for OCaml
 \label{sec:intro}
 \vspace{-2px}
 % The surface syntax of a programming language is its user interface. 
-When designing the surface syntax of a general-purpose programming language, it is common practice to define \emph{literal notation} that decreases the syntactic cost of constructing and pattern matching over values of a select few data structures. For example, many languages in the ML family support list literals like \li{[x1, x2, x3]} in both expression and pattern position \cite{harper1997programming,mthm97-for-dart}. 
+When designing the surface syntax of a general-purpose programming language, it is common practice to define shorthand \emph{literal notation}, i.e. notation that decreases the syntactic cost of constructing and pattern matching over values of a particular data structure or parameterized family of data structures. For example, many languages in the ML family support list literals like \li{[x1, x2, x3]} in both expression and pattern position \cite{harper1997programming,mthm97-for-dart}. 
 %\footnote{In SML, list literals work even in contexts where the list expression constructors have been shadowed by other bindings, i.e. the meaning of literal forms is \emph{context independent}. 
 % We will return to this concept again later.} 
-While lists are common across problem domains, other literal notation is more specialized. For example, Ur/Web extends the surface syntax of Ur (an ML-like language \cite{conf/pldi/Chlipala10}) with expression and pattern literals for encodings of XML and HTML data~\cite{conf/popl/Chlipala15}. The example in Fig. \ref{fig:urweb} below shows two HTML literals, one that ``splices in'' a string expression delimited by \li{\{[} and \li{]\}} (Line 1) and the other an HTML expression delimited by \li{\{} and \li{\}} (Line 2).
+While lists are common across problem domains, other literal notation is more specialized. For example, Ur/Web extends the surface syntax of Ur (an ML-like language \cite{conf/pldi/Chlipala10}) with expression and pattern literals for encodings of XML and HTML data~\cite{conf/popl/Chlipala15}. The example in Fig. \ref{fig:urweb} shows two HTML literals, one that ``splices in'' a string expression delimited by \li{\{[} and \li{]\}} and the other an HTML expression delimited by \li{\{} and \li{\}}.
 %The desugarings of these literal expressions, not shown, are substantially more verbose and less readable to programmers familiar with XHTML. 
 
 \begin{figure}[h]
-\vspace{-12px}
+\vspace{-9px}
 \begin{lstlisting}
   fun heading first_name = SURL<xml><h1>Hello, {[EURLfirst_nameSURL]}!</h1></xml>EURL
   val body = SURL<xml><body>{EURLheading "World"SURL} ...</body></xml>EURL
@@ -296,20 +296,19 @@ While lists are common across problem domains, other literal notation is more sp
 \vspace{-4px}
 \caption{HTML literals with support for splicing at two different types are built primitively into Ur/Web \cite{conf/popl/Chlipala15}.}
 \label{fig:urweb}
-\vspace{-9px}
+\vspace{-7px}
 \end{figure}
 
-This design practice, where the language designer privileges certain library constructs with built-in literal notation, is decidedly \emph{ad hoc} in that it is easy to come up with other examples of data structures for which mathematicians, scientists or programmers have invented specialized notation \cite{DBLP:journals/cacm/Iverson80,cajori1928history,TSLs}. For example, 1) clients of a ``collections'' library might want not just list literals, but also literal notation for matrices, finite sets, maps and so on; 2) clients of a ``web programming'' library might like CSS literals (which Ur/Web lacks); 3) a compiler author might like ``quotation'' literals for the terms of the object language and various intermediate languages of interest; and 4) clients of a ``chemistry'' library might like chemical structure literals based on the SMILES standard \cite{anderson1987smiles}.
+This design practice, where the language designer privileges certain library constructs with built-in literal notation, is \emph{ad hoc} in that it is easy to come up with other examples of data structures for which mathematicians, scientists or programmers have invented specialized notation \cite{DBLP:journals/cacm/Iverson80,cajori1928history,TSLs}. For example, 1) clients of a ``collections'' library might want not just list literals, but also literal notation for matrices, finite sets, maps and so on; 2) clients of a ``web programming'' library might want CSS literals (which Ur/Web lacks); 3) a compiler author might want ``quotation'' literals for the terms of the object language and various intermediate languages of interest; and 4) clients of a ``chemistry'' library might want chemical structure literals based on the SMILES standard \cite{anderson1987smiles}.
 
-Although requests for specialized literal notation are easy to dismiss as superficial, the reality is that literal notation, or the absence thereof, can have a substantial influence on software quality. For example, \citet{Bravenboer:2007:PIA:1289971.1289975} finds that literal notation for structured encodings of queries, like the SQL-based query literals now found in many languages \cite{meijer2006linq}, reduce the temptation to use string encodings of queries and therefore reduce the risk of catastrophic string injection attacks~\cite{owasp2017}. More generally, evidence suggests that programmers frequently resort to ``stringly-typed programming'', i.e. they choose strings instead of composite data structures largely for reasons of notational convenience. In particular, \citet{TSLs} sampled strings from open source projects and found that at least 15\% of them could be parsed by some readily apparent type-specific grammar.
-%, e.g. for URLs, paths, regular expressions and so on
-Literal notation, with support for splicing, would decrease the syntactic cost of composite encodings of this data, which is more amenable to programmatic manipulation and compositional reasoning. %Literal forms would  preferable to string encodings because they support compositional construction and decomposition by pattern matching via splicing.
-
+Although requests for specialized literal notation are easy to dismiss as superficial, the reality is that literal notation, or the absence thereof, can have a substantial influence on software quality. For example, \citet{Bravenboer:2007:PIA:1289971.1289975} finds that literal notation for structured encodings of queries, like the SQL-based query literals now found in many languages \cite{meijer2006linq}, reduce the temptation to use string encodings of queries and therefore reduce the risk of catastrophic string injection attacks~\cite{owasp2017}. More generally, evidence suggests that programmers frequently resort to ``stringly-typed programming'', i.e. they choose strings instead of composite data structures largely for reasons of notational convenience. In particular, \citet{TSLs} sampled strings from open source projects and found that at least 15\% of them could be parsed by some readily apparent type-specific grammar, e.g. for URLs, paths, regular expressions and many others. 
+Literal notation, with support for splicing, would decrease the syntactic cost of composite encodings, which are more amenable to programmatic manipulation and compositional reasoning. %Literal forms would  preferable to string encodings because they support compositional construction and decomposition by pattern matching via splicing.
 
 
-Of course, it would not be scalable to ask general-purpose language designers to build in support for all known notations \emph{a priori}. Instead, there has been persistent interest in mechanisms that allow library providers to define new literal notation on their own. For example, direct grammar extension systems like Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, macro-based systems like Omar et al's \emph{type-specific languages} (TSLs) \cite{TSLs}, and other systems that we will discuss in Sec.~\ref{sec:existing-approaches} can all be used to define new literal notation (and, in some cases, other forms of new notation, such as new infix expression forms or type declaration forms, which we leave beyond the scope of this paper).
 
-\paragraph{Problem} The problem that specifically motivates this paper is that these existing syntax extension systems  make it difficult or impossible to reason abstractly about such fundamental issues as types and variable binding. Instead, programmers and editor services can only reason transparently, i.e. by inspecting the underlying expansion or the implementation details of the collection of extensions responsible for producing the expansion.% In some existing systems, even determining which syntax extension is responsible for a literal form is difficult.
+Of course, it would not be scalable to ask general-purpose language designers to build in support for all known notations \emph{a priori}. Instead, there has been persistent interest in mechanisms that allow library providers to define new literal notation on their own. For example, direct grammar extension systems like Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, macro-based systems like Template Haskell~\cite{SheardPeytonJones:Haskell-02,mainland2007s} and the \emph{type-specific languages} (TSLs) of \citet{TSLs}, and other systems that we will discuss below can all be used to define new literal notation (and, in some cases, other forms of new notation, such as new infix expression forms, control flow operations or type declaration forms, which we leave beyond the scope of this paper). 
+
+\paragraph{Problem} The problem that specifically motivates this paper is that these existing systems  make it difficult or impossible to reason abstractly about such fundamental issues as types and variable binding. Instead, programmers and editor services can only reason transparently, i.e. by inspecting the underlying expansion or the implementation details of the collection of extensions responsible for producing the expansion.% In some existing systems, even determining which syntax extension is responsible for a literal form is difficult.
 %, i.e. when developing large programs ``consisting of many small programs o(modules), possibly written by different people''
 \begin{figure}[t!]
 \begin{subfigure}[t]{0.48\textwidth}
@@ -327,7 +326,7 @@ Of course, it would not be scalable to ask general-purpose language designers to
   let y = `((!R)@&{&/x!/:2_!x}'!R)`;
 \end{lstlisting}
 \vspace{-5px}
-\caption{It is difficult to reason abstractly about programs that use unfamiliar grammar extensions (see the five reasoning criteria in the text).}
+\caption{It is difficult to reason abstractly about programs that use unfamiliar grammar extensions (see the six reasoning criteria in the text).}
 \label{fig:K-dialect}
 \end{subfigure}
 \hfill
@@ -349,128 +348,75 @@ Of course, it would not be scalable to ask general-purpose language designers to
 \caption{TLMs make examples like these more reasonable by leaving the base grammar fixed and making the type and binding structure and the segmentation explicit.}
 \label{fig:K-tsm-example}
 \end{subfigure}
-% \vspace{4px}
+\vspace{4px}
 \caption{Two of the possible ways to introduce literal notation for encodings of K queries}
 \vspace{-10px}
 \end{figure}
 
-Consider, for example, the perspective of a programmer attempting to comprehend the program text in Figure \ref{fig:K-dialect}, which is written in a dialect of OCaml's surface syntax called Reason \cite{reason-what} that has, hypothetically, been extended with some number of new literal forms by a grammar extension system -- Lines 1-5 show the grammar extension syntax from Camlp4 \cite{ocaml-manual}, but Sugar*/SugarHaskell is  similar \cite{erdweg2011sugarj,erdweg2013framework,erdweg2012layout}. 
-The literal form on Line 9 constructs an encoding of a query in the niche stack-based database query language K, using its intentionally terse notation~\cite{Whitney:2001:LOR:376284.375783}. The problem is that a programmer looking at the program as presented, and unfamiliar with (i.e. holding abstract) the details elided on Lines 5-6, cannot easily answer questions like the following:
+Consider, for example, the perspective of a programmer attempting to comprehend the program text in Figure \ref{fig:K-dialect}, which is written in a dialect of OCaml's surface syntax called Reason \cite{reason-what} that has, hypothetically, been extended with some number of new literal forms by a grammar extension system --- Lines 1-5 show the grammar extension syntax from Camlp4 \cite{ocaml-manual}, but Sugar*/SugarHaskell is  similar \cite{erdweg2011sugarj,erdweg2013framework,erdweg2012layout}. 
+Line 9 uses one of the active syntax extensions to construct an encoding of a query in the niche database query language K, using its intentionally terse notation~\cite{Whitney:2001:LOR:376284.375783}. The problem is that a programmer looking at the program as presented, and unfamiliar with (i.e. holding abstract) the details elided on Lines 5-6, cannot easily answer questions like the following:
 
-\begin{enumerate}[leftmargin=12px]
-\item[\Circle] \textbf{Responsibility}: Which syntax extension even determines the expansion of the literal on Line~9? Might activating a new extension generate a conflicting expansion for the same form?
-\item[\Circle] \textbf{Segmentation}: Are the characters \li{x}, \li{R} and \li{2} on Line 9 parsed as spliced expressions (meaning that they appear directly in the underlying expansion), or are they parsed in some other way peculiar to this literal form (e.g. as operators in the K query language)?
-\item[\Circle] \textbf{Capture}: If \li{x} is in fact a spliced expression, does it refer to the binding of \li{x} on Line 5, or might it capture an unseen binding of the same identifier in the expansion of Line 9?
-\item[\Circle] \textbf{Context Dependence}: If \li{w}, on Lines 7-8, is renamed, could that break Line 9  because the expansion assumes that \li{w} is in scope? What other hidden assumptions is the expansion making?
-\item[\Circle] \textbf{Typing}: What type does \li{y} have? What type is each spliced expression expected to have?
+\begin{enumerate}[leftmargin=15px]
+\item \textbf{Responsibility}: Which syntax extension determined the expansion of the literal on Line~9? Might activating a new extension generate a conflicting expansion for the same literal?
+\item \textbf{Expansion Typing}: What type does \li{y} have?
+\item \textbf{Context Dependence}: Which bindings does the expansion of Line~9 invisibly depend on? If I shadow or remove a module or other binding, could that break or change the meaning of Line~9 because its expansion depended invisibly on the original binding?
+\item \textbf{Segmentation}: Are the characters \li{x}, \li{R} and \li{2} on Line~9 parsed as spliced terms, meaning that they appear directly in the underlying expansion, or are they parsed in some other way peculiar to this literal notation (e.g. as operators in the K query language)?
+\item \textbf{Segment Typing}: What type is each spliced term expected to have? How can I infer a type for a variable that appears in a spliced term without looking at where it ends up in the expansion?
+\item \textbf{Capture}: If \li{x} is in fact a spliced term, does it refer to the binding of \li{x} on Line 5, or might it capture an invisible binding of the same identifier in the expansion of Line 9?
 \end{enumerate}
 
 % In short, the problem is that library providers cannot reason modularly about syntactic determinism (because other extensions might define overlapping forms), and if the desugaring of the program text is held abstract, programmers can no longer reason about types, binding and segmentation (i.e. answer questions like those above.) This is burdensome at all scales, but particularly when programming in the large, where it is common to encounter a wide variety of libraries \cite{DBLP:conf/sac/LammelPS11}. 
 Forcing the programmer to reason transparently to answer basic questions like these defeats the ultimate purpose of syntactic sugar: decreasing cognitive cost \cite{Green89}. Analagous problems do not arise when programming without syntax extensions in languages like ML --- programmers can reason lexically about where variables and other symbols are bound, and types mediate abstraction over function and module implementations \cite{B304}. Ideally, the programmer would be able to abstract in some analagous manner over the implementation of an unfamiliar notation. % From this perspective, it is unsurprising that the use of Camlp4 has been deprecated in the OCaml system.
 
-An approach that has made some headway toward this ideal is Omar et al.'s \emph{type-specific languages} (TSLs) \cite{TSLs}. A language that supports TSLs delegates control over the parsing and expansion of certain \emph{generalized literal forms} to a parser associated with the type that the form is being checked against. So if we add TSLs to our language, our example then requires a type annotation on \li{y}:
-\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont]
-  let y : KQuery.t = `((!R)@&{&/x!/:2_!x}'!R)`
-\end{lstlisting}
-The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free grammar of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism that we will propose, so let us analyze TSLs from the perspective of the five reasoning criteria just outlined.
-\begin{enumerate}[leftmargin=12px]
-  \item[\LEFTcircle] \textbf{Responsibility}: The type-directed dispatch mechanism allows the client to easily determine which parser is responsible for each literal form: the parser that was associated with the type when it was defined. Clients do not need to worry about different TSLs conflicting syntactically because the context-free grammar of the language remains fixed and composition is mediated by splicing. The main limitation here is that it is impossible to define literal notation after a type has been defined, and it is also impossible to define multiple notations at a single type.
-  \item[\LEFTcircle] \textbf{Segmentation}: The parser can splice expressions out of the literal body, but there is no clear way to associate each spliced term with some particular segment (i.e. subsequence) of the literal body, nor is there a guarantee that spliced terms are non-overlapping. As such, there is no way to indicate to the programmer where base language expressions are located within a literal form.
-  \item[\LEFTcircle] \textbf{Capture}: The TSL mechanism as described enforces complete capture avoidance (though the formal specification given in the paper did not adequately enforce this constraint).
-  \item[\LEFTcircle] \textbf{Context Dependence}: The TSL mechanism as described requires that the expansion be completely closed, so it is trivially context independent. However, this comes at a significant expressive cost: the generated expansions cannot make use of any libraries whatsoever.
-  \item[\LEFTcircle] \textbf{Typing}: The expansion must necessarily be of the associated type, so abstract reasoning about the type of the expansion is straightforward. However, there is no easy way to determine the type expected for each spliced expression. In addition, the prior work considered only a monomorphic, nominally-typed language with local type inference, leaving open a number of problems that came up as we considered integrating TSLs into Reason/OCaml:
-\begin{enumerate}[leftmargin=15px,nolistsep,noitemsep]
-  \item \textbf{Structural Types}: There is no way to define literal notation at structural types, e.g. tuple and arrow types, because there is no ``definition site'' for such types.
-  \item \textbf{Parameterized \& Abstract Types}: There is no way to define literal notation over a type-parameterized family of types, e.g. at all types \li{list('a)}. Similarly, there is no way to define literal notation over a module-parameterized family of abstract types, e.g. at every abstract type defined by a module implementing the \li{QUEUE} signature. Parameterized and abstract type families are ubiquitous in ML-family languages.% Programmers in ML-family languages commonly define various implementations of abstract data types in this way.
-  \item \textbf{Pattern Literals}: Pattern matching is ubiquitous in ML-family languages but the prior work on TSLs considered only expression literals. %Pattern literals are dual to expression literals in that expression literals support value construction, while pattern literals support value deconstruction.
-  \item \textbf{ML-Style Type Inference}: It is not clear that a type-directed dispatch scheme can be cleanly  reconciled with ML-style type inference.
-\end{enumerate}
-\end{enumerate}
+Given these issues, we concluded that direct grammar extension systems were not ideally suited for integration into Reason. We also evaluated various approaches that are based not on direct grammar extension but on term rewriting over a fixed grammar. We give a full account of this evaluation in Sec.~\ref{sec:existing-approaches}. Briefly, we found that:
+\begin{itemize}[leftmargin=15px]
+\item Unhygienic approaches, like OCaml's preprocessor extension point (PPX) rewriters \cite{ocaml-manual} and Template Haskell \cite{SheardPeytonJones:Haskell-02,mainland2007s} allow us to define new literal notation with support for splicing by repurposing existing string literal forms. They also partially or completely solve the problem of reasoning about \textbf{Responsibility} by using explicit annotations on terms that are being rewritten. However, they do not satisfy the remaining five reasoning criteria.
+\item Hygienic staging macro systems, like MetaOCaml and related systems \cite{DBLP:conf/flops/Kiselyov14,ganz2001macros,Sheard:1999:UMS} do not give the expander access to the syntax trees of arguments, i.e. the rewriting is parametric in the arguments, so they are not suitable for the problem of defining new literal notation.  
+\item Hygienic term rewriting macro systems, like those in various Lisp-family languages \cite{DBLP:conf/esop/HermanW08,Herman10:Theory,Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92,mccarthy1978history,Flatt:2012:CLR:2063176.2063195} and Scala \cite{ScalaMacros2013}, do not allow us to repurpose string literal forms to define literal forms at other types because the hygiene discipline does not allow us to splice terms out of literal bodies via parsing. Only existing composite forms can therefore be repurposed.
+\item An approach that came close was Omar et al.'s \emph{type-specific languages} (TSLs) \cite{TSLs}, but it fell short with regard to the six reasoning principles just discussed in ways that we will return to and in any case, the mechanism was designed for a simple monomorphic, nominally-typed language and relied critically on a particular local type inference scheme. It is not suitable for a language with an ML-like semantics, meaning a language with support for structural types (like tuple types and arrow types in ML), parameterized types, abstract types, modules, pattern matching and non-local type inference.
+\end{itemize}
 
+% Based on this evaluation, we concluded that the existing approaches were not ideally suited for integration into Reason, an increasingly popular open source project that seeks to provide a more clear and practical surface syntax for the OCaml programming language.
 
-We consider other existing approaches against these criteria in Sec.~\ref{sec:existing-approaches}. Taken together, we found that no existing approach was reasonable and expressive enough for integration into Reason/OCaml.
-
-\paragraph{Contributions} This paper introduces \emph{typed literal macros} (TLMs): the first system for defining new literal notation that (1) provably maintains all five of the abstract reasoning principles just outlined; and (2) is semantically expressive enough for integration into Reason/OCaml and other full-scale statically typed functional languages. We evaluate these claims with (1) a series of increasingly ML-like calculi equipped with proofs of these abstract reasoning principles; and (2) a number of non-trivial examples that appear throughout the paper and involve the language features mentioned above. In describing these examples, we also demonstrate that literal parsing logic can be defined using standard, unmodified parser generators, so the burden on notation providers is comparable to that of existing systems despite these stronger client-side reasoning principles. % From the client's perspective, which is the focus of our contributions, TLMs are uniquely reasonable. 
+\paragraph{Contributions} This paper introduces \emph{typed literal macros} (TLMs): the first system for defining new literal notation, of nearly arbitrary design, that (1) provides the ability to reason abstractly about all six of the topics just outlined; and (2) is semantically expressive enough for integration into Reason/OCaml and other full-scale statically typed functional languages. We evaluate these claims with (1) a series of increasingly ML-like calculi equipped with proofs of the claimed abstract reasoning principles; and (2) a number of non-trivial examples that appear throughout the paper and involve the language features mentioned above. In describing these examples, we also demonstrate that literal parsing logic can be defined using standard, unmodified parser generators, so the burden on notation providers is comparable to that of existing systems despite these stronger client-side reasoning principles. % From the client's perspective, which is the focus of our contributions, TLMs are uniquely reasonable. 
 
 %Unique to our approach in this paper is the focus, both formal and informal, on maintaining client-side abstract reasoning principles.
 
 % The empirical study in the prior work on TSLs \cite{TSLs} supports the claim that a macro-based mechanism for defining new literal notation is broadly useful, so This paper is targeted at language designers that seek a deeper understanding of the reasoning principles at play, particularly as they relate to features common to ML and other full-scale statically typed languages (e.g. Haskell, Scala, Rust, etc.)
 
-TLMs, like TSLs, operate on generalized literal forms. With TLMs, however, the mechanism for defining new literal notation is not tied up with the type definition mechanism of the language. TLMs are instead explicitly named and applied. For example, Line 9 of Figure \ref{fig:K-tsm-example} applies a TLM named \li{$kq} to a generalized literal form delimited by \li{`(} and \li{)`} to express the K query example. The programmer can reason abstractly as follows:
-\begin{enumerate}[leftmargin=12pt]
-\item[\CIRCLE] \textbf{Responsibility}: The lexer and parser specified by the applied TLM on Lines 2-3 is exclusively responsible for lexing, parsing and expanding the literal body. We will give more details on constructing a TLM lexer and parser in the next section. Due to this explicit dispatch mechanism, there can be any number of TLMs defined at a given type. As with TSLs, the context-free grammar of the language is fixed, so the TLM provider can modularly establish that the notation that the TLM implements is unambiguous (even in situations where a spliced term itself applies another TLM, which we will show in a later example).
-\item[\CIRCLE] \textbf{Segmentation}: The intermediate output that the TLM generates is structured so that the system can infer from it an accurate \emph{segmentation} of the literal body that distinguishes spliced terms from segments that are parsed in some other way by the TLM. The segmentation is all that needs to be communicated to editor services downstream of the expander, and ultimately to the programmer using secondary notation, e.g. colors in this document. So by examining Figure \ref{fig:K-tsm-example}, the programmer knows that the two instances of \li{x} on Line 3 are parsed as spliced expressions (because they are black), whereas the \li{R}'s must be parsed in some other way, e.g. as operators in the K language (because they are green).
-\item[\CIRCLE] \textbf{Capture}: Splicing is capture-avoiding, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2. It cannot capture a coincidental binding of \li{x} in the expansion. We will say more about capture later on.
-\item[\CIRCLE] \textbf{Context Dependence}: The system enforces context independence, so the expansion of Line 3 cannot  rely on the fact that, e.g., \li{w} is in scope. The client is free to rename \li{w}. The external dependencies of the generated expansion are explicit -- here, Lines 4-5 specify that expansions generated by \li{$kq} require the module \li{KQuery} -- and the system ensures that this dependency is  bound as specified even if the identifier \li{KQuery} has been shadowed at the application site.
-\item[\CIRCLE] \textbf{Typing}: The type annotation on the definition of \li{$kq} (Line 1) determines the type that the expansion is validated against, here \li{KQuery.t} (not shown). Moreover, each spliced segment in the inferred segmentation also has  a type annotation. This, together with the context independence property, ensures that type inference at the TLM application site can be performed (by editor services or in the programmer's mind) abstractly, i.e. given only the inferred segmentation rather than the full expansion. We will see examples of TLMs that make use of more advanced features of the OCaml type system -- notably, pattern matching, parameterized types and modules -- later. %This information is usually not necessary to reason about typing, but it can be conveyed to the programmer upon request by the program editor if desired. %TLM definitions follow the usual scoping rules, so it is easy to ``jump to the definition'' of \li{$kq}.
+\paragraph{Brief Overview} To finish up our discussion of the K query example above, let us give a brief overview of the TLM-based solution outlined in Figure \ref{fig:K-tsm-example}. On lines 1-5, we define a TLM named \li{$kq}. On Line 9, we apply this TLM. We can reason abstractly about this program as follows:
+\begin{enumerate}[leftmargin=15pt]
+\item \textbf{Responsibility}: The lexer and parser specified by the applied TLM on Lines 2-3 are exclusively responsible for lexing, parsing and expanding the body of the generalized literal form, i.e. the characters between \li{`(} and \li{)`}. We will give more details on generalized literal forms, and on constructing a TLM lexer and parser in the next section. For now, it suffices to say that our design goal is to provide a mechanism where the programmer does not normally need to look up the definitions of \li{KQueryLexer} and \li{KQueryParser} to reason about types and binding. % To briefly summarize, our system uses Menhir, which is the most popular parser generator in the OCaml ecosystem and integrated into its standard build tools. %the context-free grammar of the language is fixed, so the TLM provider can modularly establish that the notation that the TLM implements is unambiguous (even in situations where a spliced term itself applies another TLM, which we will show in a later example).
+\item \textbf{Expansion Typing}: The type annotation on the definition of \li{$kq} (Line 1) determines the type that the expansion must have, here \li{KQuery.t}.
+\item \textbf{Context Dependence}: The external dependencies of the generated expansion are explicitly specified. Here, Lines 4-5 specify that expansions generated by \li{$kq} require the module \li{KQuery}. The system ensures that this dependency is  bound as specified even if the identifier \li{KQuery} has been shadowed at the application site. By making dependencies explicit, we can be sure that the expansion does not rely on the fact that, e.g., \li{w} is in scope at the application site. 
+\item \textbf{Segmentation}: The intermediate output that the TLM generates is structured so that the system can infer from it an accurate \emph{segmentation} of the literal body that distinguishes spliced terms, which appear directly in the expansion, from segments that are parsed in some other way by the TLM. The segmentation is all that needs to be communicated to editor services downstream of the expander, and ultimately to the programmer using secondary notation, e.g. colors in this document. So by examining Fig. \ref{fig:K-tsm-example}, the programmer knows that the two instances of \li{x} on Line 3 are parsed as spliced expressions (because they are black), whereas the \li{R}'s must be parsed in some other way, e.g. as operators of the K language (because they are green).
+\item \textbf{Segment Typing}: Each spliced segment in the inferred segmentation also has  a type annotation. This, together with the context independence property, ensures that type inference at the TLM application site can be performed (by editor services or in the programmer's mind) abstractly, i.e. by requesting just the type annotations on the spliced segments.  %This information is usually not necessary to reason about typing, but it can be conveyed to the programmer upon request by the program editor if desired. %TLM definitions follow the usual scoping rules, so it is easy to ``jump to the definition'' of \li{$kq}.
+\item \textbf{Capture}: Splicing is guaranteed to be capture-avoiding, so the spliced expression \li{x} must refer to the binding of \li{x} on Line 2. It cannot have captured a coincidental binding of \li{x} in the expansion. % We will say more about capture later on.
 \end{enumerate}
+
+% We will see examples of TLMs that make use of the more advanced features of the OCaml type system -- notably, pattern matching, parameterized types and modules -- later.
 
 %\footnote{In general, spliced expressions might themselves apply TLMs, in which case the convention is to use a distinct color for unspliced segments at each depth. For example, if strings were not primitive, we might write \li{`SURL<body>\{EURLheading ($str "SSTRWorld!ESTR")SURL\} ...</body>EURL`}.}
 
 
-\begin{figure}[t]
-\begin{subfigure}[t]{0.45\textwidth}
-\vspace{-1px}
-\begin{lstlisting}[mathescape=~]
-  module Regex = {
-    type t = AnyChar | Str(string)
-           | Seq(t, t) | Or(t, t) 
-           | Star(t);
-  };
-\end{lstlisting}
-\vspace{-5px}
-\caption{The \li{Regex} module, which defines the recursive datatype \li{Regex.t}.}
-\label{fig:Regex-module-def}
-\end{subfigure}
-\hfill
-\begin{subfigure}[t]{0.53\textwidth}
-\vspace{-1px}
-\begin{lstlisting}[mathescape=|]
-  notation $regex at Regex.t
-    lexer   RegexLexer
-    parser  RegexParser.start
-    expansions require
-      module Regex as Regex;
-\end{lstlisting}
-\vspace{-5px}
-\caption{The definition of the \li{$regex} TLM. Figure \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}.}
-\label{fig:regex-tlm-def}
-\end{subfigure}
-
-\begin{subfigure}[t]{\textwidth}
-\vspace{4px}
-\begin{lstlisting}
-  let any_base = $regex `(SURLA|T|G|CEURL)`;
-  let bisA = $regex `(SURLGC$(EURLany_baseSURL)GCEURL)`;
-  let gene_restriction_template(gene) => 
-    $regex `(SURL$(EURLbisASURL)$(EURLany_baseSURL)*$$(EURLgeneSURL)$(EURLany_baseSURL)*$(EURLbisASURL)EURL)`
-\end{lstlisting}
-\vspace{-5px}
-\caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
-}
-\label{fig:first-tlm-example}
-\end{subfigure}
-\vspace{3px}
-\caption{Case Study: POSIX-style regex literal notation, with support for string and regex splicing.}
-\vspace{-5px}
-\end{figure}
 
 
-\paragraph{Outline} 
+
+\paragraph{Paper Outline} 
 % \begin{itemize}
 % \item 
-Sec.~\ref{sec:setsms} introduces expression TLMs with a detailed case study. 
+Sec.~\ref{sec:setsms} introduces expression TLMs with a substantially more detailed case study. 
 % \item 
-Sec.~\ref{sec:sptsms} then introduces {pattern TLMs}, i.e. TLMs that generate patterns, and describes the special reasoning conditions in pattern position. %The hygiene condition for pattern TLMs is interesting.
+Sec.~\ref{sec:sptsms} then introduces {pattern TLMs} and describes the special reasoning conditions in pattern position. %The hygiene condition for pattern TLMs is interesting.
 % \item 
-Sec.~\ref{sec:ptsms} then introduces the more general \emph{parametric TLMs}, i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. This section also reveals that the \li{expansions require} clause is but syntactic sugar for parameterization followed immediately by partial parameter application. 
-Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with examples that further demonstrate the expressive power of this approach and various parser implementation strategies that notation providers can consider. This notably includes our take on the example from  Fig.~\ref{fig:urweb} of Ur/Web-style HTML literals. 
+Sec.~\ref{sec:ptsms} introduces the more general {parametric TLMs}, i.e. TLMs that can take type and module parameters, which allow us to define literal notation over a type- or module-parameterized family of types. This section also reveals that the \li{expansions require} clause can be understood as parameterization followed immediately by partial parameter application. 
+Having introduced the basic machinery, we continue in Sec.~\ref{sec:more-examples} with examples that further demonstrate the expressive power of this approach and various parser implementation strategies that notation providers can consider. Notably, this section gives our take on the example from  Fig.~\ref{fig:urweb} of Ur/Web-style HTML literals as well as a TLM that implements quasiquotation for Reason language terms, which is useful for writing other TLMs. 
 Next, Sec.~\ref{sec:setsms-formally} defines a type-theoretic calculus of simple expression and pattern TLMs and formally establishes the reasoning principles implied above in their simplest form. 
 Sec.~\ref{sec:ptlms-formally} adds type functions and an ML-style module system to this calculus, and gives a more general variant of the reasoning principles theorem. 
 % \item 
-Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of five reasoning principles just discussed. 
+Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of  reasoning principles just discussed. 
 % \item 
-Sec.~\ref{sec:discussion} concludes with a summary of the contributions of this paper and a discussion of future work.
+Sec.~\ref{sec:discussion} concludes with a summary of the contributions of this paper and a discussion of limitations and future work.
 Certain technical details, proofs and extensions to the calculi presented in this paper are given in the supplement. % Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
 
 %  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
@@ -577,7 +523,52 @@ In Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex
 
 
 % Moreover, there already exists a broadly adopted shorthand notational standard -- the POSIX standard for regular expressions \cite{STD95954}. For the purposes of this section, we will stick to the subset of the POSIX standard that applies to the encoding in Fig.~\ref{fig:Regex-module-def}, but there is nothing that would fundamentally prevent us from implementing the full POSIX standard using TLMs.
+\begin{figure}[t]
+\begin{subfigure}[t]{0.45\textwidth}
+\vspace{-1px}
+\begin{lstlisting}[mathescape=~]
+  module Regex = {
+    type t = AnyChar | Str(string)
+           | Seq(t, t) | Or(t, t) 
+           | Star(t);
+  };
+\end{lstlisting}
+\vspace{-5px}
+\caption{The \li{Regex} module, which defines the recursive datatype \li{Regex.t}.}
+\label{fig:Regex-module-def}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.53\textwidth}
+\vspace{-1px}
+\begin{lstlisting}[mathescape=|]
+  notation $regex at Regex.t
+    lexer   RegexLexer
+    parser  RegexParser.start
+    expansions require
+      module Regex as Regex;
+\end{lstlisting}
+\vspace{-5px}
+\caption{The definition of the \li{$regex} TLM. Figure \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}.}
+\label{fig:regex-tlm-def}
+\end{subfigure}
 
+\begin{subfigure}[t]{\textwidth}
+\vspace{4px}
+\begin{lstlisting}
+  let any_base = $regex `(SURLA|T|G|CEURL)`;
+  let bisA = $regex `(SURLGC$(EURLany_baseSURL)GCEURL)`;
+  let gene_restriction_template(gene) => 
+    $regex `(SURL$(EURLbisASURL)$(EURLany_baseSURL)*$$(EURLgeneSURL)$(EURLany_baseSURL)*$(EURLbisASURL)EURL)`
+\end{lstlisting}
+\vspace{-5px}
+\caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
+}
+\label{fig:first-tlm-example}
+\end{subfigure}
+\vspace{3px}
+\caption{Case Study: POSIX-style regex literal notation, with support for string and regex splicing.}
+\vspace{-5px}
+\end{figure}
 
 
 \vspace{-3px}
@@ -1198,7 +1189,7 @@ That said, it should be possible to export TLM \emph{abbreviations} from modules
 \section{\protect\seTLMsFormallySec}
 \label{sec:setsms-formally}
 
-This section will present a calculus of simple expression and pattern TLMs called $\miniVersePat$. By the end of this section, we will have a theorem that encodes the five reasoning principles that were outlined informally in the previous sections. 
+This section will present a calculus of simple expression and pattern TLMs called $\miniVersePat$. By the end of this section, we will have a theorem that encodes the six reasoning principles that were outlined informally in the previous sections. 
 
 Because our focus is on these reasoning principles, and for reasons of space, we leave our full calculus of parametric TLMs to the supplement. The full calculus extends the simple calculus of this section with an ML module calculus based closely on the system defined by \citet{pfple1}, which in turn is based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. These additional mechanisms are necessary only to formalize the advanced features of Sec. \ref{sec:ptsms}. Proofs are in the supplement for both the simple and full calculus.
 
@@ -3019,6 +3010,29 @@ If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
 \newcommand{\rwSec}{Related Work}
 \section{\protect\rwSec}
 \label{sec:existing-approaches}
+
+
+Unhygienic term rewriting systems like OCaml's PPX system and Template Haskell can be used to rewrite string literals, but these systems also do no adequately address any of these reasoning criteria. Hygienic macro systems, like those available in various Lisp-family languages and in Scala, are also unsuitable because the hygiene constraints prevent the macros from surfacing spliced expressions from literal bodies. The system of \emph{type-specific languages} (TSLs) developed in prior work by \citet{TSLs} has made perhaps the most headway toward these ideals, but it too does not adequately maintain these reasoning criteria. Moreover, it is not clear how to integrate this approach, which was developed for a simple monomorphic language with nominal types and local type inference, into ML, which supports structural types, parameterized types, abstract types, modules, pattern matching and non-local type inference. We will say more about these existing approaches in Sec. \ref{sec:existing-approaches}. For now, it suffices to say that after evaluating existing approaches, we found that none of them were suitable for integration into Reason.
+
+An approach that has made some headway toward this ideal is Omar et al.'s \emph{type-specific languages} (TSLs) \cite{TSLs}. A language that supports TSLs delegates control over the parsing and expansion of certain \emph{generalized literal forms} to a parser associated with the type that the form is being checked against. So if we add TSLs to our language, our example then requires a type annotation on \li{y}:
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{9pt}{1em}\selectfont]
+  let y : KQuery.t = `((!R)@&{&/x!/:2_!x}'!R)`
+\end{lstlisting}
+The parser associated with the type \li{KQuery.t} is statically invoked to lex, parse and expand the literal body, i.e. the sequence of characters between the outer delimiters, here \li{`(} and \li{)`}. The literal body is constrained by the context-free grammar of the language only in that nested delimiters must be matched (like comments in OCaml). TSLs are closely related to the mechanism that we will propose, so let us analyze TSLs from the perspective of the six reasoning criteria just outlined.
+\begin{enumerate}[leftmargin=12px]
+  \item[\LEFTcircle] \textbf{Responsibility}: The type-directed dispatch mechanism allows the client to easily determine which parser is responsible for each literal form: the parser that was associated with the type when it was defined. Clients do not need to worry about different TSLs conflicting syntactically because the context-free grammar of the language remains fixed and composition is mediated by splicing. The main limitation here is that it is impossible to define literal notation after a type has been defined, and it is also impossible to define multiple notations at a single type.
+  \item[\LEFTcircle] \textbf{Segmentation}: The parser can splice expressions out of the literal body, but there is no clear way to associate each spliced term with some particular segment (i.e. subsequence) of the literal body, nor is there a guarantee that spliced terms are non-overlapping. As such, there is no way to indicate to the programmer where base language expressions are located within a literal form.
+  \item[\LEFTcircle] \textbf{Capture}: The TSL mechanism as described enforces complete capture avoidance (though the formal specification given in the paper did not adequately enforce this constraint).
+  \item[\LEFTcircle] \textbf{Context Dependence}: The TSL mechanism as described requires that the expansion be completely closed, so it is trivially context independent. However, this comes at a significant expressive cost: the generated expansions cannot make use of any libraries whatsoever.
+  \item[\LEFTcircle] \textbf{Typing}: The expansion must necessarily be of the associated type, so abstract reasoning about the type of the expansion is straightforward. However, there is no easy way to determine the type expected for each spliced expression. In addition, the prior work considered only a monomorphic, nominally-typed language with local type inference, leaving open a number of problems that came up as we considered integrating TSLs into Reason/OCaml:
+\begin{enumerate}[leftmargin=15px,nolistsep,noitemsep]
+  \item \textbf{Structural Types}: There is no way to define literal notation at structural types, e.g. tuple and arrow types, because there is no ``definition site'' for such types.
+  \item \textbf{Parameterized \& Abstract Types}: There is no way to define literal notation over a type-parameterized family of types, e.g. at all types \li{list('a)}. Similarly, there is no way to define literal notation over a module-parameterized family of abstract types, e.g. at every abstract type defined by a module implementing the \li{QUEUE} signature. Parameterized and abstract type families are ubiquitous in ML-family languages.% Programmers in ML-family languages commonly define various implementations of abstract data types in this way.
+  \item \textbf{Pattern Literals}: Pattern matching is ubiquitous in ML-family languages but the prior work on TSLs considered only expression literals. %Pattern literals are dual to expression literals in that expression literals support value construction, while pattern literals support value deconstruction.
+  \item \textbf{ML-Style Type Inference}: It is not clear that a type-directed dispatch scheme can be cleanly  reconciled with ML-style type inference.
+\end{enumerate}
+\end{enumerate}
+
 \subsection{Syntax Definition Systems}\label{sec:syntax-dialects-intro}
 One approach available to library providers seeking to introduce new literal forms is to use a syntax definition system to construct a library-specific \emph{syntax dialect}: a new syntax definition that extends the syntax definition given in the language definition with new forms, including literal forms.% For example, Ur/Web's syntax (Figure 1) is a library-specific dialect of Ur's syntax \cite{conf/pldi/Chlipala10,conf/popl/Chlipala15}.
 
@@ -3396,7 +3410,7 @@ If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
   \item $e = [\omega]e'$
   \item $\tau = [\omega]\tau_\text{proto}$
   \item $
-    \segof{\ce} = \sseq{\acesplicedk{m_i}{n_i}}{\nkind} \cup \sseq{\acesplicedc{m'_i}{n'_i}{\cekappa'_i}}{\ncon} \cup $ \\
+    \segofexisitng-{\ce} = \sseq{\acesplicedk{m_i}{n_i}}{\nkind} \cup \sseq{\acesplicedc{m'_i}{n'_i}{\cekappa'_i}}{\ncon} \cup $ \\
      ~~~~$          \sseq{\acesplicede{m''_i}{n''_i}{\ctau_i}}{\nexp}
     $
   \item (\textbf{Kinding 1}) $\sseq{\kExpands{\uOmega}{\parseUKindF{\bsubseq{b}{m_i}{n_i}}}{\kappa_i}}{\nkind}$ and \\ ~~~~$\sseq{\iskind{\Omega_\text{app}}{\kappa_i}}{\nkind}$
