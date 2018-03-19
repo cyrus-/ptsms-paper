@@ -1,0 +1,403 @@
+\PassOptionsToPackage{svgnames,dvipsnames,svgnames}{xcolor}
+
+%for a more compact document, add the option openany to avoid
+%starting all chapters on odd numbered pages
+\documentclass[12pt]{cmuthesis}
+%\usepackage[usenames,dvipsnames,svgnames]{xcolor}
+\newif\ificfp
+\icfptrue
+\newcommand{\todolater}[1]{{\color{magenta} TODO (Later): #1}}
+\newcommand{\todo}[1]{{\color{red} TODO: #1}}
+% some useful packages
+\usepackage{times}     % use times font for document
+%\usepackage{lmodern}
+\usepackage{newtxtt}
+\usepackage{bbm}
+%\renewcommand{\ttdefault}{txtt} % use txtt for typewriter font
+\usepackage{mathpazo}
+\usepackage{mathpartir} % use package for inference rules
+\usepackage{upgreek} % package for alternative greek letters (\uppi)
+\usepackage{fullpage}
+\usepackage{colortab}
+%\usepackage{graphicx}
+\usepackage[labelfont=bf]{caption}
+
+% \usepackage{cleveref}
+%\usepackage{MnSymbol}
+\usepackage{fancyvrb}
+\usepackage{microtype}
+\usepackage[framemethod=tikz]{mdframed}
+
+% Get just llangle and rrangle from MnSymbol
+\makeatletter
+\DeclareFontFamily{OMX}{MnSymbolE}{}
+\DeclareSymbolFont{MnLargeSymbols}{OMX}{MnSymbolE}{m}{n}
+\SetSymbolFont{MnLargeSymbols}{bold}{OMX}{MnSymbolE}{b}{n}
+\DeclareFontShape{OMX}{MnSymbolE}{m}{n}{
+    <-6>  MnSymbolE5
+   <6-7>  MnSymbolE6
+   <7-8>  MnSymbolE7
+   <8-9>  MnSymbolE8
+   <9-10> MnSymbolE9
+  <10-12> MnSymbolE10
+  <12->   MnSymbolE12
+}{}
+\DeclareFontShape{OMX}{MnSymbolE}{b}{n}{
+    <-6>  MnSymbolE-Bold5
+   <6-7>  MnSymbolE-Bold6
+   <7-8>  MnSymbolE-Bold7
+   <8-9>  MnSymbolE-Bold8
+   <9-10> MnSymbolE-Bold9
+  <10-12> MnSymbolE-Bold10
+  <12->   MnSymbolE-Bold12
+}{}
+
+\let\llangle\@undefined
+\let\rrangle\@undefined
+\DeclareMathDelimiter{\llangle}{\mathopen}%
+                     {MnLargeSymbols}{'164}{MnLargeSymbols}{'164}
+\DeclareMathDelimiter{\rrangle}{\mathclose}%
+                     {MnLargeSymbols}{'171}{MnLargeSymbols}{'171}
+\makeatother
+
+% \usepackage{rotating}
+% \usepackage{pdflscape}
+
+\usepackage[colorlinks=true,allcolors=Blue,backref,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered,
+pdfborder={0 0 0},  %removes outlines around hyper links in online display
+]{hyperref}
+
+\usepackage{amsmath,amssymb, amsthm}
+
+\allowdisplaybreaks[1]
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{condition}[theorem]{Condition}
+
+\usepackage{pfsteps}
+
+\usepackage[noabbrev]{cleveref}
+
+\newenvironment{proof-sketch}{\noindent{\emph{Proof Sketch.}}}{\qed}
+
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+  \vspace{-\topsep}% remove the space after the theorem
+  \pushQED{\qed}%
+  \normalfont
+  \topsep0pt \partopsep0pt % no space before
+  \trivlist
+  \item[\hskip\labelsep
+        \itshape
+    #1\@addpunct{.}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+  \addvspace{6pt plus 6pt} % some space after
+}
+\makeatother
+\makeatletter
+\renewenvironment{proof-sketch}[1][\proofname]{\par
+  \vspace{-\topsep}% remove the space after the theorem
+  \pushQED{\qed}%
+  \normalfont
+  \topsep0pt \partopsep0pt % no space before
+  \trivlist
+  \item[\hskip\labelsep
+        \itshape
+    Proof Sketch\@addpunct{.}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+  \addvspace{6pt plus 6pt} % some space after
+}
+\makeatother
+
+
+
+
+\usepackage{mathtools}
+\usepackage{ stmaryrd }
+\usepackage[numbers,sort]{natbib}
+
+\usepackage{subfigure}
+
+% Approximately 1" margins, more space on binding side
+%\usepackage[letterpaper,twoside,vscale=.8,hscale=.75,nomarginpar]{geometry}
+%for general printing (not binding)
+\usepackage[letterpaper,twoside,vscale=.8,hscale=.75,nomarginpar,hmarginratio=1:1]{geometry}
+
+\usepackage{listings}
+\lstset{tabsize=2, 
+basicstyle=\ttfamily\fontsize{11pt}{1em}\selectfont, 
+commentstyle=\itshape\ttfamily\color{gray}, 
+stringstyle=\ttfamily\color{red},
+mathescape=false,escapechar=\#,
+numbers=left, numberstyle=\scriptsize\color{gray}\ttfamily, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=15pt, morekeywords=[1]{tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,datatype,new,toast,syntax,module,where,import,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,rectype,fold,unfold,inj,by,spliced},deletekeywords={double},classoffset=0,belowskip=\smallskipamount,
+moredelim=**[is][\color{red}]{SSTR}{ESTR},
+moredelim=**[is][\color{Green}]{SHTML}{EHTML},
+moredelim=**[is][\color{purple}]{SCSS}{ECSS},
+moredelim=**[is][\color{brown}]{SSQL}{ESQL},
+moredelim=**[is][\color{orange}]{SCOLOR}{ECOLOR},
+moredelim=**[is][\color{magenta}]{SPCT}{EPCT}, 
+moredelim=**[is][\color{gray}]{SNAT}{ENAT}, 
+moredelim=**[is][\color{Green}]{SURL}{EURL},
+moredelim=**[is][\color{blue}]{SURI}{EURI},
+moredelim=**[is][\color{SeaGreen}]{SQT}{EQT},
+moredelim=**[is][\color{Periwinkle}]{SGRM}{EGRM},
+moredelim=**[is][\color{YellowGreen}]{SID}{EID},
+moredelim=**[is][\color{Sepia}]{SUS}{EUS},
+deletestring=[d]{"},
+}
+\lstloadlanguages{Java,VBScript,XML,HTML,ML}
+\let\li\lstinline
+
+% http://tex.stackexchange.com/q/43526
+% fix the apparently deliberate but undocumented behaviour of disabling escapes other than mathescape in TextStyle (used by \lstinline)
+% there may be a good reason why this is disabled by default, so beware in case it causes any problems
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\lsthk@TextStyle}{\let\lst@DefEsc\@empty}{}{}{\errmessage{failed to patch}}
+\makeatother
+
+% Provides a draft mark at the bottom of the document. 
+% \draftstamp{\today}{DRAFT}
+
+
+% I hate hyphenation.
+%\lefthyphenmin=5
+\definecolor{light-gray}{gray}{0.95}
+
+\input{macros}
+
+% allow interrupted equation numbering
+% taken from http://tex.stackexchange.com/questions/101002/interrupting-and-resuming-subequations
+% \makeatletter
+% \def\user@resume{resume}
+% \def\user@intermezzo{intermezzo}
+% %
+% \newcounter{previousequation}
+% \newcounter{lastsubequation}
+% \newcounter{savedparentequation}
+% \setcounter{savedparentequation}{1}
+% % 
+% \renewenvironment{subequations}[1][]{%
+%       \def\user@decides{#1}%
+%       \setcounter{previousequation}{\value{equation}}%
+%       \ifx\user@decides\user@resume 
+%            \setcounter{equation}{\value{savedparentequation}}%
+%       \else  
+%       \ifx\user@decides\user@intermezzo
+%            \refstepcounter{equation}%
+%       \else
+%            \setcounter{lastsubequation}{0}%
+%            \refstepcounter{equation}%
+%       \fi\fi
+%       \protected@edef\theHparentequation{%
+%           \@ifundefined {theHequation}\theequation \theHequation}%
+%       \protected@edef\theparentequation{\theequation}%
+%       \setcounter{parentequation}{\value{equation}}%
+%       \ifx\user@decides\user@resume 
+%            \setcounter{equation}{\value{lastsubequation}}%
+%          \else
+%            \setcounter{equation}{0}%
+%       \fi
+%       \def\theequation  {\theparentequation  \alph{equation}}%
+%       \def\theHequation {\theHparentequation \alph{equation}}%
+%       \ignorespaces
+% }{%
+% %  \arabic{equation};\arabic{savedparentequation};\arabic{lastsubequation}
+%   \ifx\user@decides\user@resume
+%        \setcounter{lastsubequation}{\value{equation}}%
+%        \setcounter{equation}{\value{previousequation}}%
+%   \else
+%   \ifx\user@decides\user@intermezzo
+%        \setcounter{equation}{\value{parentequation}}%
+%   \else
+%        \setcounter{lastsubequation}{\value{equation}}%
+%        \setcounter{savedparentequation}{\value{parentequation}}%
+%        \setcounter{equation}{\value{parentequation}}%
+%   \fi\fi
+% %  \arabic{equation};\arabic{savedparentequation};\arabic{lastsubequation}
+%   \ignorespacesafterend
+% }
+% \makeatother
+
+\begin{document} 
+\frontmatter
+
+%initialize page style, so contents come out right (see bot) -mjz
+\pagestyle{empty}
+
+\title{\textbf{Reasonably Programmable Syntax}}
+\author{Cyrus Omar}
+\date{\today}
+\Year{2017}
+\trnumber{CMU-CS-17-113}
+
+\committee{Jonathan Aldrich, Chair\\
+Robert Harper\\
+Karl Crary\\
+Eric Van Wyk, University of Minnesota}
+
+\support{\scriptsize This research was sponsored by the DOE Computational Science Graduate Fellowship; the NSF Graduate Research Fellowship; the US Department of Defense National Security Agency under grant H9823014C0140; the US Air Force Research Laboratory under grant FA87501620042; the US Army Research Office under grants W911NF0910273 and W911NF1310154; the Boeing Company under grant 1101601762; and the National Science Foundation under grants DGE0750271, DGE1252522, and CCF1116907.  The views and conclusions contained in this document are those of the author and should not be interpreted as representing the official policies, either expressed or implied, of any sponsoring institution, the U.S. government or any other entity.
+% Any opinions or recommendations 
+%expressed in this material are those of the author and do not necessarily
+ %reflect the views of the DOE, NSF, AFRL, DARPA or NSA.
+ }
+
+% \disclaimer{}
+\permission{This work is licensed under the Creative Commons Attribution 4.0 International License, which can be found at \url{http://creativecommons.org/licenses/by/4.0/}.}
+
+% copyright notice generated automatically from Year and author.
+% permission added if \permission{} given.
+
+\keywords{syntax, notation, parsing, type systems, module systems, macro systems, hygiene, pattern matching, bidirectional typechecking, implicit dispatch}
+
+\maketitle
+
+% \begin{dedication}
+% Dedicated to the memory of Daniel Schreiber (1986 -- 2010), my friend.
+% \end{dedication}
+
+\pagestyle{plain} % for toc, was empty
+
+\begin{abstract}
+\noindent
+Programming languages commonly provide ``syntactic sugar'' that decreases the syntactic cost of working with certain standard library constructs.   
+%, i.e. {derived forms} that decrease the cognitive cost of idioms involving select library constructs. 
+For example, Standard ML builds in syntactic sugar for constructing and pattern matching on lists. %This decreases the cognitive cost of working with lists. %Semantically, lists are defined in the SML Basis library (i.e. SML's ``standard library''.)
+Third-party library providers are, justifiably, envious of this special arrangement. After all, it is not difficult to find other situations where library-specific syntactic sugar might be useful \cite{TSLs}. For example, (1) clients of a ``collections'' library might like syntactic sugar for finite sets and dictionaries; (2) clients of a ``web programming'' library might like syntactic sugar for HTML and JSON values; (3) a compiler writer might like syntactic sugar for the terms of the object language or various intermediate languages of interest; and (4) clients of a ``chemistry'' library might like syntactic sugar for chemical structures based on the SMILES standard \cite{anderson1987smiles}.
+
+Defining a ``library-specific'' syntax dialect in each of these situations is problematic, because library clients cannot combine dialects like these in a manner that conserves syntactic determinism (i.e. syntactic conflicts can and do arise.) Moreover, it can become difficult for library clients to reason abstractly about types and binding when examining the text of a program that uses unfamiliar forms. Instead, they must reason transparently, about the underlying expansion. Typed, hygienic term-rewriting macro systems, like Scala's macro system \cite{ScalaMacros2013}, while somewhat more reasonable, offer limited syntactic control.
+
+% In other words, there are few clear \emph{abstract reasoning principles} available to client programmers. % As such, the dialect-oriented approach is difficult to reconcile with the best practices of  ``programming in the large.''
+
+This thesis formally introduces \emph{typed literal macros (TLMs)}, which give library providers the ability to programmatically control the parsing and expansion, at ``compile-time'', of expressions and patterns of \emph{generalized literal form}. Library clients can use any combination of TLMs in a program without needing to consider the possibility of syntactic conflicts between them,  because the context-free syntax of the language is never extended (instead, literal forms are  contextually repurposed.) Moreover, the language validates each expansion that a TLM generates in order to maintain useful abstract reasoning principles. Most notably, expansion validation maintains:
+\begin{itemize}
+\item a \emph{type discipline}, meaning that the client can reason about types while holding the literal expansion abstract; and 
+\item a \emph{strictly hygienic binding discipline}, meaning that the client can always be sure that:
+  \begin{enumerate}
+    \item spliced terms, i.e. terms that appear within literal bodies, cannot capture bindings hidden within the literal expansion; and 
+  \item the literal expansion does not refer to definition-site or application-site bindings directly. Instead, all interactions with bindings external to the expansion go explicitly through {spliced terms} or {parameters}.% Support for partial parameter application helps reduce the syntactic cost of this explicit parameter passing style.
+  \end{enumerate}
+\end{itemize}
+\noindent
+In short, we formally define a programming language in the ML tradition with a \emph{reasonably} programmable syntax.
+
+%We discuss both explicit application of TLMs (with support for partial parameter application) and implicit, type-directed application of TLMs, which further reduces cognitive cost.
+\end{abstract}
+
+\begin{acknowledgments}
+I owe a tremendous debt of gratitude to my advisor, Jonathan Aldrich, for being willing to take me on as a na\"ive neuroscience student interested in designing programming languages, and for guiding me patiently through many years of learning, experimentation and refinement. 
+Jonathan's depth of expertise and breadth of perspective has been invaluable. Thank you.%My work seeks to apply type theory to solve usability problems, so it has been a great fit.
+
+I would also like to thank Bob Harper and Karl Crary, who both generously served on my thesis committee and substantially influenced my approach. Through their teaching and scholarship, they taught me the type-theoretic foundations of programming languages, and more broadly, they taught me the tremendous value of precision in both formal and informal discourse on language design. These lessons were reinforced during long afternoons discussing theory papers with other POP students in the ConCert reading group,  and during long evenings grading and preparing for 15-150 (Functional Programming) and 15-312 (Principles of Programming Languages) with Dan Licata, Ian Voysey, Bob Harper, Shayak Sen and the rest of the course staff. Thank you all for being uncompromisingly mathematical in your approach.
+
+I have also learned a great deal about the psychological and social aspects of software development from Brad Myers of the HCI Institute and from the faculty and students of the Institute for Software Research (ISR), particularly Thomas LaToza and Joshua Sunshine. In addition, I have collaborated with Alex Potanin, who visited us on sabbatical, and with students Darya Melicher, Ligia Nistor, Benjamin Chung and Chenglong Wang on projects related to the work presented here. Thank you all for broadening my perspective on the art and science of language design. 
+
+During my time in graduate school, I have had the privilege to attend a great many  conferences, workshops and summer schools where I participated in more illuminating conversations than I could  hope to recall here. I am particularly grateful for conversations with Eric Van Wyk, who never failed to appreciate the subtle contours of a design space and graciously served on my thesis committee. I would also like to thank the organizers and participants of the Oregon PL Summer School, where I had an amazing time learning how to properly prove the proper theorems. Finally, I am grateful to have collaborated with Ian Voysey, Michael Hilton and Matthew Hammer on Hazelnut, a side project that quite successfully delayed the completion of this dissertation. With friends and collaborators like these, why graduate?
+
+I would be remiss not to mention Brent Doiron, who took me as a student when I entered graduate school in the Neural Computation PhD program, and Garrett Kenyon,  who was my practicum supervisor during my ``man vs. wild'' stint at Los Alamos National Lab. Both of them left me with a deep appreciation for the  mathematical and computational methods used to study the dynamics of neurobiological systems. I hope some day, far in the future, to return to neuroscience with a pack full of truly modern programming tools.
+
+I also want to explicitly acknowledge Deb Cavlovich, Catherine Copetas, Victoria Poprocky and all of the other staff that have kept things running smoothly around the school, and at conferences and other events. I really appreciate all of the work that you do.
+
+Graduate school can be an emotionally taxing experience, to say the least. Fortunately, my friends were there whenever I came up for air -- sometimes after going under for weeks at a time. Tommy and Sanna, you are beautiful souls and our travels together have been incredibly rejuvenating. D, you have the most exquisite taste and it's so good to know you (yeh yeh yeh.) To the greater Miasma crew, Ian, V, Tom7 and the rest of the thursdz crew, and my former officemate, Harsha: yinz are such fascinating people and I really enjoy the time we spend together. The same goes for so many other individuals that I've connected with personally, whether at conferences, at office hours, through the CNBC, CSGF, LANL, WRCT, SCS, on Twitter, at shows and festivals, in the woods, or in apartments and backyards. You've brought such color and texture to my life.
+
+I especially want to remember Dan Schreiber. Dan was one of my very closest friends, a romantic visionary and the greatest debate partner I have ever had. He died in 2010. I am so glad to have known him and I only wish that I could have heard his take on so many of the topics I've learned about since then -- proof theory, type theory, tech cooperatives, experimental music, long-distance cycling, old books, psychedelic films,  spontaneous theater and colonizing Venus, to name a few topics I suspect he'd have some thoughts about! Dan is truly missed.
+
+Finally, so much of who I am is due to the love and support of my family. The diverse personalities of my aunts, uncles, cousins and their spouses made family gatherings so lively. My sister, Elisha, and now her husband, Pat, have been an endless source of great book recommendations and conversations. And I am forever grateful to Ami and Hibbi Abu, my mother and father, who have given me so much love, offered so many heartfelt prayers and provided me with so much practical assistance and advice throughout my life. From an early age, they encouraged me to maintain an independent mind, to cultivate the highest intellectual standards  and to remember the Big Picture at all times. Those lessons, rooted in the traditions of our family going back generations, have proven incredibly valuable in research, and in life. Thank you.
+
+It's been an unforgettable journey. Thanks, everybody. 
+\end{acknowledgments}
+
+
+\tableofcontents
+\listoffigures
+%\listoftables
+
+\mainmatter
+
+% The other requirements Catherine has:
+%
+%  - avoid large margins.  She wants the thesis to use fewer pages, 
+%    especially if it requires colour printing.
+%
+%  - The thesis should be formatted for double-sided printing.  This
+%    means that all chapters, acknowledgements, table of contents, etc.
+%    should start on odd numbered (right facing) pages.
+%
+%  - You need to use the department standard tech report title page.  I
+%    have tried to ensure that the title page here conforms to this
+%    standard.
+%
+%  - Use a nice serif font, such as Times Roman.  Sans serif looks bad.
+%
+% Other than that, just make it look good...
+
+\input{intro}
+
+\chapter{Background}\label{chap:background}
+\vspace{-6px}
+\begin{quote}\textit{The recent development of programming languages suggests that the simul\-taneous achievement of simplicity 
+and generality in language design is a serious unsolved 
+problem.}\begin{flushright}John Reynolds (1970) \cite{Reynolds70}\end{flushright}
+\end{quote}
+\vspace{-6px}
+%VerseML, like most contemporary full-scale programming languages, has a textual concrete syntax (we will consider the topic of non-textual display forms as future work in Sec. \ref{sec:non-textual-display-forms}).
+%\footnote{Although Wyvern specified a layout-sensitive concrete syntax, to avoid unnecessary distractions, we will describe a more conventional layout-insensitive concrete syntax for VerseML.} %We have chosen to specify a layout-sensitive textual concrete syntax (i.e. newlines and indentation are not ignored). This design choice is not  fundamental to our proposed contributions, but it will be useful for cleanly expressing a class of examples that we plan to discuss later. We plan to specify some novel aspects of VerseML's concrete syntax with an \emph{Adams grammar} \cite{Adams:2013:PPI:2429069.2429129} (such a specification for Wyvern, which has a very similar syntax, can be found in \cite{TSLs}), but for the purposes of this proposal, we will simply introduce VerseML's concrete syntax by example as we go on. %For constructs that have an obvious analog in ML, we will omit a detailed explanation.
+%Because the purpose of concrete syntax is to serve as the programmer-facing user interface to the language, it is common practice to build in  derived syntactic forms (colloquially, \emph{syntactic sugar}) that capture common idioms more concisely (i.e. at lower \emph{syntactic cost}) or ``naturally'' (i.e. at lower \emph{cognitive cost}, which is usually considered qualitatively \cite{green1996usability}). % (i.e. considering cognitive dimensions \cite{green1996usability}). 
+%For example, derived list syntax is built in to many functional languages, so that instead of having to write out 
+%\begin{lstlisting}[numbers=none]
+%Cons(1, Cons(2, Cons(3, Nil)))
+%\end{lstlisting}
+%the programmer can equivalently write \lstinline{[1, 2, 3]}. Many languages and dialects thereof go beyond this, building in derived syntax associated with various other types of data, like vectors (the SML/NJ dialect of SML), arrays (OCaml), monadic commands (Haskell), syntax trees (Scala, F\#), XML trees (Scala, Ur/Web) and SQL queries (F\#, Ur/Web). We will begin by describing these and several other examples in more detail in Sec. \ref{sec:motivating-examples}. %This is a rather \emph{ad hoc} process.% discussed previously, the usual approach is to require that the language designer build in new derived syntactic forms. %The desugaring from the latter to the former is specified by the language itself. %Typically, the language designer controls what forms of derived syntax are built in to the language.
+
+%VerseML will take a less \emph{ad hoc} approach -- rather than privileging particular library constructs with primitive syntactic support, VerseML exposes primitives that allow library providers to introduce new expansion logic on their own, in a modular manner. Before describing these primitives in the remaining chapters, we will survey existing approaches to the problem of reducing syntactic cost (and in so doing, highlight some of the problems that we aim to resolve in our work) in Sec. \ref{sec:existing-approaches}. %Lists need no special consideration from the language specification.
+%The purpose of this section is to  a and then introduce VerseML's syntax extension mechanisms. %For forms with a clear analogy to a form in Standard ML, we will assume the  semantics are analagous without providing details.
+
+%We will begin in Sec. \ref{sec:examples} by detailing another example for which such a mechanism would be useful: regular expression (regex) patterns expressed using abstract data types. We will refer to this example throughout the proposal. In Sec. \ref{sec:syntax-existing}, we discuss how the usual approach of using dynamic string parsing to introduce regex patterns is not ideal. We also survey existing alternatives to dynamic string parsing, finding that they involve an unacceptable loss of modularity and other undesirable trade-offs. In Secs. \ref{sec:tsms} and \ref{sec:tsls}, we introduce our proposed alternatives -- \emph{typed literal macros} (TLMs) and the related \emph{type-specific languages} (TSLs) -- and discuss how they resolve these issues (as well as some limitations that they have). We  also give an overview of how TLMs are formally specified. We give a concrete timeline for the remaining work in Sec. \ref{sec:syntax-timeline}, and conclude in Sec. \ref{sec:conclusion}.
+\input{preliminaries.tex}
+\input{motivating-examples}
+\input{existing-approaches}
+
+% \part{Simple TLMs}\label{part:simple-tsms}
+\input{uetsms}
+\input{uptsms}
+
+%\part[Parametric TLMs]{Parametric TLMs
+% ~\\ ~\\ ~\\ 
+% \begin{center}
+%                      \begin{minipage}[l]{11cm}
+%                        \textnormal{\normalsize
+% }
+%                      \end{minipage}
+%                   \end{center}
+% }\label{part:parametric-tsms}
+
+\input{ptsms}
+\input{static-language}
+
+% \part{TLM Implicits}\label{part:implicits}
+\input{tsls}
+
+% \part{Conclusion}
+\input{conclusion}
+
+
+
+
+\input{appendix}
+
+%\renewcommand{\baselinestretch}{1.0}\normalsize
+% By default \bibsection is \chapter*, but we really want this to show
+% up in the table of contents and pdf bookmarks.
+\renewcommand{\bibsection}{\chapter*{\bibname}\addcontentsline{toc}{chapter}{Bibliography}}
+% \renewcommand{\bibpreamble}{\todolater{List conference abbreviations.}\\
+% \todolater{Remove extraneous nonsense from entries.}}
+\bibliographystyle{plainnat}
+\bibliography{research} %your bib file
+
+
+\end{document}

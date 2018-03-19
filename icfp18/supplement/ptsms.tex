@@ -1,0 +1,1725 @@
+% !TEX root = omar-thesis.tex
+
+\chapter{Parametric TLMs (pTLMs)}\label{chap:ptsms}
+\begin{quote}\textit{You know me, I gotta put in a big tree.}
+\begin{flushright} --- Bob Ross, \emph{The Joy of Painting}\end{flushright}
+\end{quote}
+% \begin{quote}\textit{The recent development of programming languages suggests that the simul\-taneous achievement of simplicity 
+% and generality in language design is a serious unsolved 
+% problem.}\begin{flushright}--- John Reynolds (1970) \cite{Reynolds70}\end{flushright}
+% \end{quote}
+% ~\\
+~\\
+\noindent
+This chapter introduces \emph{parametric TLMs} (pTLMs). Parametric TLMs can be defined over a parameterized family of types, rather than just a single type, and the expansions that they generate can refer to  supplied type and module parameters. 
+
+This chapter is organized like the preceding chapters. We begin in Sec. \ref{sec:parameterized-tsms-by-example} by introducing parametric TLMs by example in VerseML. In particular, we discuss type parameters in Sec. \ref{sec:type-parameters} and module parameters in Sec. \ref{sec:module-parameters}. We then develop a reduced calculus of parametric TLMs, $\miniVerseParam$, in Sec. \ref{sec:miniVerseP}.
+
+\section{Parametric TLMs By Example}\label{sec:parameterized-tsms-by-example}
+
+\subsection{Type Parameters}\label{sec:type-parameters}
+Recall from Sec. \ref{sec:lists} the definition of the type-parameterized family of list types:
+\begin{lstlisting}[numbers=none]
+type list('a) = rec(self => Nil + Cons of 'a * self)
+\end{lstlisting}
+
+% \emph{Kinds} classify construction expressions, much like types classify expressions. Types are construction expressions of kind \li{T}, and type constructions are construction expressions of arrow kind. Here, \li{list} takes a single type parameter, so it has arrow kind \li{T -> T}.
+
+% ML dialects commonly define derived syntactic forms for constructing and pattern matching over values of list type. VerseML, in contrast, does not build in derived list forms. Instead, 
+Figure \ref{fig:petsm-list} defines a \emph{parametric expression TLM} (peTLM) and a \emph{parametric pattern TLM} (ppTLM), both named \li{#\dolla#list}. These TLMs operate uniformly over this family of types.
+\begin{figure}[h]
+\begin{lstlisting}
+syntax $list('a) at list('a) for expressions by 
+  static fn(b : body) : parse_result(proto_expr) => (* ... *)
+and for patterns by 
+  static fn(b : body) : parse_result(proto_pat) => (* ... *) 
+end
+\end{lstlisting}
+\caption{The type-parameterized \texttt{\$list} TLMs.}
+\label{fig:petsm-list}
+\end{figure}
+
+Line 1 specifies a single type parameter, \li{'a}. This type parameter appears in the type annotation, which establishes that:
+\begin{enumerate}
+\item The peTLM \li{#\dolla#list}, when applied to a type \li{T} and a generalized literal form, can only generate expansions of type \li{list(T)}.
+\item The ppTLM \li{#\dolla#list}, when applied to a type \li{T} and a generalized literal form, can only generate expansions that match values of type \li{list(T)}.
+\end{enumerate}
+For example, we can apply \li{#\dolla#list} to \li{int} and a generalized literal form delimited by square brackets as follows:
+% val y = $list int [3SURL, EURL4SURL, EURL5]
+\begin{lstlisting}[numbers=none]
+val x = $list int [xSURL, EURLySURL :: EURLxs]
+\end{lstlisting}
+The parse function (elided above for concision) segments the literal body into  spliced expressions. The trailing spliced expression is prefixed by two colons (\li{SURL::EURL}), which the TLM takes to mean that it should be the tail of the list. The final expansion of the example above is equivalent to the following when the list value constructors are in scope:
+\begin{lstlisting}[numbers=none]
+val x = Cons(x, Cons(y, xs))
+\end{lstlisting}
+As in the preceding chapters, the expansion itself must use the explicit \li{fold} and \li{inj} operators rather than the list value constructors \li{Cons} and \li{Nil} due to the prohibition on context dependence.
+
+\subsection{Module Parameters}\label{sec:module-parameters}
+We can finally address the inconvenience of needing to use explicit \li{fold} and \li{inj}  operators by  defining a module-parameterized TLM.
+
+Recall that in Figure \ref{fig:LIST}, we defined a signature \li{LIST} that exported the definition of \li{list} and specified the list value constructors (and some other values.) The definition of \li{#\dolla#list'} shown in Figure \ref{fig:ptsm-listprime} takes modules matching this signature as an additional parameter.
+
+\begin{figure}[h]
+\begin{lstlisting}[numbers=none]
+syntax $list' (L : LIST) 'a at 'a L.list for expressions by 
+  static fn(b : body) : parse_result(proto_expr) => (* ... *)
+for patterns by 
+  static fn(b : body) : parse_result(proto_pat) => (* ... *)
+end
+\end{lstlisting}
+\caption{The type- and module-parameterized \texttt{\$list'} TLMs}
+\label{fig:ptsm-listprime}
+\end{figure}
+% differing only in that any type parameter that the peTLM specifies can appear free in the generated expansion.
+
+We can apply \li{#\dolla#list'} to the module \li{List} and the type \li{int} as follows:
+\begin{lstlisting}[numbers=none]
+val y = $list' List int [3SURL, EURL4SURL, EURL5]
+val x = $list' List int [1SURL, EURL2SURL :: EURLy]
+\end{lstlisting}
+The expansion is:
+\begin{lstlisting}[numbers=none]
+val y = List.Cons(3, List.Cons(4, List.Cons(5, List.Nil)))
+val x = List.Cons(1, List.Cons(2, y))
+\end{lstlisting}
+There is no need to use explicit \li{fold} and \li{inj} operators in this expansion, because the expansion projects the constructors out of the provided module parameter. The TLM itself did not assume that the module would be named \li{List} (internally, the proto-expansion refers to it as \li{L}.)
+
+This makes matters simpler for the TLM provider, but there is a syntactic cost associated with supplying a module parameter at each TLM application site. To reduce this cost, VerseML supports partial parameter application in TLM abbreviations. For example, we can define \li{#\dolla#list} by partially applying \li{#\dolla#list'} as follows:
+\begin{lstlisting}[numbers=none]
+let syntax $list = $list' List
+\end{lstlisting}
+(This abbreviates both the expression and pattern TLMs -- sort qualifiers can be added to restrict the abbreviation if desired.)
+
+
+% Similarly, in lieu of derived list pattern forms, we define the following \emph{parameterized pattern TLM} (ppTLM):
+% \begin{lstlisting}[numbers=none]
+% syntax $list('a) at list('a) for patterns {
+%   static fn(body : Body) : ParseResult(CEPat) => (* ... *)
+% }
+% \end{lstlisting}
+% Again, Line 1 names the ppTLM \li{#\dolla#list} and specifies a single type parameter, \li{'a}. This type parameter appears in the type annotation, which specifies that \li{#\dolla#list}, when apply to a type \li{'a} and a generalized literal form, will only generate patterns that match values of type \li{list('a)}. 
+
+% For example, we can apply the ppTLM \li{#\dolla#list} and the \li{#\dolla#list} to define the polymorphic map function as follows.
+% \begin{lstlisting}[numbers=none]
+% fun map (f : 'a -> 'b) (x : list('a)) => match x { 
+%   $list('a) [] => $list('b) []
+% | $list('a) [hdSURL :: EURLtl] => $list('b) [f hdSURL :: EURLmap f tl]
+% }
+% \end{lstlisting}
+% The expansion of this function definition, written textually, is:
+% \begin{lstlisting}[numbers=none]
+% fun map (f : 'a -> 'b) (x : list('a)) : 'b list => match x { 
+%   Nil => Nil
+% | Cons(hd, tl) => Cons(f hd, map f tl)
+% }
+% \end{lstlisting}
+% This is somewhat unsatisfying, however, because the expansion is more concise than the unexpanded definition of \li{map}. To further reduce syntactic cost, we can designate \li{#\dolla#list} as the implicit TLM for both expressions and patterns at all types \li{'a list} around our definition of \li{map} as follows.
+% \begin{lstlisting}[numbers=none]
+% implicit syntax $list('a) in
+%   fun map (f : 'a -> 'b) (x : 'a list) : 'b list => match x {
+%     [] => []
+%   | [hdSURL :: EURLtl] => [f hdSURL :: EURLmap f tl]
+%   }
+% end
+% \end{lstlisting}
+% By designating an implicit TLM, we no longer need to explicitly apply \li{#\dolla#list} within expressions in analytic position or patterns.
+
+% When designating an implicit TLM, we assume that free type variables in the type annotation, e.g. here \li{'a}, range over all types. We can make this more explicit by specifying a type parameter explicitly as follows:
+% \begin{lstlisting}[numbers=none]
+% implicit syntax('a) $list('a) at list('a) in
+% 	(* ... *)
+% end
+% \end{lstlisting}
+% All type parameters must appear in the type annotation.
+% \subsection{More Examples}
+Module parameters also allow us to define TLMs that operate uniformly over module-parameterized families of abstract types. For example, the module-parameterized TLM \texttt{\$r} defined in Figure \ref{fig:param-tsm-r} supports the POSIX regex syntax for any type \li{R.t} where \li{R : RX}. 
+
+\begin{figure}[h]
+\begin{lstlisting}
+syntax $r(R : RX) at R.t by 
+  static fn(b : body) : parse_result(proto_expr) => (* ... *)
+end
+\end{lstlisting}
+\vspace{-8px}
+\caption{The module-parameterized TLM \texttt{\$r}}
+\label{fig:param-tsm-r}
+\vspace{-4px}
+\end{figure}
+\noindent
+For example, given \li{R1 : RX}, we can apply \li{#\dolla#r} as follows:
+\begin{lstlisting}[numbers=none]
+let dna = $r R1 /SURLA|T|G|CEURL/
+\end{lstlisting}
+The final expansion of this term is:
+\begin{lstlisting}[numbers=none]
+let dna = R1.Or(R1.Str "SSTRAESTR", R1.Or(R1.Str "SSTRTESTR", 
+	        R1.Or(R1.Str "SSTRGESTR", R1.Str "SSTRCESTR")))
+\end{lstlisting}
+
+To be clear: parameters are available to the generated expansion, but they are not available to the parse function that generates the expansion. For example, the following TLM definition is not well-typed because it refers to \li{M} from within the parse function:
+\begin{lstlisting}[numbers=none]
+syntax $badM(M : A) at T by 
+  static fn(b : body) => let x = M.x in (* ... *)
+end
+\end{lstlisting}
+(In the next chapter, we will define a mechanism that gives parse functions access to a common static environment.)
+% \subsubsection{Queues}
+% Consider the following signature for working with persistent queues:
+% \begin{lstlisting}[numbers=none]
+% signature QUEUE = sig
+%   type queue('a)
+%   val empty  : queue('a)
+%   val insert : 'a * queue('a) -> queue('a)
+%   val remove : queue('a) -> option('a * queue('a))
+% end 
+% \end{lstlisting}
+% Structures that match this signature must define a type constructor \li{queue} of kind \li{T -> T} and three values -- \li{empty} introduces the empty queue, \li{insert} inserts a value onto the back of a queue, and \li{remove} removes the element at the front of the queue and returns it and the remaining queue, or \li{None} if the queue is empty.%one for inserting an item into a queue, and one for removing a value from a queue.
+
+% There are many possible structures that implement this signature. For example, we can define a structure \li{ListQueue} that represents queues internally as lists, where the head of the list is the back of the queue. With this representation, \li{insert} is a constant time operation, but \li{remove} is a linear time operation. Alternatively, we might define a structure \li{TwoListQueue} that represents queues internally as a pair of lists, maintaining the invariant that one is the reverse of the other, so that both \li{insert} and \li{remove} are constant time operations (see \cite{harper1997programming} for the details of this and other possibilities). 
+
+% Regardless of the implementation that the client chooses, we would like for the client to be able to introduce queues more naturally and at lower syntactic cost than is possible by directly applying the functions specified by the signature above. In VerseML, we can give clients of structures matching the signature \li{QUEUE} this ability by defining the following parameterized expression TLM:
+% \begin{lstlisting}[numbers=none]
+% syntax $queue(Q : QUEUE)('a) at Q.queue('a) {
+%   static fn(body : Body) : ParseResult(CEExp) => (* ... *)
+% }
+% \end{lstlisting}
+% This peTLM specifies one module parameter, \li{Q}, which must match the signature \li{QUEUE}, and one type parameter, \li{'a} (implicitly of kind \li{T}). These appear in the type annotation, which specifies that expansions that arise from applying \li{#\dolla#queue} to a module \li{Q : QUEUE} and a type \li{'a} will be of type \li{Q.queue('a)}. For example:
+% \begin{lstlisting}
+% val q = $queue TwoListQueue int [SURL> EURL1SURL, EURL2SURL, EURL3]
+% val q' = $queue TwoListQueue int [qSURL > EURL4SURL, EURL5]
+% \end{lstlisting}
+% On Line 1, the initial angle bracket (\li{SURL>EURL}) indicates that the items are inserted in left-to-right order. The items in the queue are given as spliced subexpressions separated by commas. Line 2 inserts two additional items onto the back of the queue \li{q}. The expansion of this example, written textually, is:
+% \begin{lstlisting}
+% val q : TwoListQueue.queue(int) = 
+%   TwoListQueue.insert(1, 
+%     TwoListQueue.insert(2, 
+%       TwoListQueue.insert(3, 
+%         TwoListQueue.empty)))
+% val q' : TwoListQueue.queue(int) = 
+%   TwoListQueue.insert(4, TwoListQueue.insert(5, q))
+% \end{lstlisting}
+% Notice that the expansion can refer to the module parameter \li{TwoListQueue}.
+
+% We can further reduce syntactic cost by defining a synonym for the partial application of \li{#\dolla#queue} to the module parameter \li{TwoListQueue}:
+% \begin{lstlisting}[numbers=none]
+% syntax $tlq = $queue TwoListQueue
+% val q = $tlq int [SURL> EURL1SURL, EURL2SURL, EURL3]
+% \end{lstlisting}
+% We can further define a synonym for the partial application of \li{#\dolla#tlq} to a type parameter:
+% \begin{lstlisting}[numbers=none]
+% syntax $tlqi = $tlq int (* = $queue TwoListQueue int *)
+% val q' = $tlqi [qSURL > EURL4SURL, EURL5]
+% \end{lstlisting}
+% \subsection{Module Parameters}
+% VerseML also provides a module language based on the Standard ML module language \cite{MacQueen:1984:MSM:800055.802036}. The module language consists of \emph{module expressions} classified by \emph{signatures}. %Signatures specify type components, which may be opaque or transparent, value components, and module components.h
+
+% %In Sec. \ref{sec:motivating-examples}, we gave several examples of signatures and discussed how one might introduce derived forms that  across a module-parameterized family of types.
+
+
+
+% Another way to reduce syntactic cost is by designating \li{#\dolla#queue Q 'a} the implicit TLM at all types of the form \li{Q.queue('a)} where \li{Q : QUEUE}. This is written as follows:
+% \begin{lstlisting}[numbers=none]
+% implicit syntax (Q : QUEUE) ('a) => $queue Q 'a in
+%   val q : TwoListQueue.queue(int) = [SURL> EURL1SURL, EURL2SURL, EURL3]
+%   val q' : TwoListQueue.queue(int) = [qSURL > EURL4SURL, EURL5]
+% end
+% \end{lstlisting}
+% This designation is particularly useful for clients who need to construct a queue as an argument to a function. For example, consider a function 
+% \begin{lstlisting}[numbers=none]
+% enqueue_jobs : Q.queue(Job) -> Ticket
+% \end{lstlisting}
+% for some module \li{Q : QUEUE} and types \li{Job} and \li{Ticket}. We can enqueue a sequence of jobs \li{j1} through \li{j4} under the TLM designation above as follows:
+% \begin{lstlisting}[numbers=none]
+% enqueue_jobs [SURL> EURLj1SURL, EURLj2SURL, EURLj3SURL, EURLj4]
+% \end{lstlisting}
+
+\vspace{-5px}
+\section{\texorpdfstring{$\miniVerseParam$}{miniVerseP}}\label{sec:miniVerseP}
+We will now define a reduced dialect of VerseML called $\miniVerseParam$ that supports parametric expression and pattern TLMs (peTLMs and ppTLMs.) This language, like $\miniVersePat$, consists of an unexpanded language (UL) defined by typed expansion to an expanded language (XL). The full definition of $\miniVerseParam$ is given in Appendix \ref{appendix:miniVerseParam} -- we will detail only  particularly interesting constructs below.
+
+\subsection{Syntax of the Expanded Language (XL)}\label{sec:P-expanded-terms}
+
+\begin{figure}[p] 
+\[\begin{array}{lllllll}
+\textbf{Sort} & & & \textbf{Operational Form} 
+%& \textbf{Stylized Form} 
+& \textbf{Description}\\
+\mathsf{Sig} & \sigma & ::= & \asignature{\kappa}{u}{\tau} 
+%& \signature{u}{\kappa}{\tau} 
+& \text{signature}\\
+\mathsf{Mod} & M & ::= & X 
+%& X 
+& \text{module variable}\\
+&&& \astruct{c}{e} 
+%& \struct{c}{e} 
+& \text{structure}\\
+&&& \aseal{\sigma}{M} 
+%& \seal{M}{\sigma} 
+& \text{seal}\\
+&&& \amlet{\sigma}{M}{X}{M} %& \mlet{X}{M}{M}{\sigma} 
+& \text{definition}
+\end{array}\]
+\caption[Syntax of signatures and module expressions in $\miniVerseParam$]{Syntax of signatures and module expressions in $\miniVerseParam$}
+\label{fig:P-modules-signatures}
+\end{figure}
+
+
+\begin{figure}[p] 
+\[\begin{array}{lrlllll}
+\textbf{Sort} & & & \textbf{Operational Form} 
+%& \textbf{Stylized Form} 
+& \textbf{Description}\\
+\mathsf{Kind} & \kappa & ::= & k & \text{kind variable}\\
+&&& \akdarr{\kappa}{u}{\kappa} 
+%& \kdarr{u}{\kappa}{\kappa} 
+& \text{dependent function}\\
+&&& \akunit 
+%& \kunit 
+& \text{nullary product}\\
+&&& \akdbprod{\kappa}{u}{\kappa} 
+%& \kdbprod{u}{\kappa}{\kappa} 
+& \text{dependent product}\\
+%&&& \akdprodstd & \kdprodstd & \text{labeled dependent product}\\
+&&& \akty 
+%& \kty
+& \text{type}\\
+&&& \aksing{\tau} 
+%& \ksing{\tau} 
+& \text{singleton}\\
+\mathsf{Con} & c, \tau & ::= & u 
+%& u 
+& \text{construction variable}\\
+&&& t 
+%& t 
+& \text{type variable}
+\\
+&&& \acabs{u}{c} 
+%& \cabs{u}{c} 
+& \text{abstraction}\\
+&&& \acapp{c}{c} 
+%& \capp{c}{c} 
+& \text{application}\\
+&&& \actriv 
+%& \ctriv 
+& \text{trivial}\\
+&&& \acpair{c}{c}
+% & \cpair{c}{c} 
+& \text{pair}\\
+&&& \acprl{c} 
+%& \cprl{c} 
+& \text{left projection}\\
+&&& \acprr{c} 
+%& \cprr{c} 
+& \text{right projection}\\
+%&&& \adtplX & \dtplX & \text{labeled dependent tuple}\\
+%&&& \adprj{\ell}{c} & \prj{c}{\ell} & \text{projection}\\
+&&& \aparr{\tau}{\tau} 
+%& \parr{\tau}{\tau} 
+& \text{partial function}\\
+&&& \aallu{\kappa}{u}{\tau} 
+%& \forallu{u}{\kappa}{\tau} 
+& \text{polymorphic}\\
+&&& \arec{t}{\tau} 
+%& \rect{t}{\tau} 
+& \text{recursive}\\
+&&& \aprod{\labelset}{\mapschema{\tau}{i}{\labelset}} 
+%& \prodt{\mapschema{\tau}{i}{\labelset}} 
+& \text{labeled product}\\
+&&& \asum{\labelset}{\mapschema{\tau}{i}{\labelset}} 
+%& \sumt{\mapschema{\tau}{i}{\labelset}} 
+& \text{labeled sum}\\
+&&& \amcon{M} 
+%& \mcon{M} 
+& \text{construction component}
+\end{array}\]
+\caption[Syntax of kinds and constructions in $\miniVerseParam$]{Syntax of kinds and constructions in $\miniVerseParam$. By convention, we choose the metavariable $\tau$ for constructions that, in well-formed terms, must necessarily be of kind $\kty$, and the metavariable $c$ otherwise. Similarly, we use construction variables $t$ to stand for constructions of kind $\kty$, and construction variables $u$ otherwise. Kind variables, $k$, are necessary only for the metatheory.}
+\label{fig:P-kinds-constructors}
+\end{figure}
+
+\begin{figure}
+\[\begin{array}{lllllll}
+\textbf{Sort} & & & \textbf{Operational Form} 
+%& \textbf{Stylized Form} 
+& \textbf{Description}\\
+\mathsf{Exp} & e & ::= & x 
+%& x 
+& \text{variable}\\
+&&& \aelam{\tau}{x}{e} 
+%& \lam{x}{\tau}{e} 
+& \text{abstraction}\\
+&&& \aeap{e}{e} 
+%& \ap{e}{e} 
+& \text{application}\\
+&&& \aeclam{\kappa}{u}{e} %& \clam{u}{\kappa}{e} 
+& \text{construction abstraction}\\
+&&& \aecap{e}{c} %& \cAp{e}{c} 
+& \text{construction application}\\
+&&& \aefold{e} %& \fold{e} 
+& \text{fold}\\
+&&& \aeunfold{e} %& \unfold{e} 
+& \text{unfold}\\
+&&& \aetpl{\labelset}{\mapschema{e}{i}{\labelset}} 
+%& \tpl{\mapschema{e}{i}{\labelset}} 
+& \text{labeled tuple}\\
+&&& \aepr{\ell}{e} 
+%& \prj{e}{\ell} 
+& \text{projection}\\
+&&& \aein{\ell}{e} 
+%& \inj{\ell}{e} 
+& \text{injection}\\
+&&& \aematchwith{n}{e}{\seqschemaX{r}} 
+%& \matchwith{e}{\seqschemaX{r}} 
+& \text{match}\\
+&&& \amval{M} 
+%& \mval{M} 
+& \text{value component}\\
+\mathsf{Rule} & r & ::= & \aematchrule{p}{e} 
+%& \matchrule{p}{e} 
+& \text{rule}\\
+\mathsf{Pat} & p & ::= & x 
+%& x 
+& \text{variable pattern}\\
+&&& \aewildp 
+%& \wildp 
+& \text{wildcard pattern}\\
+&&& \aefoldp{p} 
+%& \foldp{p} 
+& \text{fold pattern}\\
+&&& \aetplp{\labelset}{\mapschema{p}{i}{\labelset}} 
+%& \tplp{\mapschema{p}{i}{\labelset}} 
+& \text{labeled tuple pattern}\\
+&&& \aeinjp{\ell}{p} 
+%& \injp{\ell}{p} 
+& \text{injection pattern}
+\end{array}\]
+\caption[Syntax of expanded expressions, rules and patterns in $\miniVerseParam$]{Syntax of expanded expressions, rules and patterns in $\miniVerseParam$}
+\label{fig:P-expanded-terms}
+\end{figure}
+
+
+Figure \ref{fig:P-modules-signatures} defines the syntax of the \emph{expanded module language}. Figure \ref{fig:P-kinds-constructors} defines the syntax of the \emph{expanded type construction language}. Figure \ref{fig:P-expanded-terms} defines the syntax of the \emph{expanded expression language}.
+
+
+\subsection{Statics of the Expanded Language}
+The module and type construction languages are based closely on those defined by Harper in \emph{PFPL} \cite{pfpl}. These languages, in turn, are based on the languages developed by Lee et al. \cite{conf/popl/LeeCH07}, and also by Dreyer \cite{dreyer2005understanding}. All of these incorporate Stone and Harper's \emph{dependent singleton kinds} formalism to track type identity \cite{stone2006extensional}. The expression language is similar to that of $\miniVersePat$, defined in Chapter \ref{chap:uptsms}.
+
+The \emph{statics of the expanded language} is defined by a collection of judgements that we organize into three groups. 
+
+The first group of judgements, which we refer to as the \emph{statics of the expanded module language}, define the statics of expanded signatures and module expressions.
+
+\vspace{5px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\issigX{\sigma} & \text{$\sigma$ is a signature }\\
+\sigequalX{\sigma}{\sigma'} & \text{$\sigma$ and $\sigma'$ are definitionally equal signatures}\\
+\sigsubX{\sigma}{\sigma'} & \text{$\sigma$ is a sub-signature of $\sigma'$}\\
+\hassigX{M}{\sigma} & \text{$M$ matches $\sigma$}\\
+\ismvalX{M} & \text{$M$ is, or stands for, a module value}
+\end{array}$
+\vspace{5px}
+
+The second group of judgements, which we refer to as the \emph{statics of the expanded type construction language}, define the statics of expanded kinds and constructions.
+
+\vspace{5px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\iskindX{\kappa} & \text{$\kappa$ is a kind}\\
+\kequalX{\kappa}{\kappa'} & \text{$\kappa$ and $\kappa'$ are definitionally equal kinds}\\
+\ksubX{\kappa}{\kappa'} & \text{$\kappa$ is a subkind of $\kappa'$}\\
+\haskindX{c}{\kappa} & \text{$c$ has kind $\kappa$}\\
+\cequalX{c}{c'}{\kappa} & \text{$c$ and $c'$ are equivalent as constructions of kind $\kappa$}
+\end{array}$
+\vspace{5px}
+
+The third group of judgements, which we refer to as the \emph{statics of the expanded expression language}, define the statics of types, expanded expressions, rules and patterns. Types are constructions of kind $\akty$. We use the metavariable $\tau$ rather than $c$ for types.
+
+\vspace{5px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+% \istypeP{\Omega}{\tau} & \text{$\tau$ is a well-formed type}\\
+% \tequalPX{\tau}{\tau'} & \text{$\tau$ and $\tau'$ are definitionally equal types}\\
+\issubtypePX{\tau}{\tau'} & \text{$\tau$ is a subtype of $\tau'$}\\
+\hastypeP{\Omega}{e}{\tau} & \text{$e$ is assigned type $\tau$}\\
+\ruleTypeP{\Omega}{r}{\tau}{\tau'} & \text{$r$ takes values of type $\tau$ to values of type $\tau'$}\\
+\patTypeP{\Omega'}{p}{\tau} & \text{$p$ matches values of type $\tau$ and generates hypotheses $\Omega'$} 
+\end{array}$
+\vspace{5px}
+
+
+A \emph{unified context}, $\Omega$, is a finite function over module, expression and construction variables. 
+We write
+\begin{itemize}
+\item $\Omega, X : \sigma$ when $X \notin \domof{\Omega}$ and $\issigX{\sigma}$ for the extension of $\Omega$ with a mapping from $X$ to the hypothesis $X : \sigma$.
+\item $\Omega, x : \tau$ when $x \notin \domof{\Omega}$ and $\haskindX{\tau}{\akty}$ for the extension of $\Omega$ with a mapping from $x$ to the hypothesis $x : \tau$
+\item $\Omega, u :: \kappa$ when $u \notin \domof{\Omega}$ and $\iskindX{\kappa}$ for the extension of $\Omega$ with a mapping from $u$ to the hypothesis $u :: \kappa$
+\end{itemize}
+A well-formed unified context is one that can be constructed by some sequence of such extensions, starting from the empty context, $\emptyset$. We identify unified contexts up to exchange and contraction in the usual manner.
+
+The complete set of rules is given in Appendix \ref{appendix:P-statics}. A comprehensive introductory account of these constructs is beyond the scope of this work (see \cite{pfpl}.) Instead, let us summarize the key features of the expanded language by example. 
+
+Modules take the form $\astruct{c}{e}$, following a \emph{phase-splitting} approach -- the construction components of the module are ``tupled'' into a single construction component, $c$, and the value components of the module are ``tupled'' into a single value component, $e$ \cite{harper1989higher}. Signatures, $\sigma$, are also split in this way -- a single \emph{kind}, $\kappa$,  classifies the construction component and a single type, $\tau$, classifies the value component of the classified module. The type can refer to the construction component through a mediating construction variable, $u$. The key rule is reproduced below:
+\begin{equation*}\tag{\ref{rule:hassig-struct}}
+\inferrule{
+  \haskindX{c}{\kappa}\\
+  \hastypeP{\Omega}{e}{[c/u]\tau}
+}{
+  \hassigX{\astruct{c}{e}}{\asignature{\kappa}{u}{\tau}}
+}
+\end{equation*}
+
+For example, consider the VerseML signature and the corresponding $\miniVerseParam$ signature in Figure \ref{fig:corresponding-signatures}. The kind on the right (Lines 1-3) is a \emph{dependent product kind} and the type (Lines 4-5) is a product type. Let us consider these in turn.
+
+\begin{figure}
+\begin{minipage}{0.35\textwidth}
+\begin{lstlisting}
+sig
+  type t
+  type t' = t * t
+  val x : t
+  val y : t -> t'
+end
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.5\textwidth}\vspace{3px}
+{\footnotesize\[
+\begin{array}{l}
+\asignature{\akdbprod{\\
+\quad\quad \akty}{t}{\\
+\quad\quad \aksing{
+  \aprod{\lbltxt{1}; \lbltxt{2}}{
+    \mapitem{\lbltxt{1}}{t}; \mapitem{\lbltxt{2}}{t}
+  }
+}}\\}{u}{
+ \aprod{\lbltxt{x}; \lbltxt{y}}{
+  \mapitem{\lbltxt{x}}{\acprl{u}}; \\ 
+\quad\quad \mapitem{\lbltxt{y}}{\aparr{
+    \acprl{u}
+  }{
+    \acprr{u}
+  }}
+}\\
+}
+\end{array}
+\]}
+\end{minipage}
+\caption{A VerseML signature and the corresponding $\miniVerseParam$ signature}
+\label{fig:corresponding-signatures}
+\vspace{-10px}
+\end{figure}
+
+
+
+On Lines 2-3 (left), we specified an abstract type component \li{t}, and then a translucent type component \li{t'} equal to \li{t * t}. Abstract type components have kind $\akty$, so the first component of the dependent product kind is $\akty$ (Line 2, right). The construction variable $t$ stands for the first component in the second component of the dependent product kind. The second component is not held abstract, so it is classified by a corresponding \emph{singleton kind}, rather than by the kind $\akty$ (Line 3, right). A singleton kind $\aksing{\tau}$ classifies only those types definitionally equal to $\tau$. A subkinding system is necessary to ensure that constructions of singleton kind can appear where a construction of kind $\akty$ is needed -- the key rule is reproduced below:
+\begin{equation*}\tag{\ref{rule:ksub-sing}}
+\inferrule{
+  \haskindX{\tau}{\akty}
+}{
+  \ksubX{\aksing{\tau}}{\akty}
+}
+\end{equation*}
+
+Lines 4-5 (right) define a product type that classifies the value component of matching modules. The construction variable \li{u} stands for the construction component of the matching module. The left- and right-projection operations $\acprl{c}$ and $\acprr{c}$ on the right correspond to \li{t} and \li{t'} on the left. (In practice, we would use labeled dependent product kinds, but for simplicity, we stick to binary dependent product kinds here.)
+
+Consider another example: the VerseML \li{LIST} signature from Figure \ref{fig:LIST}, partially reproduced below:
+\begin{lstlisting}
+sig 
+  type list('a) = rec(self => Nil + Cons of 'a * self)
+  val Nil : list('a)
+  val Cons : 'a * list('a) -> list('a)
+  (* ... *)
+end
+\end{lstlisting}
+This signature corresponds to the $\miniVerseParam$ signature $\sigma_\texttt{LIST}$ defined in Figure \ref{fig:LIST-mini}. 
+
+\begin{figure}
+\[
+\arraycolsep=1px\begin{array}{ll}
+
+\sigma_\texttt{LIST} & \defeq \asignature{\kappa_\texttt{LIST}}{list}{\tau_\texttt{LIST}}\\
+\kappa_\texttt{LIST} & \defeq \akdarr{\akty}{\alpha}{\aksing{
+  \arec{self}{
+    \asum{L_\texttt{list}}{\\
+    & \quad\quad 
+      \mapitem{\lbltxt{Nil}}{\aprod{}{}}; \\
+    & \quad\quad 
+      \mapitem{\lbltxt{Cons}}{
+        \aprod{\lbltxt{1}; \lbltxt{2}}{
+          \mapitem{\lbltxt{1}}{\alpha}; 
+          \mapitem{\lbltxt{2}}{self}
+        }
+      }
+    }
+  } 
+}}\\
+L_\texttt{list} & \defeq \lbltxt{Nil}, \lbltxt{Cons}\\
+\tau_\texttt{LIST} & \defeq \aprod{L_\texttt{list}}{\\&
+  \quad\quad \mapitem{\lbltxt{Nil}}{
+    \aallu{\akty}{\alpha}{\acapp{list}{\alpha}}
+  }; \\&
+  \quad\quad \mapitem{\lbltxt{Cons}}{
+    \aallu{\akty}{\alpha}{
+      \aparr{\\&\quad\quad\quad
+        \aprod{\lbltxt{1}; \lbltxt{2}}{
+          \mapitem{\lbltxt{1}}{\alpha}; 
+          \mapitem{\lbltxt{2}}{\acapp{list}{\alpha}}
+        }
+      }{\\&\quad\quad\quad
+        \acapp{list}{\alpha}
+      }
+    }
+  }
+}
+\end{array}
+\]
+\caption{The $\miniVerseParam$ encoding of the \texttt{LIST} signature}
+\label{fig:LIST-mini}
+\end{figure}
+Here, the signature specifies only a single construction component, so no tupling of the construction component is necessary. This single construction component is a type function, so it has dependent function kind: the argument kind is $\akty$ and the return kind is a singleton kind, because the type function is not abstract. (Had we held the type function abstract, its kind would instead be $\akdarr{\akty}{\_}{\akty}$.)
+%A well-formed unified inner context is one where there are no cycles in the dependency graph between the hypotheses (constructed in the obvious manner) and for each hypothesis, the construction, kinds or signature involved is well-formed relative to the unified inner context.
+
+At the top level, a program consists of a module expression, $M$. The module let binding form allows the programmer to bind a module to a module variable, $X$:
+\begin{equation*}\tag{\ref{rule:hassig-let}}
+\inferrule{
+  \hassigX{M}{\sigma}\\
+  \issigX{\sigma'}\\
+  \hassig{\Omega, X : \sigma}{M'}{\sigma'}  
+}{
+  \hassigX{\amlet{\sigma'}{M}{X}{M'}}{\sigma'}
+}
+\end{equation*}
+
+The construction projection form, $\amcon{M}$, allows us to refer to the construction component of $M$ within a construction appearing in $M'$. The kinding rule for this form is reproduced below:
+\begin{equation*}\tag{\ref{rule:haskind-stat}}
+\inferrule{
+  \ismvalX{M}\\
+  \hassigX{M}{\asignature{\kappa}{u}{\tau}}
+}{
+  \haskindX{\amcon{M}}{\kappa}
+}
+\end{equation*}
+Similarly, the value projection form, $\amval{M}$, projects out the value component of $M$ within an expression appearing in $M'$. The typing rule for this form is reproduced below:
+\begin{equation*}\tag{\ref{rule:hastypeP-dyn}}
+\inferrule{
+  \ismvalX{M}\\
+  \hassigX{M}{\asignature{\kappa}{u}{\tau}}
+}{
+  \hastypeP{\Omega}{\amval{M}}{[\amcon{M}/u]\tau}
+}
+\end{equation*}
+The first premise of both of these rules requires that $M$ be, or stand for, a \emph{module value}, according to the following rules:
+\begin{equation*}\tag{\ref{rule:ismval-struct}}
+\inferrule{ }{
+  \ismvalX{\astruct{c}{e}}
+}
+\end{equation*}
+\begin{equation*}\tag{\ref{rule:ismval-var}}
+\inferrule{ }{
+  \ismval{\Omega, X : \sigma}{X}
+}
+\end{equation*}
+The reason for this restriction has to do with the \emph{sealing} operation:
+\begin{equation*}\tag{\ref{rule:hassig-seal}}
+\inferrule{
+  \issigX{\sigma}\\
+  \hassigX{M}{\sigma}
+}{
+  \hassigX{\aseal{\sigma}{M}}{\sigma}
+}
+\end{equation*}
+Sealing enforces \emph{representation independence} -- the abstract construction components of a sealed module are not treated as equivalent to those of any other sealed module within the program. In other words, sealing is \emph{generative}. The module value restriction above achieves this behavior by simple syntactic means -- a sealed module is not a module value, so all sealed modules have to be bound to distinct module variables.
+
+The judgements above obey standard lemmas, including Weakening, Substitution and Decomposition (see Appendix \ref{appendix:P-statics}.)
+
+We omit certain features of the ML module system in  $\miniVerseParam$, such as its support for hierarchical modules and functors. Our formulation also does not support ``width'' subtyping and subkinding for simplicity. These are straightforward extensions of $\miniVerseParam$, but because their inclusion would not change the semantics of parametric TLMs, we did not include them (see \cite{pfpl} for a discussion of these features.)
+
+\subsection{Structural Dynamics}
+The structural dynamics of modules is defined as a transition system, and is organized around judgements of the following form:
+
+\vspace{10px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\stepsU{M}{M'} & \text{$M$ transitions to $M'$}\\
+\isvalP{M} & \text{$M$ is a module value}\\
+\matchfail{M} & \text{$M$ raises match failure}
+\end{array}$
+\vspace{10px}
+
+The structural dynamics of expressions is also defined as a transition system, and is organized around judgements of the following form:
+
+\vspace{10px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\stepsU{e}{e'} & \text{$e$ transitions to $e'$}\\
+\isvalP{e} & \text{$e$ is a value}\\
+\matchfail{e} & \text{$e$ raises match failure}
+\end{array}$
+\vspace{10px}
+
+We also define auxiliary judgements for \emph{iterated transition}, $\multistepU{e}{e'}$, and \emph{evaluation}, $\evalU{e}{e'}$, of expressions.
+
+\begingroup
+\def\thetheorem{\ref{defn:iterated-transition-P}}
+\begin{definition}[Iterated Transition] Iterated transition, $\multistepU{e}{e'}$, is the reflexive, transitive closure of the transition judgement, $\stepsU{e}{e'}$.\end{definition}
+% \addtocounter{theorem}{-1}
+\endgroup
+
+\begingroup
+\def\thetheorem{\ref{defn:evaluation-P}}
+\begin{definition}[Evaluation] $\evalU{e}{e'}$ iff $\multistepU{e}{e'}$ and $\isvalU{e'}$. \end{definition}
+% \addtocounter{theorem}{-1}
+\endgroup
+
+As in previous chapters, our subsequent developments do not make mention of particular rules in the dynamics, so we do not produce these details here. Instead, it suffices to state the following conditions.
+
+The Preservation condition ensures that evaluation preserves typing.
+\begingroup
+\def\thetheorem{\ref{condition:preservation-P}}
+\begin{condition}[Preservation] ~
+\begin{enumerate}
+\item If $\hassig{}{M}{\sigma}$ and $\stepsU{M}{M'}$ then $\hassig{}{M}{\sigma}$.
+\item If $\hastypeUC{e}{\tau}$ and $\stepsU{e}{e'}$ then $\hastypeUC{e'}{\tau}$.
+\end{enumerate}
+\end{condition}
+\endgroup
+
+The Progress condition ensures that evaluation of a well-typed expanded expression cannot ``get stuck''. We must consider the possibility of match failure in this condition.
+\begingroup
+\def\thetheorem{\ref{condition:progress-P}}
+\begin{condition}[Progress] ~
+\begin{enumerate}
+\item If $\hassig{}{M}{\sigma}$ then either $\isvalU{M}$ or $\matchfail{M}$ or there exists an $M'$ such that $\stepsU{M}{M'}$.
+\item If $\hastypeUC{e}{\tau}$ then either $\isvalU{e}$ or $\matchfail{e}$ or there exists an $e'$ such that $\stepsU{e}{e'}$.
+\end{enumerate}
+\end{condition}
+% \addtocounter{theorem}{-1}
+\endgroup
+
+Together, these two conditions constitute the Type Safety Condition.
+
+\begin{figure}[p] \vspace{-15px}
+$\arraycolsep=4pt\begin{array}{lllllll}
+\textbf{Sort} & & 
+%& \textbf{Operational Form} 
+& \textbf{Stylized Form} & \textbf{Description}\\
+\mathsf{USig} & \usigma & ::= 
+%& \ausignature{\ukappa}{\uu}{\utau} 
+& \signature{\uu}{\ukappa}{\utau} & \text{signature}\\
+\mathsf{UMod} & \uM & ::= 
+%& \uX 
+& \uX & \text{module identifier}\\
+&&
+%& \austruct{\uc}{\ue} 
+& \struct{\uc}{\ue} & \text{structure}\\
+&&
+%& \auseal{\usigma}{\uM} 
+& \seal{\uM}{\usigma} & \text{seal}\\
+&&
+%& \aumlet{\usigma}{\uM}{\uX}{\uM} 
+& \mlet{\uX}{\uM}{\uM}{\usigma} & \text{definition}\\
+\LCC &&
+%& \lightgray 
+& \color{Yellow} & \color{Yellow}\\
+&&
+%& \aumdefpetsm{\urho}{e}{\tsmv}{\uM} 
+& \defpetsm{\tsmv}{\urho}{e}{\uM} & \text{peTLM definition}\\
+%&&&                                    & \texttt{expressions}~\{e\}~\texttt{in}~\uM\\
+&&
+%& \aumletpetsm{\uepsilon}{\tsmv}{\uM} 
+& \uletpetsm{\tsmv}{\uepsilon}{\uM} & \text{peTLM binding}\\
+% &&&                                  & \texttt{expressions}~\texttt{in}~\uM\\
+% &&& ... & ... & \text{peTLM designation}\\
+&&
+%& \audefpptsm{\urho}{e}{\tsmv}{\uM} 
+& \defpptsm{\tsmv}{\urho}{e}{\uM} & \text{ppTLM definition}\\
+% &&&                                    & \texttt{patterns}~\{e\}~\texttt{in}~\uM\\
+&&
+%& \auletpptsm{\uepsilon}{\tsmv}{\uM} 
+& \uletpptsm{\tsmv}{\uepsilon}{\uM} & \text{ppTLM binding}\ECC%
+% &&& & \texttt{patterns}~\texttt{in}~\uM\\
+% &&& ... & ... & \text{ppTLM designation}\ECC
+\end{array}$%\vspace{-5px}
+\caption[Syntax of unexpanded module expressions and signatures in $\miniVerseParam$]{Syntax of unexpanded module expressions and signatures in $\miniVerseParam$}%\vspace{-5px}
+\label{fig:P-unexpanded-modules-signatures}
+\end{figure}
+\begin{figure}[p] \vspace{-10px}
+\[\begin{array}{lrlllll}
+\textbf{Sort} & & 
+%& \textbf{Operational Form} 
+& \textbf{Stylized Form} & \textbf{Description}\\
+\mathsf{UKind} & \ukappa & ::= 
+%& \aukdarr{\ukappa}{\uu}{\ukappa} 
+& \kdarr{\uu}{\ukappa}{\ukappa} & \text{dependent function}\\
+&&
+%& \aukunit 
+& \kunit & \text{nullary product}\\
+&&
+%& \aukdbprod{\ukappa}{\uu}{\ukappa} 
+& \kdbprod{\uu}{\ukappa}{\ukappa} & \text{dependent product}\\
+%&&& \akdprodstd & \kdprodstd & \text{labeled dependent product}\\
+&&
+%& \aukty 
+& \kty & \text{type}\\
+&&
+%& \auksing{\utau} 
+& \ksing{\utau} & \text{singleton}\\
+\mathsf{UCon} & \uc, \utau & ::= 
+%& \uu 
+& \uu & \text{construction identifier}\\
+&&
+%& \ut 
+& \ut & \\
+&&
+%& \aucasc{\ukappa}{\uc} 
+& \casc{\uc}{\ukappa} & \text{ascription}\\
+&&
+%& \aucabs{\uu}{\uc} 
+& \cabs{\uu}{\uc} & \text{abstraction}\\
+&&
+%& \aucapp{c}{c} 
+& \capp{c}{c} & \text{application}\\
+&&
+%& \auctriv 
+& \ctriv & \text{trivial}\\
+&&
+%& \aucpair{\uc}{\uc} 
+& \cpair{\uc}{\uc} & \text{pair}\\
+&&
+%& \aucprl{\uc} 
+& \cprl{\uc} & \text{left projection}\\
+&&
+%& \aucprr{\uc} 
+& \cprr{\uc} & \text{right projection}\\
+%&&& \adtplX & \dtplX & \text{labeled dependent tuple}\\
+%&&& \adprj{\ell}{c} & \prj{c}{\ell} & \text{projection}\\
+&&
+%& \auparr{\utau}{\utau} 
+& \parr{\utau}{\utau} & \text{partial function}\\
+&&
+%& \auallu{\ukappa}{\uu}{\utau} 
+& \forallu{\uu}{\ukappa}{\utau} & \text{polymorphic}\\
+&&
+%& \aurec{\ut}{\utau} 
+& \rect{\ut}{\utau} & \text{recursive}\\
+&&
+%& \auprod{\labelset}{\mapschema{\utau}{i}{\labelset}} 
+& \prodt{\mapschema{\utau}{i}{\labelset}} & \text{labeled product}\\
+&&
+%& \ausum{\labelset}{\mapschema{\utau}{i}{\labelset}} 
+& \sumt{\mapschema{\utau}{i}{\labelset}} & \text{labeled sum}\\
+&&
+%& \aumcon{\uX} 
+& \mcon{\uX} & \text{construction component}
+\end{array}\]%\vspace{-5px}
+\caption[Syntax of unexpanded kinds and constructions in $\miniVerseParam$]{Syntax of unexpanded kinds and constructions in $\miniVerseParam$}\vspace{-10px}
+\label{fig:P-unexpanded-kinds-constructors}
+\end{figure}
+
+% \clearpage
+\begin{figure}[p]
+\[\begin{array}{lllllll}
+\textbf{Sort} & & 
+%& \textbf{Operational Form} 
+& \textbf{Stylized Form} & \textbf{Description}\\
+\mathsf{UExp} & \ue & ::= 
+%& \ux 
+& \ux & \text{identifier}\\
+&&
+% & \auasc{\utau}{\ue} 
+& \asc{\ue}{\utau} & \text{ascription}\\
+&&
+% & \auletsyn{\ux}{\ue}{\ue} 
+& \letsyn{\ux}{\ue}{\ue} & \text{value binding}\\
+% &&
+%& \auanalam{\ux}{\ue} 
+% & \analam{\ux}{\ue} & \text{abstraction (unannotated)}\\
+&&
+%& \aulam{\utau}{\ux}{\ue} 
+& \lam{\ux}{\utau}{\ue} & \text{abstraction}\\
+&&
+%& \auap{\ue}{\ue} 
+& \ap{\ue}{\ue} & \text{application}\\
+&&
+%& \auclam{\ukappa}{\uu}{\ue} 
+& \clam{\uu}{\ukappa}{\ue} & \text{construction abstraction}\\
+&&
+%& \aucap{\ue}{\uc} 
+& \cAp{\ue}{\uc} & \text{construction application}\\
+&&
+%& \auanafold{\ue} 
+& \fold{\ue} & \text{fold}\\
+&&
+%& \auunfold{\ue} 
+& \unfold{\ue} & \text{unfold}\\
+&&
+%& \autpl{\labelset}{\mapschema{\ue}{i}{\labelset}} 
+& \tpl{\mapschema{\ue}{i}{\labelset}} & \text{labeled tuple}\\
+&&
+%& \aupr{\ell}{\ue} 
+& \prj{\ue}{\ell} & \text{projection}\\
+&&
+%& \auanain{\ell}{\ue} 
+& \inj{\ell}{\ue} & \text{injection}\\
+&&
+%& \aumatchwithb{n}{\ue}{\seqschemaX{\urv}} 
+& \matchwith{\ue}{\seqschemaX{\urv}} & \text{match}\\
+&&
+%& \aumval{\uX} 
+& \mval{\uX} & \text{value component}\\
+\LCC &&
+% %& \color{Yellow} 
+& \color{Yellow} & \color{Yellow} \\
+% &&& \audefpetsm{\urho}{e}{\tsmv}{\ue} & \texttt{syntax}~\tsmv~\texttt{at}~\urho~\texttt{for} & \text{peTLM definition}\\
+% &&&                                    & \texttt{expressions}~\{e\}~\texttt{in}~\ue\\
+% &&& \auletpetsm{\uepsilon}{\tsmv}{\ue} & \texttt{let}~\texttt{syntax}~\tsmv=\uepsilon~\texttt{for} & \text{peTLM binding}\\
+% &&&                                  & \texttt{expressions}~\texttt{in}~\ue\\
+% &&& ... & ... & \text{peTLM designation}\\
+&&
+%& \auappetsm{b}{\uepsilon} 
+& \utsmap{\uepsilon}{b} & \text{peTLM application}\ECC\\%\ECC
+% &&& \auelit{b} & {\lit{b}}  & \text{peTLM unadorned literal}\\
+% &&& \audefpptsm{\urho}{e}{\tsmv}{\ue} & \texttt{syntax}~\tsmv~\texttt{at}~\urho~\texttt{for} & \text{ppTLM definition}\\
+% &&&                                    & \texttt{patterns}~\{e\}~\texttt{in}~\ue\\
+% &&& \auletpptsm{\uepsilon}{\tsmv}{\ue} & \texttt{let}~\texttt{syntax}~\tsmv=\uepsilon~\texttt{for} & \text{ppTLM binding}\\
+% &&& & \texttt{patterns}~\texttt{in}~\ue\\
+% &&& ... & ... & \text{ppTLM designation}\\\ECC
+\mathsf{URule} & \urv & ::= 
+%& \aumatchrule{\upv}{\ue} 
+& \matchrule{\upv}{\ue} & \text{match rule}\\
+\mathsf{UPat} & \upv & ::= 
+%& \ux 
+& \ux & \text{identifier pattern}\\
+&&
+%& \auwildp 
+& \wildp & \text{wildcard pattern}\\
+&&
+%& \aufoldp{\upv} 
+& \foldp{\upv} & \text{fold pattern}\\
+&&
+%& \autplp{\labelset}{\mapschema{\upv}{i}{\labelset}} 
+& \tplp{\mapschema{\upv}{i}{\labelset}} & \text{labeled tuple pattern}\\
+&&
+% & \auinjp{\ell}{\upv} 
+& \injp{\ell}{\upv} 
+& \text{injection pattern}\\
+\LCC &&
+%& \lightgray 
+& \color{Yellow} & \color{Yellow}\\
+&&
+%& \auappptsm{b}{\uepsilon} 
+& \utsmap{\uepsilon}{b} & \text{ppTLM application}\ECC
+% &&& \auplit{b} & \lit{b} & \text{ppTLM unadorned literal}\ECC
+\end{array}\]
+\caption[Syntax of unexpanded expressions, rules and patterns in $\miniVerseParam$]{Syntax of unexpanded expressions, rules and patterns in $\miniVerseParam$}
+\label{fig:P-unexpanded-terms}
+\end{figure}
+
+% \clearpage
+
+
+
+\begin{figure}[p]
+\[\begin{array}{lllllll}
+\textbf{Sort} & & 
+%& \textbf{Operational Form} 
+& \textbf{Stylized Form} 
+& \textbf{Description}\\
+\LCC \color{Yellow}&\color{Yellow}& \color{Yellow}
+%& \lightgray 
+& \color{Yellow} & \color{Yellow}\\
+\mathsf{UMType} & \urho & ::= 
+%& \autype{\utau} 
+& \utau & \text{type annotation}\\
+% &&
+%& \aualltypes{\ut}{\urho} 
+% & \alltypes{\ut}{\urho} & \text{type parameterization}\\
+&&
+%& \auallmods{\usigma}{\uX}{\urho} 
+& \allmods{\uX}{\usigma}{\urho} & \text{module parameterization}\\
+\mathsf{UMExp} & \uepsilon & ::= 
+%& \abindref{\tsmv} 
+& \tsmv & \text{TLM identifier reference}\\
+% &&
+%& \auabstype{\ut}{\uepsilon} 
+% & \abstype{\ut}{\uepsilon} & \text{type abstraction}\\
+&&
+%& \auabsmod{\usigma}{\uX}{\uepsilon} 
+& \absmod{\uX}{\usigma}{\uepsilon} & \text{module abstraction}\\
+% &&
+%& \auaptype{\utau}{\uepsilon} 
+% & \aptype{\uepsilon}{\utau} & \text{type application}\\
+&&
+%& \auapmod{\uM}{\uepsilon} 
+& \apmod{\uepsilon}{\uX} & \text{module application}\ECC
+\end{array}
+\]
+\caption{Syntax of unexpanded TLM types and expressions  in $\miniVerseParam$}
+\label{fig:P-macro-expressions-types-u}
+\end{figure}
+\begin{figure}[t]
+\[\begin{array}{lllllll}
+\textbf{Sort} & & & \textbf{Operational Form} 
+%& \textbf{Stylized Form} 
+& \textbf{Description}\\
+\LCC \color{Yellow}&\color{Yellow}& \color{Yellow}
+%& \lightgray 
+& \color{Yellow} & \color{Yellow}\\
+\mathsf{MType} & \rho & ::= & \aetype{\tau} 
+%& \tau 
+& \text{type annotation}\\
+% &&& \aealltypes{t}{\rho} 
+%& \alltypes{t}{\rho} 
+% & \text{type parameterization}\\
+&&& \aeallmods{\sigma}{X}{\rho} 
+%& \allmods{X}{\sigma}{\rho} 
+& \text{module parameterization}\\
+\mathsf{MExp} & \epsilon & ::= & \adefref{a} 
+%& a 
+& \text{TLM definition reference}\\
+% &&& \aeabstype{t}{\epsilon} 
+%& \abstype{t}{\epsilon} 
+% & \text{type abstraction}\\
+&&& \aeabsmod{\sigma}{X}{\epsilon} 
+%& \absmod{X}{\sigma}{\epsilon} 
+& \text{module abstraction}\\
+% &&& \aeaptype{\tau}{\epsilon} 
+%& \aptype{\epsilon}{\tau} 
+% & \text{type application}\\
+&&& \aeapmod{M}{\epsilon} 
+%& \aptype{\epsilon}{M} 
+& \text{module application}\ECC
+\end{array}\]
+\caption[Syntax of TLM types and expressions in $\miniVerseParam$]{Syntax of TLM types and expressions  in $\miniVerseParam$}
+\label{fig:P-macro-expressions-types}
+\end{figure}
+\subsection{Syntax of the Unexpanded Language}
+The syntax of the unexpanded language is defined in Figures \ref{fig:P-unexpanded-modules-signatures} through \ref{fig:P-macro-expressions-types}.
+
+Each expanded form, with three exceptions, has a corresponding unexpanded form. We refer to these as the \emph{common forms}. The correspondence is defined in Appendix \ref{appendix:P-shared-forms}.
+
+Kind variables, $k$, are one exception. Kind variables are used only in the metatheory.
+
+The other two exceptions are constructions of the form $\amcon{M}$ and expressions of the form $\amval{M}$ where $M$ is of the form $\astruct{c}{e}$. Projection out of a module expression of the form $\astruct{c}{e}$ was supported in the XL only because this is needed to give the language  a conventional structural dynamics. Programmers refer to modules exclusively through module identifiers in unexpanded programs. 
+
+In addition to the common forms, there are several forms related to pTLMs, highlighted in yellow in these figures. We need syntax for unexpanded TLM types, $\urho$, and unexpanded TLM expressions, $\uepsilon$, to support parameterization and parameter application. Internally, these expand to TLM expressions, $\epsilon$, and TLM types, $\rho$, respectively.
+
+There is also a context-free textual syntax for the UL. For our purposes, we need only posit the existence of partial metafunctions that satisfy the following condition. 
+\begingroup
+\def\thetheorem{\ref{condition:textual-representability-P}}
+\begin{condition}[Textual Representability] All of the following must hold:
+\begin{enumerate}
+% \item For each $\usigma$, there exists $b$ such that $\parseUSig{b}{\usigma}$.
+% \item For each $\uM$, there exists $b$ such that $\parseUMod{b}{\uM}$.
+\item For each $\ukappa$, there exists $b$ such that $\parseUKind{b}{\ukappa}$.
+\item For each $\uc$, there exists $b$ such that $\parseUCon{b}{\uc}$.
+\item For each $\ue$, there exists $b$ such that $\parseUExp{b}{\ue}$.
+\item For each $\upv$, there exists $b$ such that $\parseUPat{b}{\upv}$.
+\end{enumerate}
+\end{condition}
+\endgroup
+
+
+\subsection{Typed Expansion}
+
+Typed expansion is defined by six groups of judgements. In these judgements, \emph{unexpanded unified contexts}, $\uOmega$, take the form $\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega}$, where $\uMctx$ is a \emph{module identifier expansion context}, $\uD$ is a \emph{construction identifier expansion context}, $\uG$ is an \emph{expression identifier expansion context} and $\Omega$ is a unified context. Identifier expansion contexts are defined in Appendix \ref{appendix:u-unified-ctxs} and conceptually operate as described in Sec. \ref{sec:miniVerseU}, mapping identifiers to variables.
+
+The first group of judgements defines signature and module expansion.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\sigExpandsPX{\usigma}{\sigma} & \text{$\usigma$ has well-formed expansion $\sigma$}\\
+\mExpandsPX{\uM}{M}{\sigma} & \text{$\uM$ has expansion $M$ matching $\sigma$}
+\end{array}$
+\vspace{6px}
+
+The second group of judgements defines kind and construction expansion.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\kExpandsX{\ukappa}{\kappa} & \text{$\ukappa$ has well-formed expansion $\kappa$}\\
+\cExpandsX{\uc}{c}{\kappa} & \text{$\uc$ has expansion $c$ of kind $\kappa$}
+\end{array}$
+\vspace{6px}
+
+The third group of judgements defines expression, rule and pattern expansion.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+% \tExpandsPX{\utau}{\tau} & \text{$\utau$ has well-formed expansion $\tau$}\\
+\expandsPX{\ue}{e}{\tau} & \text{$\ue$ has expansion $e$ of type $\tau$}\\
+% \eanaPX{\ue}{e}{\tau} & \text{$\ue$ has expansion $e$ when analyzed against type $\tau$}\\
+\rExpandsSP{\uOmega}{\uPsi}{\uPhi}{\urv}{r}{\tau}{\tau'} & \text{$\urv$ has expansion $r$ taking values of type $\tau$ to values of type $\tau'$}\\
+% & \text{synthesized type $\tau'$}\\
+% \ranaPX{\urv}{r}{\tau}{\tau'} & \text{$\urv$ has expansion $r$ and takes values of type $\tau$ to values of}\\
+% & \text{type $\tau'$ when $\tau's$ is provided for analysis}\\
+\patExpandsP{\uOmega'}{\uPhi}{\upv}{p}{\tau} & \text{$\upv$ has expansion $p$ matching at $\tau$  generating hypotheses $\uOmega'$}
+\end{array}$
+\vspace{6px}
+
+The judgements above are defined by the rules given in Appendix \ref{appendix:typed-expansion-P}. Most of these rules simply serve to ``mirror'' corresponding rules in the statics of the XL, as was described in Sec. \ref{sec:miniVerseU}. The interesting rules, governing the forms highlighted in yellow, will be reproduced as we discuss them below.
+
+The remaining judgements assign meaning to TLM types and expressions. We will detail these below. In particular, the fourth group of judgements define TLM type and expression expansion.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\tsmtyExpands{\uOmega}{\urho}{\rho} & \text{$\urho$ has well-formed expansion $\rho$}\\
+\tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\rho} & \text{$\uepsilon$ has peTLM expression expansion $\epsilon$ at $\rho$}\\
+\tsmexpExpandsPat{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\rho} & \text{$\uepsilon$ has ppTLM expression expansion $\epsilon$ at $\rho$}
+\end{array}$
+\vspace{6px}
+
+The fifth group of judgements define the statics of TLM expressions.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\istsmty{\Omega}{\rho} & \text{$\rho$ is a TLM type}\\
+\hastsmtypeExp{\Omega}{\Psi}{\epsilon}{\rho} & \text{$\epsilon$ is a peTLM expression at $\rho$}\\
+\hastsmtypePat{\Omega}{\Phi}{\epsilon}{\rho} & \text{$\epsilon$ is a ppTLM expression at $\rho$}
+\end{array}$
+\vspace{6px}
+
+The sixth group of judgements define the dynamics of TLM expressions.
+
+\vspace{6px}
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'} & \text{peTLM expression $\epsilon$ transitions to $\epsilon'$}\\
+\tsmexpStepsPat{\Omega}{\Psi}{\epsilon}{\epsilon'} & \text{ppTLM expression $\epsilon$ transitions to $\epsilon'$}\\
+\tsmexpNormalExp{\Omega}{\Psi}{\epsilon} & \text{$\epsilon$ is a normal peTLM expression}\\
+\tsmexpNormalPat{\Omega}{\Psi}{\epsilon} & \text{$\epsilon$ is a normal ppTLM expression}
+\end{array}$
+\vspace{6px}
+
+We define the multi-step transition judgements $\tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$ and $\tsmexpMultistepsPat{\Omega}{\Phi}{\epsilon}{\epsilon'}$ as the reflexive transitive closures of the corresponding transition judgements. We also define the peTLM expression normalization judgement $\tsmexpEvalsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$ iff $\tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$ and $\tsmexpNormalExp{\Omega}{\Psi}{\epsilon'}$. Similarly, we define the ppTLM expression normalization judgement $\tsmexpEvalsPat{\Omega}{\Phi}{\epsilon}{\epsilon'}$ iff $\tsmexpMultistepsPat{\Omega}{\Phi}{\epsilon}{\epsilon'}$ and $\tsmexpNormalPat{\Omega}{\Phi}{\epsilon'}$.
+
+\subsection{TLM Definitions}
+TLMs are scoped to module expressions. (Adding support for TLM definitions scoped to a single expression would be a straightforward exercise, so we omit the details for simplicity.)
+
+\subsubsection{peTLM Definitions}
+The rule governing peTLM definitions is reproduced below:
+\begin{equation*}\tag{\ref{rule:mExpandsP-syntaxpe}}
+\inferrule{
+  \tsmtyExpands{\uOmega}{\urho}{\rho}\\
+  \hastypeP{\emptyset}{\eparse}{\aparr{\tBody}{\tParseResultPCEExp}}\\\\
+  \evalU{\eparse}{\eparse'}\\
+  \mExpandsP{\uOmega}{\uAS{\uA \uplus \mapitem{\tsmv}{\adefref{a}}}{\Psi, \petsmdefn{a}{\rho}{\eparse'}}}{\uPhi}{\uM}{M}{\sigma}
+}{
+  \mExpandsP{\uOmega}{\uAS{\uA}{\Psi}}{\uPhi}{\defpetsm{\tsmv}{\urho}{\eparse}{\uM}}{M}{\sigma}
+}
+\end{equation*}
+
+peTLM definitions differ from ueTLM definitions in that the unexpanded type annotation is an \emph{unexpanded TLM type}, $\urho$, rather than an unexpanded type, $\utau$. This unexpanded TLM type determines the parameterization of the TLM. The first premise of the rule above expands the unexpanded TLM type to produce a \emph{TLM type}, $\rho$. The straightforward rules governing TLM type expansion are reproduced below.
+\begin{equation*}\tag{\ref{rule:tsmtyExpands-type}}
+\inferrule{
+  \cExpandsX{\utau}{\tau}{\akty}
+}{
+  \tsmtyExpands{\uOmega}{{\utau}}{\aetype{\tau}}
+}
+\end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmtyExpands-alltypes}}
+% \inferrule{
+%   \tsmtyExpands{\uOmega, \uKhyp{\ut}{t}{\akty}}{\urho}{\rho}
+% }{
+%   \tsmtyExpands{\uOmega}{\alltypes{\ut}{\urho}}{\aealltypes{t}{\rho}}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmtyExpands-allmods}}
+\inferrule{
+  \sigExpandsPX{\usigma}{\sigma}\\
+  \tsmtyExpands{\uOmega, \uMhyp{\uX}{X}{\sigma}}{\urho}{\rho}
+}{
+  \tsmtyExpands{\uOmega}{\allmods{\uX}{\usigma}{\urho}}{\aeallmods{\sigma}{X}{\rho}}
+}
+\end{equation*}
+Rule (\ref{rule:tsmtyExpands-type}) defines quantification over modules matching a given signature. There is no mechanism for quantification over types in the calculus because it can be understood as quantification over a module with a single type component.
+
+The second premise of Rule (\ref{rule:mExpandsP-syntaxpe}) checks that the parse function is of the appropriate type. The types $\tBody$ and $\tParseResultPCEExp$ are characterized in Appendix \ref{appendix:typed-expansion-P}. The type $\tPProtoExpr$ classifies \emph{encodings of parameterized proto-expressions}, which we will return to when we discuss TLM application below.
+
+The third premise of Rule (\ref{rule:mExpandsP-syntaxpe}) evaluates the parse function to a value.
+
+The final premise of Rule (\ref{rule:mExpandsP-syntaxpe}) extends the \emph{peTLM context}, $\uPsi$, which consists of a \emph{TLM identifier expansion context}, $\uA$, and a \emph{peTLM definition context}, $\Psi$. A peTLM definition context maps TLM names, $a$, to an expanded peTLM definition, $\petsmdefn{a}{\rho}{\eparse}$, where $\rho$ is the TLM type determined from the annotation and $\eparse$ is its parse function. A TLM identifier context maps TLM identifiers, $\tsmv$, to \emph{TLM expressions}, $\epsilon$. In this case, the TLM expression is simply a reference to the newly introduced TLM definition, $\adefref{a}$. We discuss the other TLM expression forms when we discuss TLM abbreviations below.
+
+\subsubsection{ppTLM Definitions}
+The rule governing ppTLM definitions is similar, and is reproduced below:
+\begin{equation*}\tag{\ref{rule:mExpandsP-syntaxpp}}
+\inferrule{ 
+  \tsmtyExpands{\uOmega}{\urho}{\rho}\\
+  \hastypeP{\emptyset}{\eparse}{\aparr{\tBody}{\tParseResultCEPat }}\\\\
+  \evalU{\eparse}{\eparse'}\\
+  \mExpandsP{\uOmega}{\uPsi}{\uAS{\uA \uplus \mapitem{\tsmv}{\adefref{a}}}{\Phi, \pptsmdefn{a}{\rho}{\eparse'}}}{\uM}{M}{\sigma}
+}{
+  \mExpandsP{\uOmega}{\uPsi}{\uAS{\uA}{\Phi}}{\defpptsm{\tsmv}{\urho}{\eparse}{\uM}}{M}{\sigma}
+}
+\end{equation*}
+This rule differs from Rule (\ref{rule:mExpandsP-syntaxpe}) in the type of the parse function and in the fact that the \emph{ppTLM context}, $\uPhi$, rather than the peTLM context, is updated.
+
+\subsection{TLM Abbreviations}
+It is possible to abbreviate a complex TLM expression by binding it to a TLM identifier.
+
+\subsubsection{peTLM Abbreviations}
+The rule governing peTLM abbreviations is reproduced below:
+\begin{equation}\tag{\ref{rule:mExpandsP-letpetsm}}
+\inferrule{
+  \tsmexpExpandsExp{\uOmega}{\uAS{\uA}{\Psi}}{\uepsilon}{\epsilon}{\rho}\\
+  \mExpandsP{\uOmega}{\uAS{\uA\uplus\mapitem{\tsmv}{\epsilon}}{\Psi}}{\uPhi}{\uM}{M}{\sigma}
+}{
+  \mExpandsP{\uOmega}{\uAS{\uA}{\Psi}}{\uPhi}{\uletpetsm{\tsmv}{\uepsilon}{\uM}}{M}{\sigma}
+}
+\end{equation}
+Here, $\uepsilon$ is an \emph{unexpanded TLM expression}. The first premise of the rule above expands it, producing a TLM expression $\epsilon$ at TLM type $\rho$. The second premise updates the peTLM identifier expansion context with this TLM expression.
+
+The rules below govern peTLM expression expansion. The first rule handles the base case, when the unexpanded TLM expression is a TLM identifier, $\tsmv$, by looking it up in $\uA$ and determining its TLM type according to the TLM expression typing judgement, $\hastsmtypeExp{\Omega}{\Psi}{\epsilon}{\rho}$ (which mirrors the rules below, and is defined in Appendix \ref{appendix:typed-expansion-P}.)
+\begin{equation*}\tag{\ref{rule:tsmexpExpandsExp-bindref}}
+\inferrule{
+  \hastsmtypeExp{\Omega}{\Psi}{\epsilon}{\rho}  
+}{
+  \tsmexpExpandsExp{\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega}}{\uAS{\uA, \mapitem{\tsmv}{\epsilon}}{\Psi}}{{\tsmv}}{\epsilon}{\rho}
+}
+\end{equation*}
+
+The following rule allows a peTLM expression to itself abstract over a module. (This is necessary to support abbreviated application of parameters other than the first.)
+% \begin{equation*}\tag{\ref{rule:tsmexpExpandsExp-abstype}}
+% \inferrule{
+%   \tsmexpExpandsExp{\uOmega, \uKhyp{\ut}{t}{\akty}}{\uPsi}{\uepsilon}{\epsilon}{\rho}
+% }{
+%   \tsmexpExpandsExp{\uOmega}{\uPsi}{\abstype{\ut}{\uepsilon}}{\aeabstype{t}{\epsilon}}{\aealltypes{t}{\rho}}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpExpandsExp-absmod}}
+\inferrule{
+  \sigExpandsPX{\usigma}{\sigma}\\
+  \tsmexpExpandsExp{\uOmega, \uMhyp{\uX}{X}{\sigma}}{\uPsi}{\uepsilon}{\epsilon}{\rho}
+}{
+  \tsmexpExpandsExp{\uOmega}{\uPsi}{\absmod{\uX}{\usigma}{\uepsilon}}{\aeabsmod{\sigma}{X}{\epsilon}}{\aeallmods{\sigma}{X}{\rho}}
+}
+\end{equation*}
+
+The final rule defines the semantics of parameter application.
+% \begin{equation*}\tag{\ref{rule:tsmexpExpandsExp-aptype}}
+% \inferrule{
+%   \tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aealltypes{t}{\rho}}\\
+%   \cExpandsX{\utau}{\tau}{\akty}
+% }{
+%   \tsmexpExpandsExp{\uOmega}{\uPsi}{\aptype{\uepsilon}{\utau}}{\aeaptype{\tau}{\epsilon}}{[\tau/t]\rho} 
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpExpandsExp-apmod}}
+\inferrule{
+  \tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aeallmods{\sigma}{X'}{\rho}}\\
+  \mExpandsPX{\uX}{X}{\sigma}
+}{
+  \tsmexpExpandsExp{\uOmega}{\uPsi}{\apmod{\uepsilon}{\uX}}{\aeapmod{X}{\epsilon}}{[X/X']\rho}
+}
+\end{equation*}
+
+\subsubsection{ppTLM Abbreviations}
+The rule governing ppTLM abbreviations is analagous:
+\begin{equation*}\tag{\ref{rule:mExpandsP-letpptsm}}
+\inferrule{
+  \tsmexpExpandsPat{\uOmega}{\uAS{\uA}{\Phi}}{\uepsilon}{\epsilon}{\rho}\\
+  \mExpandsP{\uOmega}{\uPsi}{\uAS{\uA\uplus\mapitem{\tsmv}{\epsilon}}{\Phi}}{\uM}{M}{\sigma}
+}{
+  \mExpandsP{\uOmega}{\uPsi}{\uAS{\uA}{\Phi}}{\uletpptsm{\tsmv}{\uepsilon}{\uM}}{M}{\sigma}
+}
+\end{equation*}
+The ppTLM expression expansion judgement appearing as the first premise is defined analagously to the peTLM expression expansion judgement defined above, differing only in that the rule for TLM identifiers consults the ppTLM context rather than the peTLM context. The rules are reproduced in Appendix \ref{appendix:typed-expansion-P}.
+
+\subsection{TLM Application}
+
+\subsubsection{peTLM Application}
+The rule for applying an unexpanded peTLM expression $\uepsilon$ to a generalized literal form with body $b$ is reproduced below:
+\begin{equation*}\tag{\ref{rule:expandsP-apuetsm}}
+\inferrule{
+  \uOmega = \uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \uPsi=\uAS{\uA}{\Psi}\\\\
+  \tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aetype{\tau_\text{final}}}\\
+  \tsmexpEvalsExp{\Omega_\text{app}}{\Psi}{\epsilon}{\epsilon_\text{normal}}\\\\
+  \tsmdefof{\epsilon_\text{normal}}=a\\
+  \Psi = \Psi', \petsmdefn{a}{\rho}{\eparse}\\\\
+  \encodeBody{b}{\ebody}\\
+  \evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessE}}{e_\text{pproto}}}\\
+  \decodePCEExp{e_\text{pproto}}{\pce}\\\\
+  \prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}\\\\
+     \segOKP{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\segof{\ce}}{b}\\
+  \cvalidEP{\Omega_\text{params}}{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}}{\ce}{e}{\tau_\text{proto}}
+}{
+  \expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{[\omega]e}{[\omega]\tau_\text{proto}}
+}
+\end{equation*}
+
+The first two premises simply deconstruct $\uOmega$ and $\uPsi$. Next, we expand $\uepsilon$ according to the unexpanded peTLM expression expansion rules that we already described above. The resulting TLM expression, $\epsilon$, must be defined at a type (i.e. no quantification must remain.)
+
+The fourth premise performs \emph{peTLM expression normalization}. Normalization is defined in terms of a simple structural dynamics with two stepping rules:
+% \begin{equation*}\tag{\ref{rule:tsmexpEvalsExp}}
+% \inferrule{
+%   \tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}\\
+%   \tsmexpNormalExp{\Omega}{\Psi}{\epsilon'}
+% }{
+%   \tsmexpEvalsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+% }
+% \end{equation*}
+% where the multistep judgement, $\tsmexpMultistepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$, is defined as the reflexive, transitive closure of the stepping judgement defined by the following rules:
+% \begin{equation*}\tag{\ref{rule:tsmexpStepsExp-aptype-1}}
+% \inferrule{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+% }{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\aeaptype{\tau}{\epsilon}}{\aeaptype{\tau}{\epsilon'}}
+% }
+% \end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpStepsExp-aptype-2}}
+% \inferrule{ }{
+%   \tsmexpStepsExp{\Omega}{\Psi}{\aeaptype{\tau}{\aeabstype{t}{\epsilon}}}{[\tau/t]\epsilon}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpStepsExp-apmod-1}}
+\inferrule{
+  \tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}
+}{
+  \tsmexpStepsExp{\Omega}{\Psi}{\aeapmod{X}{\epsilon}}{\aeapmod{X}{\epsilon'}}
+}
+\end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpStepsExp-apmod-2}}
+\inferrule{ }{
+  \tsmexpStepsExp{\Omega}{\Psi}{\aeapmod{X}{\aeabsmod{\sigma}{X'}{\epsilon}}}{[X/X']\epsilon}
+}
+\end{equation*}
+The peTLM expression normal forms are defined as follows:
+\begin{equation*}\tag{\ref{rule:tsmexpNormalExp-defref}}
+\inferrule{ }{
+  \tsmexpNormalExp{\Omega}{\Psi, \petsmdefn{a}{\rho}{\eparse}}{\adefref{a}}
+}
+\end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-abstype}}
+% \inferrule{ }{
+%   \tsmexpNormalExp{\Omega}{\Psi}{\aeabstype{t}{\epsilon}}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpNormalExp-absmod}}
+\inferrule{ }{
+  \tsmexpNormalExp{\Omega}{\Psi}{\aeabsmod{\sigma}{X}{\epsilon}}
+}
+\end{equation*}
+% \begin{equation*}\tag{\ref{rule:tsmexpNormalExp-aptype}}
+% \inferrule{
+%   \epsilon \neq \aeabstype{t}{\epsilon'}\\
+%   \tsmexpNormalExp{\Omega}{\Psi}{\epsilon}
+% }{
+%   \tsmexpNormalExp{\Omega}{\Psi}{\aeaptype{\tau}{\epsilon}}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:tsmexpNormalExp-apmod}}
+\inferrule{
+  \epsilon \neq \aeabsmod{\sigma}{X'}{\epsilon'}\\
+  \tsmexpNormalExp{\Omega}{\Psi}{\epsilon}
+}{
+  \tsmexpNormalExp{\Omega}{\Psi}{\aeapmod{X}{\epsilon}}
+}
+\end{equation*}
+Normalization leaves only those parameter applications that cannot be reduced away immediately, i.e. those specified by the original TLM definition.
+
+The TLM definition at the root of the normalized TLM expression is extracted by the third row of premises in Rule (\ref{rule:expandsP-apuetsm}). The first of these appeals to the following metafunction to produce the TLM definition's name.
+\begin{align}
+\tsmdefof{\adefref{a}} & = a \tag{\ref{eqn:tsmdefof-adefref}}\\
+% \tsmdefof{\aeabstype{t}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-abstype}}\\
+\tsmdefof{\aeabsmod{\sigma}{X}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-absmod}}\\
+% \tsmdefof{\aeaptype{\tau}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-aptype}}\\
+\tsmdefof{\aeapmod{X}{\epsilon}} & = \tsmdefof{\epsilon} \tag{\ref{eqn:tsmdefof-apmod}}
+\end{align}
+The second premise on the third row then looks up this name within $\Psi$.
+
+The fourth row of premises in Rule (\ref{rule:expandsP-apuetsm}) 1) encode the body as a value of the type $\tBody$; 2) apply the parse function; and 3) decode the result, producing a \emph{parameterized proto-expression}, $\pce$. Parameterized proto-expressions, $\pce$, are ABTs that serve to introduce the parameter bindings into a proto-expression, $\ce$. The operational and stylized syntax of parameterized proto-expression is given in Figure \ref{fig:P-pceexp}. 
+
+\begin{figure}[h]
+\[\begin{array}{lllllll}
+\textbf{Sort} & & & \textbf{Operational Form} & \textbf{Stylized Form} & \textbf{Description}\\
+\LCC \color{Yellow}&\color{Yellow}&\color{Yellow}& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+\mathsf{PPrExpr} & \pce & ::= & \apceexp{\ce} & \pceexp{\ce} & \text{proto-expression}\\
+% &&& \apcebindtype{t}{\pce} & \pcebindtype{t}{\pce} & \text{type binding}\\
+&&& \apcebindmod{X}{\pce} & \pcebindmod{X}{\pce} & \text{module binding}\ECC
+\end{array}\]
+\caption[Syntax of parameterized proto-expressions in $\miniVerseParam$]{Syntax of parameterized proto-expressions  in $\miniVerseParam$}
+\label{fig:P-pceexp}
+\end{figure}
+\noindent 
+There must be one binder in $\pce$ for each TLM parameter specified by $\tsmdefof{\epsilon_\text{normal}}$. (VerseML inserts these binders automatically as a convenience, but we consider only the underlying mechanism in this core calculus.) The judgement on the fifth row of Rule (\ref{rule:expandsP-apuetsm}) then \emph{deparameterizes} $\pce$ by peeling away these binders to produce 1) the underlying proto-expression, $\ce$, with the variables that stand for the parameters free; 2) a corresponding deparameterized type, $\tau_\text{proto}$, that uses the same free variables to stand for the parameters; 3) a \emph{substitution}, $\omega$, that pairs the applied parameters from $\epsilon_\text{normal}$ with the corresponding variables generated when peeling away the binders in $\pce$; and 4) a corresponding \emph{parameter context}, $\Omega_\text{params}$, that tracks the signatures of these variables. The two rules governing the proto-expression deparameterization judgement are reproduced below:
+\begin{equation*}\tag{\ref{rule:prepce-ceexp}}
+\inferrule{ }{
+  \prepce{\Omega_\text{app}}{\Psi, \petsmdefn{a}{\rho}{\eparse}}{\apceexp{\ce}}{\ce}{\adefref{a}}{\rho}{\emptyset}{\emptyset}
+}
+\end{equation*}
+% \begin{equation*}\tag{\ref{rule:prepce-alltypes}}
+% \inferrule{
+%   \prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon}{\aealltypes{t}{\rho}}{\omega}{\Omega}\\
+%   t \notin \domof{\Omega_\text{app}}
+% }{
+%   \prepce{\Omega_\text{app}}{\Psi}{\apcebindtype{t}{\pce}}{\ce}{\aeaptype{\tau}{\epsilon}}{\rho}{\omega, \tau/t}{\Omega, t :: \akty}
+% }
+% \end{equation*}
+\begin{equation*}\tag{\ref{rule:prepce-allmods}}
+\inferrule{
+  \prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon}{\aeallmods{\sigma}{X}{\rho}}{\omega}{\Omega}\\
+  X \notin \domof{\Omega_\text{app}}
+}{
+  \prepce{\Omega_\text{app}}{\Psi}{\apcebindmod{X}{\pce}}{\ce}{\aeapmod{X'}{\epsilon}}{\rho}{(\omega, X'/X)}{(\Omega, X : \sigma)}
+}
+\end{equation*}
+This judgement can be pronounced ``when applying peTLM $\epsilon$, $\pce$ has deparameterization $\ce$ leaving $\rho$ with parameter substitution $\omega$''. Notice from Rule (\ref{rule:prepce-allmods}) that every module binding in $\pce$ must pair with a corresponding module parameter application. Moreover, the variables standing for parameters must not appear in $\Omega_\text{app}$, i.e. $\domof{\Omega_\text{params}}$ must be disjoint from $\domof{\Omega_\text{app}}$ (this requirement can always be discharged by alpha-variation.)
+
+The final row of premises in Rule (\ref{rule:expandsP-apuetsm}) performs proto-expansion validation. This involves first checking that the segmentation of $\ce$ is valid. Segmentation validation is contextual because kind and type equivalence are contextual (see Appendix \ref{appendix:segmentations-P} for details.) After checking the segmentation, the next premise checks that the proto-expansion is well-typed under the parameter context, $\Omega_\text{param}$ (rather than the empty context, as was the case in $\miniVersePat$.) The conclusion of the rule applies the parameter substitution, $\omega$, to the resulting expression and the deparameterized type it was checked against.
+
+\subsubsection{ppTLM Application}
+
+The rule governing ppTLM application is similar:
+\begin{equation*}\tag{\ref{rule:patExpandsP-apuptsm}}
+\inferrule{
+  \uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \uPhi=\uAS{\uA}{\Phi}\\\\
+  \tsmexpExpandsPat{\uOmega}{\uPhi}{\uepsilon}{\epsilon}{\aetype{\tau_\text{final}}}\\
+  \tsmexpEvalsPat{\Omega_\text{app}}{\Phi}{\epsilon}{\epsilon_\text{normal}}\\\\
+  \tsmdefof{\epsilon_\text{normal}}=a\\
+  \Phi = \Phi', \pptsmdefn{a}{\rho}{\eparse}\\\\
+  \encodeBody{b}{\ebody}\\
+  \evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessP}}{e_\text{pproto}}}\\
+  \decodePCEPat{e_\text{pproto}}{\pcp}\\\\
+  \prepcp{\Omega_\text{app}}{\Phi}{\pcp}{\cpv}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}\\\\
+     \segOKP{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\segof{\cpv}}{b}\\
+  \cvalidPP{\uOmega'}{\psceneP{\omega : \Omega_\text{params}}{\uOmega}{\uPhi}{b}}{\cpv}{p}{\tau_\text{proto}}
+}{
+  \patExpandsP{\uOmega'}{\uPhi}{\utsmap{\uepsilon}{b}}{p}{[\omega]\tau_\text{proto}}
+}
+\end{equation*}
+
+Although patterns themselves cannot make reference to surrounding bindings, the type annotations on spliced patterns can, so we need the notion of a \emph{parameterized proto-pattern}, $\pcp$, and a corresponding deparameterization judgement. The necessary definitions, which are analagous to those given above for peTLMs, are given in Appendix \ref{appendix:typed-expansion-P}.
+
+\subsection{Syntax of Proto-Expansions}\label{sec:ce-syntax-P}
+
+\begin{figure}[p] 
+\[\begin{array}{lrlllll}
+\textbf{Sort} & & & \textbf{Operational Form} & \textbf{Stylized Form} & \textbf{Description}\\
+\mathsf{PrKind} & \cekappa & ::= & \acekdarr{\cekappa}{u}{\cekappa} & \kdarr{u}{\cekappa}{\cekappa} & \text{dependent function}\\
+&&& \acekunit & \kunit & \text{nullary product}\\
+&&& \acekdbprod{\cekappa}{u}{\cekappa} & \kdbprod{u}{\cekappa}{\cekappa} & \text{dependent product}\\
+%&&& \akdprodstd & \kdprodstd & \text{labeled dependent product}\\
+&&& \acekty & \kty & \text{type}\\
+&&& \aceksing{\ctau} & \ksing{\ctau} & \text{singleton}\\
+\LCC &&& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+&&& \acesplicedk{m}{n} & \splicedk{m}{n} & \text{spliced kind}\ECC\\
+\mathsf{PrCon} & \cec, \ctau & ::= & u & u & \text{construction variable}\\
+&&& t & t & \text{type variable}\\
+% &&& \acecasc{\cekappa}{\cec} & \casc{\cec}{\cekappa} & \text{ascription}\\
+&&& \acecabs{u}{\cec} & \cabs{u}{\cec} & \text{abstraction}\\
+&&& \acecapp{\cec}{\cec} & \capp{\cec}{\cec} & \text{application}\\
+&&& \acectriv & \ctriv & \text{trivial}\\
+&&& \acecpair{\cec}{\cec} & \cpair{\cec}{\cec} & \text{pair}\\
+&&& \acecprl{\cec} & \cprl{\cec} & \text{left projection}\\
+&&& \acecprr{\cec} & \cprr{\cec} & \text{right projection}\\
+%&&& \adtplX & \dtplX & \text{labeled dependent tuple}\\
+%&&& \adprj{\ell}{c} & \prj{c}{\ell} & \text{projection}\\
+&&& \aceparr{\ctau}{\ctau} & \parr{\ctau}{\ctau} & \text{partial function}\\
+&&& \aceallu{\cekappa}{u}{\ctau} & \forallu{u}{\cekappa}{\ctau} & \text{polymorphic}\\
+&&& \acerec{t}{\ctau} & \rect{t}{\ctau} & \text{recursive}\\
+&&& \aceprod{\labelset}{\mapschema{\ctau}{i}{\labelset}} & \prodt{\mapschema{\ctau}{i}{\labelset}} & \text{labeled product}\\
+&&& \acesum{\labelset}{\mapschema{\ctau}{i}{\labelset}} & \sumt{\mapschema{\ctau}{i}{\labelset}} & \text{labeled sum}\\
+&&& \acemcon{X} & \mcon{X} & \text{construction component}\\
+\LCC &&& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+&&& \acesplicedc{m}{n}{\cekappa} & \splicedc{m}{n}{\cekappa} & \text{spliced construction}\ECC
+\end{array}\]
+\caption[Syntax of proto-kinds and proto-constructions in $\miniVerseParam$]{Syntax of proto-kinds and proto-constructions in $\miniVerseParam$}
+\label{fig:P-ce-kinds-constructors}
+\end{figure}
+
+\begin{figure}[p]
+\[\arraycolsep=4pt\begin{array}{lllllll}
+\textbf{Sort} & & & \textbf{Operational Form} & \textbf{Stylized Form} & \textbf{Description}\\
+\mathsf{PrExp} & \ce & ::= & x & x & \text{variable}\\
+&&& \aceasc{\ctau}{\ce} & \asc{\ce}{\ctau} & \text{ascription}\\
+&&& \aceletsyn{x}{\ce}{\ce} & \letsyn{x}{\ce}{\ce} & \text{value binding}\\
+% &&& \aceasc{\ctau}{\ce} & \asc{\ce}{\ctau} & \text{ascription}\\
+% &&& \aceletsyn{x}{\ce}{\ce} & \letsyn{x}{\ce}{\ce} & \text{value binding}\\
+% &&& \aceanalam{x}{\ce} & \analam{x}{\ce} & \text{abstraction (unannotated)}\\
+&&& \acelam{\ctau}{x}{\ce} & \lam{x}{\ctau}{\ce} & \text{abstraction}\\
+&&& \aceap{\ce}{\ce} & \ap{\ce}{\ce} & \text{application}\\
+&&& \aceclam{\cekappa}{u}{\ce} & \clam{u}{\cekappa}{\ce} & \text{construction abstraction}\\
+&&& \acecap{\ce}{\cec} & \cAp{\ce}{\cec} & \text{construction application}\\
+&&& \acefold{\ce} & \fold{\ce} & \text{fold}\\
+&&& \aceunfold{\ce} & \unfold{\ce} & \text{unfold}\\
+&&& \acetpl{\labelset}{\mapschema{\ce}{i}{\labelset}} & \tpl{\mapschema{\ce}{i}{\labelset}} & \text{labeled tuple}\\
+&&& \acepr{\ell}{\ce} & \prj{\ce}{\ell} & \text{projection}\\
+&&& \aceanain{\ell}{\ce} & \inj{\ell}{\ce} & \text{injection}\\
+&&& \acematchwith{n}{\ce}{\seqschemaX{\urv}} & \matchwith{\ce}{\seqschemaX{\crv}} & \text{match}\\
+&&& \acemval{X} & \mval{X} & \text{value component}\\
+\LCC &&& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+&&& \acesplicede{m}{n}{\ctau} & \splicede{m}{n}{\ctau} & \text{spliced expression}\ECC\\
+\mathsf{PrRule} & \crv & ::= & \acematchrule{p}{\ce} & \matchrule{p}{\ce} & \text{rule}\\
+\mathsf{PrPat} & \cpv & ::= & \acewildp & \wildp & \text{wildcard pattern}\\
+&&& \acefoldp{p} & \foldp{p} & \text{fold pattern}\\
+&&& \acetplp{\labelset}{\mapschema{\cpv}{i}{\labelset}} & \tplp{\mapschema{\cpv}{i}{\labelset}} & \text{labeled tuple pattern}\\
+&&& \aceinjp{\ell}{\cpv} & \injp{\ell}{\cpv} & \text{injection pattern}\\
+&&& \acemval{X} & \mval{X} & \text{value component}\\
+\LCC &&& \color{Yellow} & \color{Yellow} & \color{Yellow}\\
+&&& \acesplicedp{m}{n}{\ctau} & \splicedp{m}{n}{\ctau} & \text{spliced pattern} \ECC
+\end{array}\]
+\caption[Syntax of proto-expressions, proto-rules and proto-patterns in $\miniVerseParam$]{Syntax of proto-expressions, proto-rules and proto-patterns in $\miniVerseParam$}
+\label{fig:P-candidate-terms}
+\end{figure}
+Figure \ref{fig:P-ce-kinds-constructors} defines the syntax of proto-kinds, $\cekappa$ and proto-constructions, $\cec$. Figure \ref{fig:P-candidate-terms} defines the syntax of proto-expressions, $\ce$, proto-rules, $\crv$, and proto-patterns, $\cpv$. All of these are ABTs. %The syntax of ce-types is identical to that given in Figure \ref{fig:U-candidate-terms}, which was described in Sec. \ref{sec:ce-syntax-U}. 
+
+The mapping from expanded forms to proto-expansion forms is given in Appendix \ref{appendix:P-proto-expansion-validation}. The only ``interesting'' forms are the forms for references to spliced unexpanded terms, highlighted in yellow in Figure \ref{fig:P-ce-kinds-constructors} and Figure \ref{fig:P-candidate-terms}.
+
+\subsection{Proto-Expansion Validation}
+Proto-expansion validation operates essentially as described in Sec. \ref{sec:ce-validation-U}. It is governed by two groups of judgements. The first group of judgements defines proto-kind and proto-construction validation.
+
+\vspace{10px}\noindent
+$\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+\cvalidKX{\cekappa}{\kappa} & \text{$\cekappa$ has well-formed expansion $\kappa$}\\
+\cvalidCX{\cec}{c}{\kappa} & \text{$\cec$ has expansion $c$ of kind $\kappa$}\\
+\end{array}$
+\vspace{10px}
+
+The second group of judgements defines proto-expression, proto-rule and proto-pattern validation.
+
+\vspace{10px}\noindent
+$\arraycolsep=4pt\begin{array}{ll}
+\textbf{Judgement Form} & \textbf{Description}\\
+% \cvalidTP{\Omega}{\cscenev}{\ctau}{\tau} & \text{$\ctau$ has expansion $\tau$}\\
+\cvalidEPX{\ce}{e}{\tau} & \text{$\ce$ has expansion $e$ of type $\tau$}\\
+\cvalidRP{\Omega}{\escenev}{\crv}{r}{\tau}{\tau'} & \text{$\crv$ has expansion $r$ taking values of type $\tau$ to values of type $\tau'$}\\
+\cvalidPPE{\uOmega}{\pscenev}{\cpv}{p}{\tau} & \text{$\cpv$ has expansion $p$ matching against $\tau$ generating hypotheses $\uOmega$}
+\end{array}$
+\vspace{10px}
+
+\emph{Expression splicing scenes}, $\escenev$, are of the form $\esceneP{\omega : \Omega_\text{params}}{\uOmega}{\uPsi}{\uPhi}{b}$, \emph{construction splicing scenes}, $\cscenev$, are of the form $\csceneP{\omega : \Omega_\text{params}}{\uOmega}{b}$, and \emph{pattern splicing scenes}, $\pscenev$, are of the form $\psceneP{\omega : \Omega_\text{params}}{\uOmega}{\uPhi}{b}$. Their purpose is to ``remember'', during proto-expansion validation, the contexts and literal bodies from the TLM application site (cf. Rules (\ref{rule:expandsP-apuetsm}) and (\ref{rule:patExpandsP-apuptsm}) above), because these are necessary to validate references to spliced terms. They also keep around the parameter substitution and corresponding context, $\omega : \Omega_\text{params}$, because type/kind annotations on spliced terms need to be able to access parameters (but not expansion-local bindings.) 
+We write $\csfrom{\escenev}$ for the construction splicing scene constructed by dropping the TLM contexts from $\escenev$:
+\[\csfrom{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}} = \csceneP{\omega : \OParams}{\uOmega}{b}\]
+
+The rules governing references to spliced terms are reproduced below:
+\begin{equation*}\tag{\ref{rule:cvalidK-spliced}}
+\inferrule{
+  \parseUKind{\bsubseq{b}{m}{n}}{\ukappa}\\
+  \kExpands{\uOmega}{\ukappa}{\kappa}\\\\
+  \uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \domof{\Omega} \cap \domof{\Omega_\text{app}} = \emptyset
+}{
+  \cvalidK{\Omega}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\acesplicedk{m}{n}}{\kappa}
+}
+\end{equation*}
+\begin{equation*}\tag{\ref{rule:cvalidC-spliced}}
+\inferrule{
+  \cscenev=\csceneP{\omega : \OParams}{\uOmega}{b}\\
+  \cvalidK{\OParams}{\cscenev}{\cekappa}{\kappa}\\\\
+  \parseUCon{\bsubseq{b}{m}{n}}{\uc}\\
+  \cExpands{\uOmega}{\uc}{c}{[\omega]\kappa}\\\\
+  \uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \domof{\Omega} \cap \domof{\Omega_\text{app}} = \emptyset
+}{
+  \cvalidC{\Omega}{\cscenev}{\acesplicedc{m}{n}{\cekappa}}{c}{\kappa}
+}
+\end{equation*}
+\begin{equation*}\tag{\ref{rule:cvalidE-P-splicede}}
+\inferrule{
+  \escenev = \esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}\\
+  \cvalidC{\OParams}{\csfrom{\escenev}}{\ctau}{\tau}{\akty}\\\\
+  \parseUExp{\bsubseq{b}{m}{n}}{\ue}\\
+  \expandsP{\uOmega}{\uPsi}{\uPhi}{\ue}{e}{[\omega]\tau}\\\\
+  \uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}\\
+  \domof{\Omega} \cap \domof{\Omega_\text{app}} = \emptyset
+}{
+  \cvalidEP{\Omega}{\escenev}{\acesplicede{m}{n}{\ctau}}{e}{\tau}
+}
+\end{equation*}
+\begin{equation*}\tag{\ref{rule:cvalidPP-spliced}}
+\inferrule{
+  \cvalidC{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\ctau}{\tau}{\akty}\\
+  \parseUPat{\bsubseq{b}{m}{n}}{\upv}\\
+  \patExpandsP{\uOmega'}{\uPhi}{\upv}{p}{[\omega]\tau}
+}{
+  \cvalidPP{\uOmega'}{\psceneP{\omega : \Omega_\text{params}}{\uOmega}{\uPhi}{b}}{\acesplicedp{m}{n}{\ctau}}{p}{\tau}
+}
+\end{equation*}
+
+
+Notice that the kind/type annotations on spliced terms can refer to the provided parameters, but not to bindings local to the expansion. The parameter substitution, $\omega$, must be applied after expanding the annotations because the parameter names are not bound at the application site.
+
+\subsection{Metatheory}
+A more detailed account of the metatheory is given in Appendix \ref{appendix:metatheory-P}. We will summarize the key theorems below.
+
+\subsubsection{TLM Expression Evaluation}
+The following theorems establish a notion of TLM type safety based on preservation and progress for TLM expression evaluation.
+
+\begingroup
+\def\thetheorem{\ref{thm:peTLM-preservation}}
+\begin{theorem}[peTLM Preservation]
+% \label{thm:peTLM-preservation}
+If $\hastsmtypeExp{\Omega}{\Psi}{\epsilon}{\rho}$ and $\tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$ then $\hastsmtypeExp{\Omega}{\Psi}{\epsilon'}{\rho}$.
+\end{theorem}
+\endgroup
+
+\begingroup
+\def\thetheorem{\ref{thm:ppTLM-preservation}}
+\begin{theorem}[ppTLM Preservation]
+% \label{thm:ppTLM-preservation}
+If $\hastsmtypePat{\Omega}{\Phi}{\epsilon}{\rho}$ and $\tsmexpStepsPat{\Omega}{\Phi}{\epsilon}{\epsilon'}$ then $\hastsmtypePat{\Omega}{\Phi}{\epsilon'}{\rho}$.
+\end{theorem}
+\endgroup
+
+\begingroup
+\def\thetheorem{\ref{thm:peTLM-progress}}
+\begin{theorem}[peTLM Progress]
+% \label{thm:peTLM-progress}
+If $\hastsmtypeExp{\Omega}{\Psi}{\epsilon}{\rho}$ then either $\tsmexpStepsExp{\Omega}{\Psi}{\epsilon}{\epsilon'}$ for some $\epsilon'$ or $\tsmexpNormalExp{\Omega}{\Psi}{\epsilon}$.
+\end{theorem}
+\endgroup
+
+\begingroup
+\def\thetheorem{\ref{thm:ppTLM-progress}}
+\begin{theorem}[ppTLM Progress]
+% \label{thm:ppTLM-progress}
+If $\hastsmtypePat{\Omega}{\Phi}{\epsilon}{\rho}$ then either $\tsmexpStepsPat{\Omega}{\Phi}{\epsilon}{\epsilon'}$ for some $\epsilon'$ or $\tsmexpNormalPat{\Omega}{\Phi}{\epsilon}$.
+\end{theorem}
+\endgroup
+
+\subsubsection{Typed Expansion}
+There are also a number of theorems that establish that typed expansion generates a well-typed expansion.
+
+The top-level theorem is the typed expansion theorem for modules. 
+
+\begingroup
+\def\thetheorem{\ref{thm:module-expansion-P}}
+\begin{theorem}[Module Expansion]
+% \label{thm:module-expansion-P}
+If $\mExpandsP{\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega}}{\uPsi}{\uPhi}{\uM}{M}{\sigma}$ then $\hassig{\Omega}{M}{\sigma}$.
+\end{theorem}
+\endgroup
+
+(The proof of this theorem requires proving the corresponding theorems about the other typed expansion judgements, as well as the proto-expansion validation judgements -- see Appendix \ref{appendix:metatheory-P}.)
+
+\subsubsection{peTLM Abstract Reasoning Principles}
+The following theorem summarizes the abstract reasoning principles available to programmers when applying a peTLM. Descriptions of labeled clauses are given inline.
+
+\begingroup
+\def\thetheorem{\ref{thm:petsm-abstract-reasoning-principles}}
+\begin{theorem}[peTLM Abstract Reasoning Principles]
+If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
+\begin{enumerate}
+	\item $\uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}$
+	\item $\uPsi=\uAS{\uA}{\Psi}$
+  \item (\textbf{Typing 1}) $\tsmexpExpandsExp{\uOmega}{\uPsi}{\uepsilon}{\epsilon}{\aetype{\tau'}}$ and $\hastypeP{\Omega_\text{app}}{e}{\tau'}$ for $\tau'$ such that $\issubtypeP{\Omega_\text{app}}{\tau'}{\tau}$
+		\begin{quote}
+			The type of the expansion is consistent with the type annotation on the peTLM definition.
+		\end{quote}
+	\item $\tsmexpEvalsExp{\Omega_\text{app}}{\Psi}{\epsilon}{\epsilon_\text{normal}}$
+	\item $\tsmdefof{\epsilon_\text{normal}}=a$
+	\item $\Psi = \Psi', \petsmdefn{a}{\rho}{\eparse}$
+	\item $\encodeBody{b}{\ebody}$
+  	\item $\evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessE}}{e_\text{pproto}}}$
+	\item $\decodePCEExp{e_\text{pproto}}{\pce}$
+	\item $\prepce{\Omega_\text{app}}{\Psi}{\pce}{\ce}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}$
+	\item (\textbf{Segmentation}) $\segOKP{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\segof{\ce}}{b}$
+		\begin{quote}
+			The segmentation determined by the proto-expansion actually segments the literal body (i.e. each segment is in-bounds and the segments are non-overlapping and operate at consistent sorts, kinds and types.)
+		\end{quote}
+	\item $\cvalidEP{\Omega_\text{params}}{\esceneP{\omega : \OParams}{\uOmega}{\uPsi}{\uPhi}{b}}{\ce}{e'}{\tau_\text{proto}}$
+	\item $e = [\omega]e'$
+	\item $\tau = [\omega]\tau_\text{proto}$
+	\item $
+		\segof{\ce} = \sseq{\acesplicedk{m_i}{n_i}}{\nkind} \cup \sseq{\acesplicedc{m'_i}{n'_i}{\cekappa'_i}}{\ncon} \cup\\
+					     \sseq{\acesplicede{m''_i}{n''_i}{\ctau_i}}{\nexp}
+		$
+	\item (\textbf{Kinding 1}) $\sseq{\kExpands{\uOmega}{\parseUKindF{\bsubseq{b}{m_i}{n_i}}}{\kappa_i}}{\nkind}$ and $\sseq{\iskind{\Omega_\text{app}}{\kappa_i}}{\nkind}$
+		\begin{quote}
+			Each spliced kind has a well-formed expansion at the application site.
+		\end{quote}
+	\item (\textbf{Kinding 2}) $\sseq{\cvalidK{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\cekappa'_i}{\kappa'_i}}{\ncon}$ and $\sseq{\iskind{\Omega_\text{app}}{[\omega]\kappa'_i}}{\ncon}$
+		\begin{quote}
+			Each kind annotation on a spliced construction has a well-formed expansion at the application site.
+		\end{quote}
+	\item (\textbf{Kinding 3}) $\sseq{\cExpands{\uOmega}{\parseUConF{\bsubseq{b}{m'_i}{n'_i}}}{c_i}{[\omega]\kappa'_i}}{\ncon}$ and $\sseq{\haskind{\Omega_\text{app}}{c_i}{[\omega]\kappa'_i}}{\ncon}$
+		\begin{quote}
+			Each spliced construction is well-kinded consistent with its kind annotation.
+		\end{quote}
+	\item (\textbf{Kinding 4}) $\sseq{\cvalidC{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\ctau_i}{\tau_i}{\akty}}{\nexp}$ and $\sseq{\haskind{\Omega_\text{app}}{[\omega]\tau_i}{\akty}}{\nexp}$
+		\begin{quote}
+			Each type annotation on a spliced expression has a well-formed expansion at the application site.
+		\end{quote}
+	\item (\textbf{Typing 2}) $\sseq{\expandsP{\uOmega}{\uPsi}{\uPhi}{\parseUExpF{\bsubseq{b}{m''_i}{n''_i}}}{e_i}{[\omega]\tau_i}}{\nexp}$ and $\sseq{\hastypeP{\Omega_\text{app}}{e_i}{[\omega]\tau_i}}{\nexp}$
+		\begin{quote}
+			Each spliced expression is well-typed consistent with its type annotation.
+		\end{quote}
+	\item (\textbf{Capture Avoidance}) $e = [\sseq{\kappa_i/k_i}{\nkind}, \sseq{c_i/u_i}{\ncon}, \sseq{e_i/x_i}{\nexp}, \omega]e''$ for some $e''$ and fresh $\sseq{k_i}{\nkind}$ and fresh $\sseq{u_i}{\ncon}$ and fresh $\sseq{x_i}{\nexp}$
+		\begin{quote}
+			The final expansion can be decomposed into a term with variables in place of each spliced kind, construction, expression and parameter. The expansions of these spliced kinds, constructions and expressions, as well as the provided parameters, can be substituted into this term in the standard capture avoiding manner.
+		\end{quote}
+	\item (\textbf{Context Independence}) \[\mathsf{fv}(e'') \subset \sseq{k_i}{\nkind} \cup \sseq{u_i}{\ncon} \cup \sseq{x_i}{\nexp} \cup \domof{\OParams}\]
+		\begin{quote}
+			The decomposed term is independent of the application site context.
+		\end{quote}
+	% $\hastypeP{\sseq{\Khyp{k_i}}{\nkind} \cup \sseq{u_i :: [\omega]\kappa'_i}{\ncon} \cup \sseq{x_i : [\omega]\tau_i}{\nexp}}{[\omega]e''}{\tau}$\todo{maybe restate this in terms of free variables of e'' here and elsewhere, because context isn't technically well-formed here?}
+\end{enumerate}
+\end{theorem}
+\endgroup
+
+\subsubsection{ppTLM Abstract Reasoning Principles}
+The following theorem summarizes the abstract reasoning principles available to programmers when applying a ppTLM. Descriptions of labeled clauses are given inline.
+
+\begingroup
+\def\thetheorem{\ref{thm:pptsm-abstract-reasoning-principles}}
+\begin{theorem}[ppTLM Abstract Reasoning Principles]
+If $\patExpandsP{\uOmega'}{\uPhi}{\utsmap{\uepsilon}{b}}{p}{\tau}$ then:
+\begin{enumerate}
+  \item $\uOmega=\uOmegaEx{\uD}{\uG}{\uMctx}{\Omega_\text{app}}$
+  \item $\uPhi=\uAS{\uA}{\Phi}$
+  \item (\textbf{Typing 1}) $\tsmexpExpandsPat{\uOmega}{\uPhi}{\uepsilon}{\epsilon}{\aetype{\tau'}}$ and $\patTypePC{\Omega_\text{app}}{\uOmega'}{p}{\tau'}$ for $\tau'$ such that $\issubtypeP{\Omega_\text{app}}{\tau'}{\tau}$
+  	\begin{quote}
+  		The final expansion matches values of the type specified by the ppTLM's type annotation.
+  	\end{quote}
+  \item $\tsmexpEvalsPat{\Omega_\text{app}}{\Phi}{\epsilon}{\epsilon_\text{normal}}$
+  \item $\tsmdefof{\epsilon_\text{normal}}=a$
+  \item $\Phi = \Phi', \pptsmdefn{a}{\rho}{\eparse}$
+  \item $\encodeBody{b}{\ebody}$
+  \item $\evalU{\ap{\eparse}{\ebody}}{\aein{\mathtt{SuccessP}}{e_\text{pproto}}}$
+  \item $\decodePCEPat{e_\text{pproto}}{\pcp}$
+  \item $\prepcp{\Omega_\text{app}}{\Phi}{\pcp}{\cpv}{\epsilon_\text{normal}}{\aetype{\tau_\text{proto}}}{\omega}{\Omega_\text{params}}$
+  \item (\textbf{Segmentation}) $\segOKP{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\segof{\cpv}}{b}$
+  	\begin{quote}
+  		The segmentation determined by the proto-expansion actually segments the literal body (i.e. each segment is in-bounds and the segments are non-overlapping and operate at consistent sorts, kinds and types.)
+  	\end{quote}
+    \item $\cvalidPP{\uOmega'}{\psceneP{\omega : \Omega_\text{params}}{\uOmega}{\uPhi}{b}}{\cpv}{p}{\tau_\text{proto}}$
+      \item $\tau'=[\omega]\tau_\text{proto}$
+	\item $
+	\segof{\ce} = \sseq{\acesplicedk{m_i}{n_i}}{\nkind} \cup \sseq{\acesplicedc{m'_i}{n'_i}{\cekappa'_i}}{\ncon} \cup\\
+				     \sseq{\acesplicedp{m''_i}{n''_i}{\ctau_i}}{\npat}
+	$
+	\item (\textbf{Kinding 1}) $\sseq{\kExpands{\uOmega}{\parseUKindF{\bsubseq{b}{m_i}{n_i}}}{\kappa_i}}{\nkind}$ and $\sseq{\iskind{\Omega_\text{app}}{\kappa_i}}{\nkind}$
+		\begin{quote}
+			Each spliced kind has a well-formed expansion at the application site.
+		\end{quote}
+	\item (\textbf{Kinding 2}) $\sseq{\cvalidK{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\cekappa'_i}{\kappa'_i}}{\ncon}$ and $\sseq{\iskind{\Omega_\text{app}}{[\omega]\kappa'_i}}{\ncon}$
+		\begin{quote}
+			Each kind annotation on a spliced construction has a well-formed expansion at the application site.
+		\end{quote}
+	\item (\textbf{Kinding 3}) $\sseq{\cExpands{\uOmega}{\parseUConF{\bsubseq{b}{m'_i}{n'_i}}}{c_i}{[\omega]\kappa'_i}}{\ncon}$ and $\sseq{\haskind{\Omega_\text{app}}{c_i}{[\omega]\kappa'_i}}{\ncon}$
+		\begin{quote}
+			Each spliced construction is well-kinded consistent with its kind annotation.
+		\end{quote}
+	\item (\textbf{Kinding 4}) $\sseq{\cvalidC{\OParams}{\csceneP{\omega : \OParams}{\uOmega}{b}}{\ctau_i}{\tau_i}{\akty}}{\npat}$ and $\sseq{\haskind{\Omega_\text{app}}{[\omega]\tau_i}{\akty}}{\npat}$
+		\begin{quote}
+			Each type annotation on a spliced expression has a well-formed expansion at the application site.
+		\end{quote}
+  \item (\textbf{Typing 2}) $\sseq{\patExpandsP{\uOmegaEx{\emptyset}{\uG_i}{\emptyset}{\Omega_i}}{\uPhi}{\parseUPatF{\bsubseq{b}{m''_i}{n''_i}}}{p_i}{[\omega]\tau_i}}{\npat}$ and $\sseq{\patTypePC{\Omega_\text{app}}{\Omega_i}{p_i}{[\omega]\tau_i}}{\npat}$
+  	\begin{quote}
+  		Each spliced pattern has a well-typed expansion that matches values of the type indicated by the corresponding type annotation in the splice summary.
+  	\end{quote}
+      \item (\textbf{No Hidden Bindings}) $\uOmega'=\uOmegaEx{\emptyset}{\biguplus_{0 \leq i < \npat} \uG_i}{\emptyset}{\bigcup_{0 \leq i < \npat} \Omega_i}$
+      	\begin{quote}
+      		The hypotheses generated by the TLM application are exactly those generated by the spliced patterns.
+      	\end{quote}
+\end{enumerate}
+\end{theorem}
+\endgroup
+

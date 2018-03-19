@@ -1,0 +1,428 @@
+\PassOptionsToPackage{svgnames,dvipsnames,svgnames}{xcolor}
+
+\documentclass[12pt]{report}
+\newif\ificfp
+\icfptrue
+\newcommand{\todolater}[1]{{\color{magenta} TODO (Later): #1}}
+\newcommand{\todo}[1]{{\color{red} TODO: #1}}
+
+% some useful packages
+\usepackage{times}     % use times font for document
+%\usepackage{lmodern}
+\usepackage{newtxtt}
+\usepackage{bbm}
+%\renewcommand{\ttdefault}{txtt} % use txtt for typewriter font
+\usepackage{mathpazo}
+\usepackage{mathpartir} % use package for inference rules
+\usepackage{upgreek} % package for alternative greek letters (\uppi)
+\usepackage{fullpage}
+\usepackage{colortab}
+%\usepackage{graphicx}
+\usepackage[labelfont=bf]{caption}
+
+% \usepackage{cleveref}
+%\usepackage{MnSymbol}
+\usepackage{fancyvrb}
+\usepackage{microtype}
+\usepackage[framemethod=tikz]{mdframed}
+
+% Get just llangle and rrangle from MnSymbol
+\makeatletter
+\DeclareFontFamily{OMX}{MnSymbolE}{}
+\DeclareSymbolFont{MnLargeSymbols}{OMX}{MnSymbolE}{m}{n}
+\SetSymbolFont{MnLargeSymbols}{bold}{OMX}{MnSymbolE}{b}{n}
+\DeclareFontShape{OMX}{MnSymbolE}{m}{n}{
+    <-6>  MnSymbolE5
+   <6-7>  MnSymbolE6
+   <7-8>  MnSymbolE7
+   <8-9>  MnSymbolE8
+   <9-10> MnSymbolE9
+  <10-12> MnSymbolE10
+  <12->   MnSymbolE12
+}{}
+\DeclareFontShape{OMX}{MnSymbolE}{b}{n}{
+    <-6>  MnSymbolE-Bold5
+   <6-7>  MnSymbolE-Bold6
+   <7-8>  MnSymbolE-Bold7
+   <8-9>  MnSymbolE-Bold8
+   <9-10> MnSymbolE-Bold9
+  <10-12> MnSymbolE-Bold10
+  <12->   MnSymbolE-Bold12
+}{}
+
+\let\llangle\@undefined
+\let\rrangle\@undefined
+\DeclareMathDelimiter{\llangle}{\mathopen}%
+                     {MnLargeSymbols}{'164}{MnLargeSymbols}{'164}
+\DeclareMathDelimiter{\rrangle}{\mathclose}%
+                     {MnLargeSymbols}{'171}{MnLargeSymbols}{'171}
+\makeatother
+
+% \usepackage{rotating}
+% \usepackage{pdflscape}
+
+\usepackage[colorlinks=true,allcolors=Blue,backref,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered,
+pdfborder={0 0 0},  %removes outlines around hyper links in online display
+]{hyperref}
+
+\usepackage{amsmath,amssymb, amsthm}
+
+\allowdisplaybreaks[1]
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{condition}[theorem]{Condition}
+
+\usepackage{pfsteps}
+
+\usepackage[noabbrev]{cleveref}
+
+\newenvironment{proof-sketch}{\noindent{\emph{Proof Sketch.}}}{\qed}
+
+% \makeatletter
+% \renewenvironment{proof}[1][\proofname]{\par
+%   \vspace{-\topsep}% remove the space after the theorem
+%   \pushQED{\qed}%
+%   \normalfont
+%   \topsep0pt \partopsep0pt % no space before
+%   \trivlist
+%   \item[\hskip\labelsep
+%         \itshape
+%     #1\@addpunct{.}]\ignorespaces
+% }{%
+%   \popQED\endtrivlist\@endpefalse
+%   \addvspace{6pt plus 6pt} % some space after
+% }
+% \makeatother
+% \makeatletter
+% \renewenvironment{proof-sketch}[1][\proofname]{\par
+%   \vspace{-\topsep}% remove the space after the theorem
+%   \pushQED{\qed}%
+%   \normalfont
+%   \topsep0pt \partopsep0pt % no space before
+%   \trivlist
+%   \item[\hskip\labelsep
+%         \itshape
+%     Proof Sketch\@addpunct{.}]\ignorespaces
+% }{%
+%   \popQED\endtrivlist\@endpefalse
+%   \addvspace{6pt plus 6pt} % some space after
+% }
+% \makeatother
+
+
+
+
+\usepackage{mathtools}
+\usepackage{ stmaryrd }
+\usepackage[numbers,sort]{natbib}
+
+\usepackage{subfigure}
+
+% Approximately 1" margins, more space on binding side
+%\usepackage[letterpaper,twoside,vscale=.8,hscale=.75,nomarginpar]{geometry}
+%for general printing (not binding)
+\usepackage[letterpaper,twoside,vscale=.8,hscale=.75,nomarginpar,hmarginratio=1:1]{geometry}
+
+\usepackage{listings}
+\lstset{tabsize=2, 
+basicstyle=\ttfamily\fontsize{11pt}{1em}\selectfont, 
+commentstyle=\itshape\ttfamily\color{gray}, 
+stringstyle=\ttfamily\color{red},
+mathescape=false,escapechar=\#,
+numbers=left, numberstyle=\scriptsize\color{gray}\ttfamily, language=ML,moredelim=[il][\sffamily]{?},showspaces=false,showstringspaces=false,xleftmargin=15pt, morekeywords=[1]{tyfam,opfam,let,fn,val,def,casetype,objtype,metadata,of,*,datatype,new,toast,syntax,module,where,import,switch,for,ana,syn,opcon,tycon,metasignature,metamodule,metasig,metamod,static,at,tycase,mod,macro,match,pattern,in,patterns,expressions,implicit,forall,rectype,fold,unfold,inj,by,spliced},deletekeywords={double},classoffset=0,belowskip=\smallskipamount,
+moredelim=**[is][\color{red}]{SSTR}{ESTR},
+moredelim=**[is][\color{Green}]{SHTML}{EHTML},
+moredelim=**[is][\color{purple}]{SCSS}{ECSS},
+moredelim=**[is][\color{brown}]{SSQL}{ESQL},
+moredelim=**[is][\color{orange}]{SCOLOR}{ECOLOR},
+moredelim=**[is][\color{magenta}]{SPCT}{EPCT}, 
+moredelim=**[is][\color{gray}]{SNAT}{ENAT}, 
+moredelim=**[is][\color{Green}]{SURL}{EURL},
+moredelim=**[is][\color{SeaGreen}]{SQT}{EQT},
+moredelim=**[is][\color{Periwinkle}]{SGRM}{EGRM},
+moredelim=**[is][\color{YellowGreen}]{SID}{EID},
+moredelim=**[is][\color{Sepia}]{SUS}{EUS},
+deletestring=[d]{"},
+}
+\lstloadlanguages{Java,VBScript,XML,HTML,ML}
+\let\li\lstinline
+
+% http://tex.stackexchange.com/q/43526
+% fix the apparently deliberate but undocumented behaviour of disabling escapes other than mathescape in TextStyle (used by \lstinline)
+% there may be a good reason why this is disabled by default, so beware in case it causes any problems
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\lsthk@TextStyle}{\let\lst@DefEsc\@empty}{}{}{\errmessage{failed to patch}}
+\makeatother
+
+% Provides a draft mark at the bottom of the document. 
+% \draftstamp{\today}{DRAFT}
+
+
+% I hate hyphenation.
+%\lefthyphenmin=5
+\definecolor{light-gray}{gray}{0.95}
+
+\input{macros}
+
+% allow interrupted equation numbering
+% taken from http://tex.stackexchange.com/questions/101002/interrupting-and-resuming-subequations
+% \makeatletter
+% \def\user@resume{resume}
+% \def\user@intermezzo{intermezzo}
+% %
+% \newcounter{previousequation}
+% \newcounter{lastsubequation}
+% \newcounter{savedparentequation}
+% \setcounter{savedparentequation}{1}
+% % 
+% \renewenvironment{subequations}[1][]{%
+%       \def\user@decides{#1}%
+%       \setcounter{previousequation}{\value{equation}}%
+%       \ifx\user@decides\user@resume 
+%            \setcounter{equation}{\value{savedparentequation}}%
+%       \else  
+%       \ifx\user@decides\user@intermezzo
+%            \refstepcounter{equation}%
+%       \else
+%            \setcounter{lastsubequation}{0}%
+%            \refstepcounter{equation}%
+%       \fi\fi
+%       \protected@edef\theHparentequation{%
+%           \@ifundefined {theHequation}\theequation \theHequation}%
+%       \protected@edef\theparentequation{\theequation}%
+%       \setcounter{parentequation}{\value{equation}}%
+%       \ifx\user@decides\user@resume 
+%            \setcounter{equation}{\value{lastsubequation}}%
+%          \else
+%            \setcounter{equation}{0}%
+%       \fi
+%       \def\theequation  {\theparentequation  \alph{equation}}%
+%       \def\theHequation {\theHparentequation \alph{equation}}%
+%       \ignorespaces
+% }{%
+% %  \arabic{equation};\arabic{savedparentequation};\arabic{lastsubequation}
+%   \ifx\user@decides\user@resume
+%        \setcounter{lastsubequation}{\value{equation}}%
+%        \setcounter{equation}{\value{previousequation}}%
+%   \else
+%   \ifx\user@decides\user@intermezzo
+%        \setcounter{equation}{\value{parentequation}}%
+%   \else
+%        \setcounter{lastsubequation}{\value{equation}}%
+%        \setcounter{savedparentequation}{\value{parentequation}}%
+%        \setcounter{equation}{\value{parentequation}}%
+%   \fi\fi
+% %  \arabic{equation};\arabic{savedparentequation};\arabic{lastsubequation}
+%   \ignorespacesafterend
+% }
+% \makeatother
+
+\begin{document} 
+\title{Reasonably Programmable Literal Forms\\ (POPL 2018 Anonymous Supplemental Material)}
+\date{July 7, 2017}
+\maketitle
+\tableofcontents
+
+
+
+\input{appendix}
+
+\input{static-language}
+
+
+\chapter{A Detailed, Non-Trivial Example: Regular Expression Literals}
+\section{Basic Definitions}
+A regular expression, or \emph{regex}, is a description of a \emph{regular language} \cite{Thompson:1968:PTR:363347.363387}. Regexes arise with some frequency in fields like natural language processing and bioinformatics.
+
+\paragraph{Recursive Sums}
+One way to encode regular expressions in Reason is as values of the recursive datatype abbreviated \li{rx} in Figure \ref{fig:datatype-rx}.
+
+\begin{figure}[h]
+\begin{lstlisting}[numbers=none]
+type rx = Empty | Str string | Seq (rx, rx) 
+        | Or (rx, rx) | Star of rx;
+\end{lstlisting}
+\caption{Definition of the recursive labeled sum type \li{rx}}
+\label{fig:datatype-rx}
+\end{figure}
+We can construct a regex that matches the strings \li{"SSTRAESTR"}, \li{"SSTRTESTR"}, \li{"SSTRGESTR"} or \li{"SSTRCESTR"} (i.e. DNA bases) as follows:
+\begin{lstlisting}[numbers=none]
+Or(Str "SSTRAESTR", Or(Str "SSTRTESTR", Or(Str "SSTRGESTR", Str "SSTRCESTR")))
+\end{lstlisting}
+
+Given a value of type \li{rx}, we can deconstruct it by pattern matching. For example, the function \li{is_dna_rx} defined in Figure \ref{fig:is_dna_rx} detects regular expressions that match DNA sequences.
+
+\begin{figure}[h]
+\begin{lstlisting}[numbers=none]
+fun is_dna_rx(r : rx) : boolean => 
+  switch r { 
+  | Str "SSTRAESTR" => True;
+  | Str "SSTRTESTR" => True;
+  | Str "SSTRGESTR" => True;
+  | Str "SSTRCESTR" => True;
+  | Seq (r1, r2) => (is_dna_rx r1) andalso (is_dna_rx r2);
+  | Or  (r1, r2) => (is_dna_rx r1) andalso (is_dna_rx r2);
+  | Star(r') => is_dna_rx r';
+  | _ => False;
+  };
+\end{lstlisting}
+\caption{Pattern matching over regexes in Reason}
+\label{fig:is_dna_rx}
+\end{figure}
+
+
+\paragraph{Abstract Types} Encoding regexes as values of type \li{rx} is straightforward, but there are reasons why one might not wish to expose this encoding to clients directly. 
+
+First, regexes are usually identified up to their reduction to a normal form. For example, \li{Seq(Empty, Str "SSTRAESTR")} has normal form \li{Str("SSTRAESTR")}. It can be useful for regexes with the same normal form to be  indistinguishable from the perspective of client code. (The details of regex normalization are not important for our purposes, so we omit them.)
+
+Second, it can be useful for performance reasons to maintain additional data alongside each regex (e.g. a corresponding finite automaton.) In fact, there may be many ways to represent regexes, each with different performance trade-offs, so we would like to provide a choice of representations behind a common interface.
+
+To achieve these goals, we turn to the OCaml module system, which is based closely on the SML module system \cite{mthm97-for-dart,dreyer2005understanding} (which originates in early work by MacQueen \cite{MacQueen:1984:MSM:800055.802036}.) In particular, let us define the {signature} abbreviated \li{RX} in Figure \ref{fig:signature-RX}.
+%Notice that it exposes an interface otherwise  to the one available using a case type:
+
+\begin{figure}[ht]
+\begin{lstlisting}[deletekeywords={case}]
+/* abstract regex unfoldings */
+type u('a) = UEmpty | UStr string | USeq ('a, 'a) 
+           | UOr ('a, 'a) | UStar of 'a;
+
+module type RX = {
+  type t (* abstract *);
+
+  (* constructors *)
+  let Empty : t;
+  let Str : string -> t;
+  let Seq : t * t -> t;
+  let Or : t * t -> t;
+  let Star : t -> t;
+
+  (* produces the normal unfolding *)
+  let unfold_norm : t -> u(t);
+end
+
+module R1 : RX = { (* ... *) };
+module R2 : RX = { (* ... *) };
+\end{lstlisting}
+\vspace{-5px}
+\caption{The \lstinline{RX} signature and two example implementations}
+\label{fig:signature-RX}
+\end{figure}
+
+The clients of any module \lstinline{R} that has been sealed by \lstinline{RX}, e.g. \li{R1} or \li{R2}  in Figure \ref{fig:signature-RX}, manipulate regexes as values of type \li{R.t} using the interface specified by \li{RX}. For example, a client can construct a regex matching DNA bases by projecting the value constructors out of \li{R} and applying them as follows:
+\begin{lstlisting}[numbers=none]
+R.Or(R.Str "SSTRAESTR", R.Or(R.Str "SSTRTESTR", R.Or (R.Str "SSTRGESTR", R.Str "SSTRCESTR")))
+\end{lstlisting}
+
+Because the identity of the representation type \lstinline{R.t} is held abstract by the signature, the only way for a client to construct a value of this type is through the values that \li{RX} specifies (i.e. we have defined an \emph{abstract data type (ADT)}  \cite{liskov1974programming}.) Consequently, representation invariants need only be established locally within each module.
+
+
+
+
+Similarly, clients cannot interrogate the structure of a value \li{r : R.t} directly. Instead, the signature specifies a function \li{R.unfold_norm} that produces the \emph{normal unfolding} of a given regex, i.e. a value of type \li{u(R.t)} that exposes only the outermost form of the regex in normal form (this normal form invariant is specified only as an unenforced side condition that implementations are expected to obey, as is common practice in languages like ML.) Clients can pattern match over the {normal unfolding} in the familiar manner, as shown in Figure \ref{fig:is_dna_rx_prime}. 
+\begin{figure}
+\begin{lstlisting}[numbers=none]
+fun is_dna_rx'(r : R.t) : boolean => 
+  switch R.unfold_norm r { 
+  | UStr "SSTRAESTR" => True;
+  | UStr "SSTRTESTR" => True;
+  | UStr "SSTRGESTR" => True;
+  | UStr "SSTRCESTR" => True;
+  | USeq (r1, r2) => (is_dna_rx' r1) && (is_dna_rx' r2);
+  | UOr (r1, r2) => (is_dna_rx' r1) && (is_dna_rx' r2);
+  | UStar r' => is_dna_rx' r';
+  | _ => False;
+  };
+\end{lstlisting}
+\vspace{-5px}
+\caption{Pattern matching over normal unfoldings of regexes}
+\label{fig:is_dna_rx_prime}
+\end{figure}
+
+The normal unfolding suffices in situations where a client needs to examine only the outermost structure of a regex. However, in general, a client may want to pattern match more deeply into a regex. There are various ways to approach this problem. 
+
+One approach is to define auxiliary functions that construct $n$-deep unfoldings of \li{r}, where $n$ is the deepest level at which the client wishes to expose the normal structure of the regex. For example, it is easy to define a function \li{unfold_norm2 : R.t -> u(u(R.t))} in terms of \li{R.unfold_norm} that allows pattern matching to depth $2$.\footnote{Defining an unfolding \emph{generic} in $n$ is a more subtle problem that is beyond the scope of this work.} 
+
+Another approach is to \emph{completely unfold} a value of type \li{t} by applying a function \li{view : R.t -> rx} that recursively applies \li{R.unfold_norm} to exhaustion. The type \li{rx} was defined in Figure \ref{fig:datatype-rx}.  Computing the complete unfolding (also called the \emph{view}) can have higher dynamic cost than computing an incomplete unfolding of appropriate depth, but it is also a simpler approach (i.e.   lower cognitive cost can justify higher dynamic cost.)
+
+
+\begin{figure}[t]
+\begin{lstlisting}[numbers=none]
+module RXUtil(R : RX) = {
+  let unfold_norm2(r : R.t) : u(u(R.t)) => /* ... */;
+
+  let view(r : R.t) : rx => 
+    switch R.unfold_norm r { 
+    | UEmpty => Empty;
+    | UStr s => Str s;
+    | USeq (r1, r2) => Seq (view r1, view r2);
+    | UOr (r1, r2) => Or (view r1, view r2);
+    | UStar r => Star (view r);
+    };
+
+  let parse_str(x : string) : R.t => /* ... */
+};
+\end{lstlisting}
+\vspace{-5px}
+\caption{The definition of \li{RXUtil}}
+\vspace{-5px}
+\label{fig:RXUtil}
+\end{figure}
+Typically, utility functions like \li{unfold_norm2} and \li{view} are defined in a \emph{functor} (i.e. a function at the level of modules) like \li{RXUtil} in Figure \ref{fig:RXUtil}, so that they need only be defined once, rather than separately for each module \li{R : RX}. The client can instantiate the functor by applying it to their choice of module as follows:
+\begin{lstlisting}[numbers=none]
+module RU = RXUtil(R)
+\end{lstlisting}
+
+
+\section{Using A Parser Generator to Define a TLM}
+Using these definitions, an implementation of a parser generator \li{P : PARSEGEN} and the static parametric TLMs \li{$grammar}, \li{$proto_typ} and \li{$proto_expr} as described in Sec. 6 of the paper, we might define a TLM for regexes (implementing a subset of the POSIX regex syntax for simplicity) as shown in Figure \ref{fig:rx-grammar-based}. 
+
+The value \li{spliced_uexp} has type \li{proto_typ -> P.grammar(proto_expr)} and operates as described in Sec. 6 -- it recognizes the syntax of unexpanded expressions and produces the corresponding reference to a spliced expression, with the given type annotation.
+
+\begin{figure}[h!]
+\vspace{-5px}
+\begin{lstlisting}[deletekeywords={as}]
+(* we use regexes themselves to define lexemes in the grammar,
+ * so we need some static phase helpers. *)
+static module RS : RX = /* ... */;
+static module RU = RXUtil(RS);
+
+(* a TLM parametric over all modules R : RX *)
+syntax $rx(R : RX) at R.t by static {
+  P.generate ($grammar P proto_expr [|SHTML #\label{line:rx_parse_fn_start}#
+    start <- ""
+      EHTMLfun () => $proto_expr `SCSSR.EmptyECSS`SHTML
+    start <- "(" start ")"
+      EHTMLfun e => eSHTML
+    token str_tok #\label{line:str_tok_start}#
+      EHTML/* cannot use $rx within its own defn */
+      RU.parse_str "SSTR[^(@$]+ESTR" SHTML #\label{line:str_tok_end}#
+    start <- str_tok
+      EHTMLfun s => $proto_expr `SCSSR.Str %(ECSSstr_to_proto_str_lit sSCSS)ECSS`SHTML
+    start <- start start
+      EHTMLfun e1 e2 => $proto_expr `SCSSR.Seq (%ECSSe1SCSS, %ECSSe2SCSS)ECSS`SHTML
+    start <- start "|" start 
+      EHTMLfun e1 e2 => $proto_expr `SCSSR.Or (%ECSSe1SCSS, %ECSSe2SCSS)ECSS`SHTML
+    start <- start "*"
+      EHTMLfun e => $proto_expr `SCSSR.Star %ECSSe`SHTML
+    start <- "%{" ^(EHTMLspliced_uexp ($proto_typ `SCSSR.tECSS`)SHTML) "}" #\label{line:splicing-start}#
+      EHTMLfun e => eSHTML
+    start <- "${" ^(EHTMLspliced_uexp ($proto_typ `SCSSstringECSS`)SHTML) "}"
+      EHTMLfun e => $proto_expr `SCSSR.Str %(ECSSeSCSS)ECSS`SHTML #\label{line:splicing-end}#
+  EHTML|])
+}; #\label{line:rx_parse_fn_end}#
+\end{lstlisting}
+\vspace{-12px}
+\caption{A grammar-based definition of \texttt{\$rx}}
+\vspace{-15px}
+\label{fig:rx-grammar-based}
+\end{figure}
+
+\bibliographystyle{plainnat}
+\bibliography{../papers/research} %your bib file
+
+\end{document}
+
