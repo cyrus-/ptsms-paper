@@ -1,0 +1,232 @@
+ICFP '18 Paper #121 Reviews and Comments
+===========================================================================
+Paper #121 Reasonably Programmable Literal Notation
+
+
+Review #121A
+===========================================================================
+
+Overall merit
+-------------
+B. OK paper, but I will not champion it
+
+Reviewer expertise
+------------------
+X. I am an expert in this area
+
+Paper summary
+-------------
+The paper describes an extension to Reason that allows programmers to
+add new literal notation to the language - both for expressions and
+patterns.  The mechanism is typed, hygienic, and supports splicing and
+quasiquotation.  A new notation is introduced by a special syntactic
+marker, and then parsed via a traditional lexing/parsing approach.
+
+The paper describes the problem, posits six conditions a solution
+might meet, describes various examples, and then defines an expansion
+algorithm, and a metatheory.
+
+Rating rationale and comments for author
+----------------------------------------
+The paper is well-written, technically solid and well-written; it
+scratches an obvious itch in the language.  Moreover the paper
+carefully examines the relevant language-design issues and
+requirements.
+
+I remain unenthusiastic for a number of reasons however:
+
+- The main advance over existing mechanisms is in the typing, and the
+  presentation is very closely tied to ML.
+
+- There is a significant deficiency in the discussion of related work
+  - details below.
+
+- While metatheory is always appreciated, the paper would spend its
+  space better on making the design accessible, in particular with
+  more examples
+
+The latter point is particularly relevant, as the supplementary
+material contains a good example which should be part of the paper -
+I'd gladly trade the metatheory for it.
+
+Details:
+
+89: "but Sugar": confusing wording, as "but" suggests
+    Sugar*/SugarHaskell are different - maybe just elide?
+
+128: Racket can easily repurpose string literal forms as described,
+     and hygienic discipline can account for the binding structure.
+
+
+169: The use of color is unfortunate.
+
+318: See above; Racket allows for fine-grained control over binding,
+     which easily extends to string literals.  (It may not be in good
+     taste in Racket, but it's certainly possible.)
+
+
+518: "it allows the parser": Why is this good?
+
+542: As a first-time reader, I had trouble seeing where this paragraph
+     was going.  Examples would help!
+
+566: The reference to the supplement should be such that I can easily
+     find it.
+
+643: There really needs to be one example of a pattern parser
+     implementation.
+
+1204: See above wrt. Racket.
+
+1296: You should note that DrRacket does allow renaming refactorings
+      for hygienic macros
+
+
+
+Review #121B
+===========================================================================
+
+Overall merit
+-------------
+A. Good paper, I will champion it
+
+Reviewer expertise
+------------------
+Y. I am knowledgeable in this area, but not an expert
+
+Paper summary
+-------------
+[I arbitrarily use "the authors" in my review of the anonymous
+submission]
+
+In this paper, the authors presents Typed Literal Macros (TLMs), a
+mechanism to allow programmers to extend the syntax of a programming
+language (here the Reason dialect of the OCaml language) with (almost)
+arbitrary literal notations.
+
+The paper define define 6 criteria that such a syntax extension
+mechanism should meet. After lightly discussing how the related work
+does not address some of these criteria, the authors give, through
+numerous examples an overview of how TLMs can be used, and how they
+meet all criteria, as well as the difficulty in designing such a syntax
+extension mechanism. TLMs are gradually enriched and several of their
+features are presented incrementally to the reader.
+In a second, more formal half of the paper, the formal definition and
+meta-theory of TLMs are developped. One principal result is that a
+well-typed source expression (using a syntax expansion) produces a
+well-typed expression once expanded.
+The author conclude with a thorough comparison with the literature.
+
+To summarise the strenghts and limits to the approach:
+
++ besides some fixed delimiters \`( and )\` , TLMs allow to use
+  arbitrary syntax for the extension.
++ TLMs expressions can be arbitrarily nested. A new literal expression
+  may contain fragment of another expression (whether of the host
+  language or of another extension).
++ TLMs are typed, one may not, starting from a well typed expression
+  produced an ill-typed expansion.
++ special care is taken to avoid shadowing of existing identifiers or
+  unwanted capture.
+
+- TLMs are limited to spliced strings delimited by \`(
+  )\`. e.g. it is not possible to alter existing notations, such as
+  infix operators. This is understandable as it would require to have
+  control on the precedence rules of other construct of the host
+  (application for instance)
+- it does not appear that TLMs allow to easily splice in an arbitrary
+  experssion of the host language. What I mean by that is :
+    \`(SELECT * FROM T WHERE $(… arbitrary Reason expression …) )\`
+  if this is possible, it should be made clearer prominently at the
+  begining of the paper.
+
+Rating rationale and comments for author
+----------------------------------------
+All in all I'm quite happy with the paper. One could argue that the
+success of Scala is that it allows programmer to embed DSL within
+Scala code.
+Being able to do that in OCaml (or Reason) would be a huge boost,
+unfortunately the OCaml ecosystem does not provide such a solution. In
+particular PPXs are quite messy in that the interaction between
+extensions is implementation defined and the fact that one can
+generate ill-typed code with a PPX is problematic.
+The work presented here is a principled approach to macro/syntax
+extensions with a formal specification and a developped meta-theory.
+
+I think the paper could be made even clearer by stating the following
+things more prominently (in no particular order) :
+* Make a really, "for dummies" flowchart of what's going on :
+
+  source code using syntax extention
+ \-> proto-expansion form (what would be the OCaml type ? ParsedTree with place-holders for spliced terms ?)
+  \-> plain AST where place-olders are replaced by … with type annotation
+ \-> typed AST (and rest of the compilation chain as usual)
+
+  in particular it would also help saying at which phase which kind of
+  errors are detected (syntax error in a custom syntax expression,
+  syntax error in regular code, type error in a custom syntax
+  expression,)
+
+* after reading the paper it is not clear to me if this work make it
+  possible to have a full fledged quotation/antiquotation system,
+  to handle example such as :
+   \`(SELECT * FROM T WHERE $(… arbitrary Reason expression …) )`
+   where the arbitrary ReasonExpresison would be an OCaml Parsedtree
+  (to be then manipulated with compiler-libs).
+
+* I would have liked more details about the implementation of Relit.
+  size, type of distinct example written (besides the ones in the
+  paper). Amongst such detail, example of error messages and the
+  interplay between regular syntax error (Reason) and syntax extension
+  errors.
+
+Minor comments:
+--------------
+Fig. 7. (b) out of interest, would it be possible to rewrite the
+second branch (with proper syntax support) :
+
+| \`( lam x . e )`  as l => $v l
+
+my understanding is that one cannot since the syntactic expression
+\`( lam x . e )` should be present on the right hand side for splicing
+location to be correctly reported, maybe a comment on that would be nice.
+
+
+
+Review #121C
+===========================================================================
+
+Overall merit
+-------------
+B. OK paper, but I will not champion it
+
+Reviewer expertise
+------------------
+Y. I am knowledgeable in this area, but not an expert
+
+Paper summary
+-------------
+Towards making macros readable for the programmer, this paper proposes
+typed literal macros (TLM), which allows the programmer to add new
+syntax of literal expressions and patterns.  It introduces six
+criteria that good macro mechanisms must hold so that the programmer
+can recognize the meaning of the new syntax through its type, scope,
+and coloring.  TLM is typed, hygienic, and delimited by a common
+separator with a notation identifier.  TLM supports quasiquoting and
+unquoting.  These features are described through an example.
+The paper formalizes ML with TLM and typed expansion and prove that
+the language satisfies the six criteria.  The mechanism is implemented
+in Reason.
+
+Rating rationale and comments for author
+----------------------------------------
+The overall impression is good: it is well written, includes
+comprehensive analysis and discussion, and presents a solid piece of
+work.  It tackles the common issues for the typed language equipped with
+macros and proposes good design criteria.
+
+However, I found the paper less accessible since the resulting system
+is presented only through a few partially-omitted examples, whereas the
+pages are consumed for the policy, usage, and formalism of it.  I suggest to
+include more case studies and examples without any omission. Appendix
+A.1 in the supplemental material should be a good candidate.
