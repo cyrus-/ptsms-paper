@@ -1,8 +1,3 @@
-ICFP '18 Paper #121 Reviews and Comments
-===========================================================================
-Paper #121 Reasonably Programmable Literal Notation
-
-
 Review #121A
 ===========================================================================
 
@@ -81,6 +76,8 @@ Details:
 1296: You should note that DrRacket does allow renaming refactorings
       for hygienic macros
 
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
 Review #121B
@@ -192,6 +189,8 @@ my understanding is that one cannot since the syntactic expression
 location to be correctly reported, maybe a comment on that would be nice.
 
 
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
 
 Review #121C
 ===========================================================================
@@ -230,3 +229,97 @@ is presented only through a few partially-omitted examples, whereas the
 pages are consumed for the policy, usage, and formalism of it.  I suggest to
 include more case studies and examples without any omission. Appendix
 A.1 in the supplemental material should be a good candidate.
+
+
+Comments
+===========================================================================
+
+Response by Cyrus Omar <comar@cs.cmu.edu>
+---------------------------------------------------------------------------
+We thank the referees for their thoughtful reviews!
+
+# Review A
+
+Racket certainly does offer granular escape hatches out of its hygiene 
+discipline. The problem is that the client does not know, abstractly, whether these 
+escape hatches have been used strictly to support splicing from 
+a string literal body.
+
+To address this problem, it would be possible to use the escape hatches in Racket to implement, as a layer atop the Racket macro system, the literal macro system described in this paper. This point should also address the critique that the paper is "very closely tied to ML" --
+in fact, the contributions are relevant even in dynamic languages like Racket 
+(by simply ignoring the typing aspects, or by inserting a corresponding 
+contract on each expansion). We will make these points clear in the final related work section.
+
+With the additional page allowance in the final paper, we can include the HTML example from the supplement. It should not be necessary to remove the metatheory, which 
+is a valuable contribution in that it makes the claimed reasoning 
+principles precise (Theorems 5.2 and 5.3).
+
+We would also be happy to provide the additional small clarifications suggested 
+in the "Details" section of the review.
+
+# Review B
+
+> it does not appear that TLMs allow to easily splice in an arbitrary experssion of the host language
+
+Spliced expressions can be any arbitrary expression of the host language that 
+does not contain unbalanced \`( and )\`. Sec. 2.1 suggests this and many of the examples demonstrate this, but we would be happy to state this more directly.
+
+The SQL example can certainly be expressed. If the "WHERE" expression appears directly in the expansion (i.e. it has a type like `DBRow -> bool`), this is straightforward. 
+Alternatively, the TLM might internally extract its parse tree (like the 
+`$re_expr` TLM in 2.2.2) and transform it. Any free 
+variables in the transformed expression would need to be either 
+(1) marked as spliced expressions, or (2) appear in the TLM's dependencies.
+
+> I would have liked more details about the implementation
+
+We would be happy to include the requested implementation details 
+in the final version.
+
+> would it be possible to rewrite the
+second branch (with proper syntax support) :
+```
+| `( lam x . e )` as l => $v l
+```
+
+This is not possible -- the meaning of variables in OCaml is unchanged, 
+so `l` stands for the matched value, not the generalized literal form 
+appearing in the pattern. It is possible, of course, to instead apply a 
+partial function `term_to_val : Lambda.term -> Lambda.v`.
+
+# Review C
+
+> the resulting system is presented only through a few partially-omitted 
+examples
+
+Fig. 3 together with Fig. 5 actually presents a complete example with no omissions, including the full 
+lexer and parser. We would be happy to also include the second complete 
+example from the supplement (see above).
+
+There are in total 8 examples in the paper ($kq, $regex, $html, $smiles, 
+$listcomp, $re_expr, \$term/\$v, $map). These span a variety
+of application domains and demonstrate all of the features of the 
+proposed system.
+
+Comment @A1
+---------------------------------------------------------------------------
+Conditionally Accepted with Mandatory Revisions
+-----------------------------------------------
+
+Your paper has been conditionally accepted to ICFP 2018, pending revisions as listed below.
+
+The deadline for completing and submitting the revised version of your paper is June 22. In a brief second phase of reviewing, the program committee will determine whether the mandatory revisions have been applied, and the paper will be conclusively accepted or rejected. The intent and expectation is that mandatory revisions can be performed within the five-week period between notification and June 22 — and that conditionally accepted papers will, in general, be accepted in the second phase.
+
+Your revised submission *must* be accompanied by a cover letter mapping each mandatory revision to specific parts of the paper. The cover letter should facilitate a quick second review, allowing for confirmation of final acceptance within two weeks. Both the final version and the cover letter must be uploaded to https://icfp18.hotcrp.com.
+
+ Of course, you are also encouraged to make other changes to your paper in response reviews and comments. You must also ensure that the revised version of your paper meets the formatting requirements specified in the call for papers, including both the document style and a specific form and use of citations, which are necessary for inclusion in PACM PL.
+
+You will receive information from Conference Publishing about *separately* submitting a camera-ready version of your paper by July 7, pending acceptance in the second round of review. The caremera-ready version is likely the same as the final version that you submit by June 22, but there will be a little time for small changes if needed.
+
+Please contact the program chair, Matthew Flatt <mflatt@cs.utah.edu>, if you have any questions about the process.
+
+Mandatory Revisions
+-------------------
+
+- The characterization of Scheme/Racket-style macros needs to be revised.
+
+- The example from the appendix should move to the main paper.
