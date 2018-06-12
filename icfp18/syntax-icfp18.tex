@@ -130,10 +130,10 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 %% Copyright information
 %% Supplied to authors (based on authors' rights management selection;
 %% see authors.acm.org) by publisher for camera-ready submission
-\setcopyright{none}             %% For review submission
+% \setcopyright{none}             %% For review submission
 %\setcopyright{acmcopyright}
 %\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
+\setcopyright{rightsretained}
 %\copyrightyear{2017}           %% If different from \acmYear
 
 
@@ -217,14 +217,13 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 %% Note: \begin{abstract}...\end{abstract} environment must come
 %% before \maketitle command
 \begin{abstract}
-\vspace{-5px}
 %Many languages define convenient list literal forms. This paper questions this common practice: why should an otherwise ordinary data structure be privileged in the definition of a general-purpose programming language? 
 General-purpose programming languages typically define literal notation for only a small number of common data structures, like lists. This is unsatisfying because there are many other data structures for which literal notation might be useful, e.g. finite maps, regular expressions, HTML elements, SQL queries, syntax trees for various languages and chemical structures. There may also be different implementations of each of these data structures behind a common signature that could all benefit from common literal notation. 
 %A less \emph{ad hoc} design would be one that allows library providers to define new literal forms in a decentralized manner. However, the mechanisms available to programmers today, e.g. Camlp4 \cite{ocaml-manual} and Sugar* \cite{erdweg2011sugarj,erdweg2013framework}, are \emph{unreasonable}. In particular, they do not support modular reasoning about syntactic determinism, so separately defined literal forms can and do conflict syntactically with one another. Moreover, clients cannot reason abstractly about types and binding when they encounter an unfamiliar literal form (like they can when they encounter an unfamiliar function being applied.)% Instead, they must reason transparently, i.e. about the underlying expansion. This increases cognitive cost, defeating much of the purpose of convenient literal forms. %This makes it difficult to program ``in the large'', and these mechanisms have not been widely adopted.% Hygienic, typed term-rewriting systems, e.g. the Scala macro system \cite{ScalaMacros2013}, are only somewhat more reasonable, and do not offer direct syntactic control.
 This paper introduces \emph{typed literal macros (TLMs)}, which allow library providers to define new literal notation of nearly arbitrary design at any specified type or parameterized family of types. 
 % TLMs give library providers programmatic control over the parsing and expansion of expressions and patterns of a flexible \emph{generalized literal form} at {a} specified type or parameteric family of types. % The mechanism is {strictly hygienic}, meaning that 1) the expansion must be context-independent; and 2)  splicing is capture avoiding. 
 % Partial parameter application lowers the syntactic cost of this strict style. 
-Compared to existing approaches, TLMs are uniquely \emph{reasonable}. TLM clients can reason abstractly, i.e. without examining grammars or generated expansions, about types and binding. The system only needs to convey to clients, via secondary notation, the inferred \emph{segmentation} of each literal body, which gives the locations and types of spliced subterms. TLM providers can reason modularly about syntactic ambiguity and expansion correctness according to clear criteria. This paper incorporates TLMs into Reason, an emerging alternative front-end for OCaml, and demonstrates, through several non-trivial case studies, how TLMs integrate with the advanced features of OCaml, including pattern matching and the module system. We discuss optional integration with MetaOCaml, which allows TLM providers to be more confident about type correctness. Finally, we establish these abstract reasoning principles formally with a detailed type-theoretic account of expression and pattern TLMs for ``core ML''. 
+Compared to existing approaches, TLMs are uniquely \emph{reasonable}. TLM clients can reason abstractly, i.e. without examining grammars or generated expansions, about types and binding. The system only needs to convey to clients, via secondary notation, the inferred \emph{segmentation} of each literal body, which gives the locations and types of spliced subterms. TLM providers can reason modularly about syntactic ambiguity and expansion correctness according to clear criteria. This paper incorporates TLMs into Reason, an emerging alternative front-end for OCaml, and demonstrates, through several non-trivial case studies, how TLMs integrate with the advanced features of OCaml, including pattern matching and the module system. We also discuss optional integration with MetaOCaml, which allows TLM providers to be more confident about type correctness. Finally, we establish these abstract reasoning principles formally with a detailed type-theoretic account of expression and pattern TLMs for ``core ML''. 
 %This is a hygienic term-rewriting macro system, of any design, for a language with a ML-like type structure and pattern matching. 
 %Maintaining information about segmentation is necessary for the novel TLM hygiene mechanism, i.e. the mechanism that ensures that clients can reason abstractly about binding (previously, only unhygienic macro systems supported splicing of terms out of string literal bodies.) 
 %The system can determine this {segmentation} automatically and convey it to the client via syntax highlighting, or by presenting the client with a context-free grammar (without revealing the semantic actions associated with each production.) 
@@ -245,24 +244,23 @@ Compared to existing approaches, TLMs are uniquely \emph{reasonable}. TLM client
 
 %% 2012 ACM Computing Classification System (CSS) concepts
 %% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
-% \begin{CCSXML}
-% <ccs2012>
-% <concept>
-% <concept_id>10011007.10011006.10011008</concept_id>
-% <concept_desc>Software and its engineering~General programming languages</concept_desc>
-% <concept_significance>500</concept_significance>
-% </concept>
-% <concept>
-% <concept_id>10003456.10003457.10003521.10003525</concept_id>
-% <concept_desc>Social and professional topics~History of programming languages</concept_desc>
-% <concept_significance>300</concept_significance>
-% </concept>
-% </ccs2012>
-% \end{CCSXML}
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10011007.10011006.10011008.10011009.10011019</concept_id>
+<concept_desc>Software and its engineering~Extensible languages</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011050.10011055</concept_id>
+<concept_desc>Software and its engineering~Macro languages</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
 
-% \ccsdesc[500]{Software and its engineering~General programming languages}
-% \ccsdesc[300]{Social and professional topics~History of programming languages}
-%% End of generated code
+\ccsdesc[500]{Software and its engineering~Extensible languages}
+\ccsdesc[500]{Software and its engineering~Macro languages}
 
 
 %% Keywords
@@ -276,16 +274,12 @@ Compared to existing approaches, TLMs are uniquely \emph{reasonable}. TLM client
 %% environment and commands, and keywords command.
 \maketitle
 
-\vspace{-5px}
-\newcommand{\introSec}{Introduction}
-\section{\protect\introSec}
+\section{Introduction}
 \label{sec:intro}
-\vspace{-2px}
-% The surface syntax of a programming language is its user interface. 
 When designing the surface syntax of a general-purpose programming language, it is common practice to define shorthand \emph{literal notation}, i.e. notation that decreases the syntactic cost of constructing and pattern matching over values of some particular data structure or parameterized family of data structures. For example, many languages in the ML family support list literals like \li{[x1, x2, x3]} in both expression and pattern position \cite{harper1997programming,mthm97-for-dart}. 
 %\footnote{In SML, list literals work even in contexts where the list expression constructors have been shadowed by other bindings, i.e. the meaning of literal forms is \emph{context independent}. 
 % We will return to this concept again later.} 
-Lists are common across problem domains, but other literal notation is more specialized. For example, Ur/Web extends the surface syntax of Ur (an ML-like language \cite{conf/pldi/Chlipala10}) with expression and pattern literals for encodings of XML and HTML data~\cite{conf/popl/Chlipala15}. The example in Fig.~\ref{fig:urweb} shows two HTML literals, one that ``splices in'' a string expression delimited by \li{\{[} and \li{]\}} and the other an HTML expression delimited by \li{\{} and \li{\}}.
+Lists are common across problem domains, but other literal notation is more specialized. For instance, Ur/Web extends the surface syntax of Ur (an ML-like language \cite{conf/pldi/Chlipala10}) with expression and pattern literals for encodings of XML and HTML data~\cite{conf/popl/Chlipala15}. For example, Fig.~\ref{fig:urweb} shows two Ur/Web HTML literals, one that ``splices in'' a string expression delimited by \li{\{[} and \li{]\}} and the other an HTML expression delimited by \li{\{} and \li{\}}.
 %The desugarings of these literal expressions, not shown, are substantially more verbose and less readable to programmers familiar with XHTML. 
 
 \begin{figure}[h]
@@ -294,7 +288,6 @@ Lists are common across problem domains, but other literal notation is more spec
   fun heading first_name = SURL<xml><h1>Hello, {[EURLfirst_nameSURL]}!</h1></xml>EURL
   val body = SURL<xml><body>{EURLheading "World"SURL} ...</body></xml>EURL
 \end{lstlisting}
-\vspace{-4px}
 \caption{HTML literals with support for splicing at two types are built primitively into Ur/Web \cite{conf/popl/Chlipala15}.}
 \label{fig:urweb}
 \vspace{-7px}
@@ -502,8 +495,7 @@ Certain technical details, proofs and additional details on the case studies are
 %TLMs, like other macro systems, perform \emph{static code generation} (also sometimes called \emph{static} or \emph{compile-time metaprogramming}), meaning that the relevant rules in the static semantics of the language call for the evaluation of \emph{static functions} that generate term encodings. Static functions are functions that are evaluated statically, i.e. during typing. %Library providers write these static functions using the Reason \emph{static language} (SL).  
 %Maintaining a separation between the static (or ``compile-time'') phase and the dynamic (or ``run-time'') phase is an important facet of Reason's design. % static code generation. %We will  also introduce a simple variant of each of these primitives that leverages Reason's support for local type inference to further reduce syntactic cost in certain common situations. 
 
-\newcommand{\seTLMsSec}{Expression TLMs in Reason}
-\section{\protect\seTLMsSec}
+\section{Expression Literals}
 \label{sec:setlms}
 
 Consider the recursive datatype \li{Regex.t} defined by Fig.~\ref{fig:Regex-module-def}, which encodes {regular expressions} (regexes) into Reason \cite{Thompson:1968:PTR:363347.363387}. Regexes are  common in, for example, bioinformatics, where they are used to express patterns in DNA sequences. We can construct a regex that matches the strings \li{"A"}, \li{"T"}, \li{"G"} or \li{"C"}, which represent the four bases in DNA, as follows:
@@ -1079,8 +1071,7 @@ the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few
 % % (Again, due to the prohibition on context dependent expansions, the final expansion actually involves explicit \li{fold} and \li{inj} operators.)
 
 
-\newcommand{\spTLMsSec}{Pattern TLMs}
-\section{\protect\spTLMsSec}
+\section{Pattern Literals}
 \label{sec:sptsms}
 
 \begin{figure}[t]
@@ -1223,8 +1214,7 @@ From the provider's perspective, the parser specified by the \li{pattern parser}
 % To maintain an abstract typing discipline, proto-pattern validation checks type annotations much as in Sec. \ref{sec:typing-e}.% (1) that the final expansion is a pattern that matches values of the type specified by the TLM's type annotation; (2) that each spliced pattern matches values of the type indicated in the segmentation; and (3) that each of these types are themselves well-formed types.
 
 
-\newcommand{\pTLMsSec}{Parametric TLMs}
-\section{\protect\pTLMsSec}
+\section{Parametric TLMs}
 \label{sec:ptsms}
 
 All of the examples that we have discussed so far operate at a single specified type. This section introduces \emph{parametric TLMs}, which can take type and module parameters and operate over a type- and module-parameterized family of types. %Parametric TLMs also allow an alternative interpretation of TLM expansion dependencies as partially applied module parameters.
@@ -1472,8 +1462,7 @@ That said, it should be possible to export TLM \emph{abbreviations} from modules
 % \end{equation}
 \end{comment}
 
-\newcommand{\seTLMsFormallySec}{Simple TLMs, Formally}
-\section{\protect\seTLMsFormallySec}
+\section{Typed Literal Macros, Formally}
 \label{sec:setlms-formally}
 
 This section will present a calculus of simple expression and pattern TLMs based on ``core ML'' called $\miniVersePat$. By the end of this section, we will have a theorem that formalizes the six reasoning principles that were outlined informally in the previous sections. $\miniVersePat$ consists of an \emph{unexpanded language}, or \emph{UL}, defined by typed expansion to the core language, named for the purposes of this paper $\miniVerseBase$. 
@@ -3414,8 +3403,7 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 % % \begin{proof} The proof, which involves auxiliary lemmas about the decomposition of proto-types and proto-expressions, is given in Appendix \ref{appendix:SES-reasoning-principles}.
 % % \end{proof}
 % % \endgroup
-\newcommand{\implSec}{Implementation}
-\section{\protect\implSec}
+\section{Implementation}
 \label{sec:implementation}
 The implementation, \li{Relit}, which is an ongoing effort based on the finished design described in this paper, consists of a few changes to the context-free grammar of Reason together with a parse tree pre-processor for the OCaml compiler, currently using its PPX system (discussed in Sec.~\ref{sec:existing-approaches}).
 
@@ -3464,8 +3452,7 @@ We are working to improve error reporting and, more generally, improving integra
 % An exception with a type annotation will always have the specified type, so this internal representation allows the system to check the proto-expansion against the expansion type specified by the TLM before moving on to recursively generate the final expansion.
 
 
-\newcommand{\rwSec}{Related Work}
-\section{\protect\rwSec}
+\section{Related Work}
 \label{sec:existing-approaches}
 
 In this section, we will give an overview of the many existing mechanisms that library providers might use to define new notation, and more specifically, new literal notation. Rather than evaluating these mechanisms by asking ``how much syntactic power do they give the library provider?'', however, our approach is to ask ``what do these mechanisms quite reasonably \textbf{not} allow a library provider to express?'', using the rubric of six reasoning principles that this paper has developed.
@@ -3530,8 +3517,7 @@ The metatheory presented by \citet{TSLs} establishes only that generated expansi
 
 % These existing forms normally have other meanings, so this can be confusing \cite{pane1996usability}.
 
-\newcommand{\discussionSec}{Discussion}
-\section{\protect\discussionSec}
+\section{Discussion}
 \label{sec:discussion}
 \label{sec:conclusion}
 
