@@ -514,10 +514,12 @@ Consider the recursive datatype \li{Regex.t} defined in Fig.~\ref{fig:Regex-modu
 \begin{lstlisting}[numbers=none]
   let any_base = Regex.(Or(Str "A", Or(Str "T", Or(Str "G", Or(Str "C")))))
 \end{lstlisting}
-Note that in Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex} within the expression $e$, so we do not need to qualify each application of \li{Regex.Or} and \li{Regex.Str}. Even with the aid of this shorthand, however, constructing regexes in this way is syntactically costly. Instead, we would like to have the option to use the common POSIX-style notation  \cite{STD95954} when constructing values of type \li{Regex.t}, including values constructed compositionally from other regexes and strings. 
-We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \li{$regex} (pronounced ``lit regex'') that supports POSIX-style regex notation extended with splice forms for regexes (delimited by \li{$(} and \li{)}) and strings (delimited by \li{$$(} and \li{)}). Fig.~\ref{fig:first-tlm-example} shows three examples of \li{$regex} being applied.
+Note that in Reason, the notation \li{Regex.(}$e$\li{)} locally opens the module \li{Regex} within $e$, so we do not need to qualify each constructor application. Even with this shorthand, however, constructing regexes in this way is syntactically costly. Instead, we would like to have the option to use the common POSIX-style notation  \cite{STD95954} when constructing values of type \li{Regex.t}, including values constructed compositionally from other regexes and strings. 
+We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \li{$regex} (pronounced ``lit regex'') that supports POSIX-style regex notation extended with splice forms for regexes (delimited by \li{$(} and \li{)}) and strings (delimited by \li{$$(} and \li{)}). 
 % One approach would be to simply define a function \li{parse_rx : string -> Regex.t} that parses a string at run-time to produce a regex. This approach works for simple expressions like the one above -- we can write \li{parse_rx "A|T|G|C"}. However, this approach breaks down when one needs to construct regexes compositionally. For example, the DNA pattern that the BisI restriction enzyme recognizes is \li{AT}$x$\li{GC}, where $x$ is any of the four DNA bases. However, one cannot pass \li{any_base} to the string concatenation operator, because \li{any_base} is already of type \li{Regex.t}. These kinds of situations cause programmers to engage in \emph{stringly-typed programming}, as discussed in Sec.~\ref{sec:intro} -- they simply use strings to encode regexes throughout their application, rather than structured encodings like \li{Regex.t}. This can be catastrophic if the programmer is not extremely careful with string concatenation because strings that happen to contain special characters recognized by the POSIX notation can be misinterpreted because they are not distinguished in any way from strings that intentionally use POSIX notation. When some of these strings come from untrusted sources, e.g. web forms as is common in bioinformatics applications, the result can be a breach in privacy. 
 
+Fig.~\ref{fig:first-tlm-example} shows three examples of \li{$regex} being applied.
+Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  described above, this time using the more concise and common POSIX regex notation. Line~3 applies \li{$regex} again, using its regex splice form to compositionally construct a regex matching DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines~4-5 define a function, \li{restriction_template}, that constructs a more complex regex from these first two regexes and a given gene sequence represented as a string.
 
 
 
@@ -525,7 +527,7 @@ We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \l
 % Moreover, there already exists a broadly adopted shorthand notational standard -- the POSIX standard for regular expressions \cite{STD95954}. For the purposes of this section, we will stick to the subset of the POSIX standard that applies to the encoding in Fig.~\ref{fig:Regex-module-def}, but there is nothing that would fundamentally prevent us from implementing the full POSIX standard using TLMs.
 \begin{figure}[t]
 \begin{subfigure}[t]{0.45\textwidth}
-\vspace{-1px}
+\vspace{-8px}
 \begin{lstlisting}[mathescape=~]
   module Regex = {
     type t = Empty
@@ -542,7 +544,7 @@ We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \l
 \end{subfigure}
 \hfill
 \begin{subfigure}[t]{0.53\textwidth}
-\vspace{-1px}
+\vspace{-8px}
 \begin{lstlisting}[mathescape=|]
   module RegexNotation = {
     notation $regex at Regex.t {
@@ -559,7 +561,7 @@ We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \l
 \end{subfigure}
 
 \begin{subfigure}[t]{\textwidth}
-\vspace{5px}
+\vspace{4px}
 \begin{lstlisting}
   notation $regex = RegexNotation.$regex; /* or open RegexNotation */
   module DNA = { let any_base = $regex `(SURLA|T|G|CEURL)`; };
@@ -567,14 +569,14 @@ We solve this problem in Fig.~\ref{fig:regex-tlm-def} by defining a TLM named \l
   let restriction_template = (gene) => 
     $regex `(SURL$(EURLbisASURL)$(EURLDNA.any_baseSURL)*$$(EURLgeneSURL)$(EURLDNA.any_baseSURL)*$(EURLbisASURL)EURL)`;
 \end{lstlisting}
-\vspace{-4px}
+\vspace{-6px}
 \caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
 }
 \label{fig:first-tlm-example}
 \end{subfigure}
-\vspace{0px}
+\vspace{1px}
 \caption{Case Study: POSIX-style regex literal notation, with support for string and regex splicing.}
-% \vspace{-6px}
+% \vspace{-4px}
 \label{fig:regex-case-study}
 \end{figure}
 
@@ -584,14 +586,13 @@ Let us start from the perspective of a client programmer examining Fig.~\ref{fig
 
 % Fig.~\ref{fig:first-tlm-example}, then use these examples to detail the client-side abstract reasoning principles that the mechanism provides, all before finally . % The \li{open notation} directive on Line 2 of Fig.~\ref{fig:first-tlm-example} allow qualifying each TLM application in the file. %reasoning about this program from the perspective of a client who wants to avoid looking at the lexer, parser and the underlying expansion itself.
 
-Line 2 of Fig.~\ref{fig:first-tlm-example} applies \li{$regex} to construct the regex \li{DNA.any_base} that was  described above, this time using the more concise and common POSIX regex notation. Line~3 applies \li{$regex} again, using its regex splice form to compositionally construct a regex matching DNA sequences recognized by the BisA restriction enzyme, where the middle base can be any base. Finally, Lines~4-5 of Fig.~\ref{fig:first-tlm-example} define a function, \li{restriction_template}, that constructs a more complex regex from these first two regexes and a given gene sequence represented as a string.
 
 Let us consider the second of these three TLM applications more closely:
 \begin{lstlisting}[numbers=none]
     $regex `(GC$(DNA.any_base)GC)`
 \end{lstlisting}
-According to the context-free grammar of (this paper's version of) Reason, this form is simply a leaf of the unexpanded parse tree, like a string literal would be. TLM names are prefixed by \li{$} 
- to distinguish them from variables. We call the TLM argument, \li{`(GC$(DNA.any_base)GC)`}, a \emph{generalized literal form}, following the terminology introduced in  prior work on type-specific languages~\cite{TSLs}. The only lexical constraint imposed on the {literal body}, i.e. the characters between \li{`(} and \li{)`}, is that any nested occurrences of \li{`(} must be balanced by \li{)`}, much like nested comments in Reason/OCaml. Generalized literal forms therefore lexically subsume many other literal forms. This nesting constraint is to allow TLM applications to appear inside spliced expressions. An example of nested TLM application is shown in Fig.~\ref{fig:nesting-example}, discussed later in this section. Related work by \citet{TSLs}, discussed in Sec.~\ref{sec:existing-approaches}, specified several other choices of outer delimitation, including layout-sensitive delimitation, but for the purposes of this paper, \li{`(} and \li{)`} suffice. 
+According to the context-free syntax of (this paper's extension to) Reason, this form is a leaf of the unexpanded parse tree, like a string literal would be. TLM names are prefixed by \li{$} 
+ to distinguish them from variables. We call the TLM argument, \li{`(GC$(DNA.any_base)GC)`}, a \emph{generalized literal form}, following our prior work on type-specific languages~\cite{TSLs}. The only lexical constraint imposed on the {literal body}, i.e. the characters between \li{`(} and \li{)`}, is that any nested occurrences of \li{`(} must be balanced by \li{)`}, much like nested comments in Reason/OCaml. Generalized literal forms therefore lexically subsume many other literal forms. This nesting constraint is to allow TLM applications to appear inside spliced expressions. An example of nested TLM applications is shown in Fig.~\ref{fig:nesting-example}, discussed later in this section. Our prior work \cite{TSLs} specified other choices of outer delimitation, including layout-sensitive delimitation, but for  this paper \li{`(} and \li{)`} suffice. 
 % Notice that in the unexpanded expression, we have not yet distinguished the spliced expression \li{any_base} from the rest of the literal. This is to emphasize that it is only during the subsequent \emph{expansion} phase that the body of the generalized literal form is lexed, parsed and expanded to produce an expanded syntax tree where spliced expressions, like \li{any_base}, have been revealed. 
 
 % \vspace{-4px}
