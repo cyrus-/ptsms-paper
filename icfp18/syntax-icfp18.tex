@@ -527,7 +527,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
 % Moreover, there already exists a broadly adopted shorthand notational standard -- the POSIX standard for regular expressions \cite{STD95954}. For the purposes of this section, we will stick to the subset of the POSIX standard that applies to the encoding in Fig.~\ref{fig:Regex-module-def}, but there is nothing that would fundamentally prevent us from implementing the full POSIX standard using TLMs.
 \begin{figure}[t]
 \begin{subfigure}[t]{0.45\textwidth}
-\vspace{-8px}
+\vspace{-4px}
 \begin{lstlisting}[mathescape=~]
   module Regex = {
     type t = Empty
@@ -544,7 +544,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
 \end{subfigure}
 \hfill
 \begin{subfigure}[t]{0.53\textwidth}
-\vspace{-8px}
+\vspace{-4px}
 \begin{lstlisting}[mathescape=|]
   module RegexNotation = {
     notation $regex at Regex.t {
@@ -556,12 +556,12 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
   }
 \end{lstlisting}
 \vspace{-5px}
-\caption{The definition of the \li{$regex} TLM. Figure \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}.}
+\caption{The definition of \li{$regex}. Fig. \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}, which are detailed in Sec.~\ref{sec:provider-perspective}.}
 \label{fig:regex-tlm-def}
 \end{subfigure}
 
 \begin{subfigure}[t]{\textwidth}
-\vspace{4px}
+\vspace{7px}
 \begin{lstlisting}
   notation $regex = RegexNotation.$regex; /* or open RegexNotation */
   module DNA = { let any_base = $regex `(SURLA|T|G|CEURL)`; };
@@ -602,9 +602,9 @@ According to the context-free syntax of (this paper's extension to) Reason, this
 \subsubsection{Responsibility} 
 Responsibility for lexing, parsing and expanding each literal body is delegated uniquely to the applied TLM. % Choices about how spliced expressions are recognized inside the literal body are entirely at the discretion of each TLM. In this case, the TLM provider has chosen to use \li{$(}$e$\li{)} for regex splicing and \li{$$(}$e$\li{)} for string splicing, where $e$ is an unexpanded Reason expression of arbitrary form. % We return to these topics below.% reasoning about splicing works when encountering an unfamiliar literal form below.
 % and take the perspective of a client that does not want to delve into these details.
-TLM definitions follow the same scoping rules as Reason modules, i.e. they can be defined in modules alongside other definitions and accessed through module paths. When a TLM definition appears inside a module with an explicitly specified module type, it must also appear in the module type with the same specification, up to the usual notions of type and module path equivalence in the type annotation and module dependencies, which are discussed below. This is much like the situation with datatype definitions in ML. In Sec. \ref{sec:implementation}, we will describe how we use an encoding of TLM definitions as modules with singleton signatures to avoid having to primitively extend OCaml's module system.
+TLM definitions and abbreviations (like the abbreviation on Line 1 of Fig.~\ref{fig:first-tlm-example}) follow the same scoping rules as Reason modules, i.e. they can appear in modules and be accessed through module paths. When a TLM definition appears inside a module with an explicitly specified module type (a.k.a. signature), it must also appear in the module type with the same specification, up to the usual notions of type and module path equivalence in the type annotation and dependencies, which are discussed below. This is much like the situation with datatype definitions in ML. By convention, we define TLMs in a module suffixed with \li{Notation} so that client programmers can \li{open} just the relevant TLM definition(s) without bringing other definitions into scope. We will demonstrate a simple lexically scoped implicit application mechanism for situations where the same TLM is being repeatedly applied  in Sec. \ref{sec:regexparser}.
 
-What is fundamental about this design is that there is a well-defined protocol for finding the definition of the TLM uniquely responsible for each generalized literal form in a program, following the usual scoping rules of the language. An editor service or documentation tool can use this protocol to integrate TLM definition lookup into a ``go to definition'' command. Moreover, clients can define scoped abbreviations as shown on Line 1 of Fig.~\ref{fig:first-tlm-example}, again following the usual scoping rules. By convention, we define TLMs in a module suffixed with \li{Notation} so that client programmers can \li{open} just the relevant TLM definition(s) without bringing other definitions into scope. We will demonstrate a simple lexically scoped implicit application mechanism for situations where the same TLM is being repeatedly applied  in Sec. \ref{sec:regexparser}.
+What is fundamental about this design is that there is a well-defined protocol that follows the usual scoping rules of the language for finding the definition of the TLM uniquely responsible for each generalized literal form in a program. An editor service or documentation tool could use this protocol to integrate TLM definition lookup into a ``go to definition'' command. In Sec. \ref{sec:implementation}, we will describe how we use an encoding of TLM definitions as modules with singleton signatures to avoid having to primitively extend OCaml.
 
 % In Reason, TLM definitions like the one in Fig.~\ref{fig:regex-tlm-def} are separately defined in files with the suffix \li{.relit}, which are processed and brought into scope by the Reason build system, \li{rebuild}. This is consistent with the protocol that other syntax extension systems use, e.g. the syntax libraries in Sugar* \cite{erdweg2011sugarj,erdweg2013framework,erdweg2012layout}. In our theoretical treatment in Sec.~\ref{sec:setlms-formally}, however, TLM definitions will be integrated directly into the scoping structure of the language. This is not possible in Reason because this would require extending OCaml's semantics with TLM definitions in module signatures. While we were careful to choose a design where this modification would be feasible in principle---TLM definition equality requires only decidable type and module path equality---modifying the semantics of OCaml has intentionally been placed beyond the scope of the Reason project. In any case, what is fundamentally important is that there is a well-defined protocol for finding the definition of the TLM uniquely responsible for each application site. % via a ``go to definition'' service.
 
@@ -3625,10 +3625,10 @@ supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042;
  at the University of Chicago. The authors
 would like to thank Robert Harper, Karl Crary and Eric Van Wyk for 
 valuable feedback on the first author's doctoral dissertation, which forms the basis of this work; 
-Charles Chamberlain, 
+Charles Chamberlain 
 for his crucial contributions to the implementation and for valuable feedback on the
-paper; and members of the PL Reading Group at University of Chicago, and the anonymous referees
-at ICFP and prior conferences, for their valuable critiques, which substantially improved the paper.
+paper; and members of the PL Reading Group at University of Chicago and the anonymous referees
+at ICFP and prior conferences for their valuable critiques, which substantially improved the paper.
 
   % This material is based upon work supported by the
   % \grantsponsor{GS100000001}{National Science
