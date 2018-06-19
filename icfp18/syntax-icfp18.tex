@@ -615,6 +615,8 @@ What is fundamental about this design is that there is a well-defined protocol t
 \subsubsection{Expansion Typing}
 Having found the definition of the \li{$regex} TLM, the client can immediately determine the type of the expansion being generated at each application site because it is specified explicitly by the clause \li{at Regex.t} on Line~2 of Fig.~\ref{fig:regex-tlm-def}. The expansion type of a TLM is analogous to the return type of a function. The identity of \li{Regex.t} is determined relative to the TLM definition site, not at the application site, so the module \li{Regex} need not be in scope at the application site, or it can have been shadowed by a different module. % In Reason, TLM definitions can refer to exactly those modules that a Reason module at the top level of the defining package would have access to, i.e. other top-level modules in the package as well as modules exported by other packages that have been imported by the build system.
 
+It is also worth noting here that although there is no direct mechanism for applying TLMs at the module level, this can be achieved by using OCaml's first class modules \cite{ocaml-manual}.
+
 \subsubsection{Context Dependence}
 \label{sec:context-dependence}
 
@@ -639,7 +641,7 @@ Implicit access to the  definition site would require the implementation to care
 
 
 \begin{figure}
-\vspace{-5px}
+\vspace{-10px}
 \begin{displaymath}
 \begin{array}{l}
   \text{\li{$regex `(GC$(DNA.any_base)GC)`}}\\[-10px]
@@ -655,8 +657,9 @@ Implicit access to the  definition site would require the implementation to care
   \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(DNA.any_base, Regex.Str "GC"))}}
 \end{array}
 \end{displaymath}
+\vspace{-4px}
 \caption{Expansion of TLM applications occurs in two steps.}
-\vspace{-5px}
+\vspace{-6px}
 \label{fig:expansion}
 \end{figure}
 
@@ -937,7 +940,7 @@ TLMs can be applied inside quoted code as long as the applied TLM is accessed th
 \subsubsection{Other Implementation Strategies}
 Although \li{ocamllex} and Menhir are powerful tools, they are not right for every parsing job. For example, we might want to use a different parser generator, a parser combinator library \cite{Hutton1992d}, or post-process the result of calling an existing parser to produce a corresponding proto-expansion. Fortunately, it is easy to bypass \li{ocamllex} and Menhir: 
 %The most obvious method is to define a trivial lexer that reads the entire literal body into a single token, and a trivial parser with one semantic action. In fact, this is not actually necessary because the system does not interface with \li{ocamllex} and Menhir directly. Rather, it is the job of the user's build system to make sure that by the time the compiler is invoked, these tools have already been invoked as necessary to produce ordinary OCaml modules satisfying the expected interface. It is just as well to implement this interface manually. 
-the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. For example, the supplement briefly describes how \li{$re_expr} can be expressed in terms of the Reason parser, a parse tree serializer and a tree transformation. It also details how the \li{$html} TLM shown previously is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step. It is also worth noting that although there is no mechanism for applying TLMs at the module level, this can be emulated by using OCaml's first class modules.
+the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. For example, the supplement briefly describes how \li{$re_expr} can be expressed in terms of the Reason parser, a parse tree serializer and a tree transformation. It also details how the \li{$html} TLM shown previously is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step.
 
 
 
