@@ -421,9 +421,9 @@ This implementation, called \li{Relit}, and additional implementation details, d
 Sec.~\ref{sec:existing-approaches} compares TLMs to related work, guided by the rubric of reasoning principles just discussed. 
 % \item 
 Sec.~\ref{sec:discussion} concludes with a discussion of contributions, limitations and future work.
-% Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the supplement. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
+% Also available is an additional series of case studies: notation for an encoding of regular expressions as an abstract data type, implemented using TLMs for quasiquotation and grammar-based parser generators. %are also available in the accompanying technical report. Sec.~\ref{sec:static-eval} considers the topic of term evaluation during the  expansion phase, i.e. \emph{static evaluation}, in  more detail. Sec \ref{sec:static-eval} also gives examples of TLMs that are useful for defining other TLMs, e.g. TLMs that implement parser generators and quasiquotation. 
 
-%  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the supplement extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
+%  We say more about LISP macros in Sec. \ref{sec:existing-approaches}.% For the present purposes, we can consider Reason as essentially the calculus defined in the accompanying technical report extended with various conveniences that are commonly found in other ML-like languages and, notionally, orthogonal to TLMs. %Reason is, as its name suggests, a conceptual descendent of ML. It diverges from other dialects of ML that have a similar type structure in that it has a bidirectional type system \cite{Pierce:2000:LTI:345099.345100} (like, for example, Scala \cite{OdeZenZen01}) for reasons that have to do with the mechanism of TLM implicits described in Chapters \ref{chap:tsls} and \ref{chap:ptsms}. 
 %The reason we will not follow Standard ML \cite{mthm97-for-dart} in giving a complete formal definition of Reason in this work is both to emphasize that the primitives we introduce are ``insensitive'' to the details of the underlying type structure of the language (so TLMs can be considered for inclusion in a variety of languages, not only dialects of ML), and to avoid distracting the reader (and the author) with definitions that are already well-understood in the literature and that are orthogonal to those that are the focus of this work. 
 % We will not formally define these features mainly to avoid unnecessarily complicating our presentation with details that are not essential to the ideas presented herein. As such, 
 % All examples written in Reason should be understood to be informal motivating material for the subsequent formal material. %We anticipate that future full-scale language specifications will be able to combine the ideas  in the proposed work without trouble. %The purpose of the work being proposed is to serve as a reference for those interested in the new constructs we introduce, not to serve as a language specification. 
@@ -537,7 +537,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
            | Seq(t, t) 
            | Or(t, t) 
            | Star(t);
-  }
+  };
 \end{lstlisting}
 \vspace{-5px}
 \caption{The \li{Regex} module, which defines the recursive datatype \li{Regex.t}.}
@@ -553,7 +553,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
       parser RegexParser.start
       in package regex_parser;
       dependencies = {module Regex = Regex}
-    }
+    };
   }
 \end{lstlisting}
 \vspace{-5px}
@@ -570,7 +570,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
   let restriction_template = (gene) => 
     $regex `(SURL$(EURLbisASURL)$(EURLDNA.any_baseSURL)*$$(EURLgeneSURL)$(EURLDNA.any_baseSURL)*$(EURLbisASURL)EURL)`;
 \end{lstlisting}
-\vspace{-6px}
+\vspace{-4px}
 \caption{Examples of the \li{$regex} TLM being applied in a bioinformatics application. %In each case, literal body, between backticks, is initially left unparsed according to the language's context-free syntax. %The applied TLM determines a segmentation and expansion during the typed expansion phase, which generalizes the usual typing phase.
 }
 \label{fig:first-tlm-example}
@@ -621,7 +621,7 @@ It is also worth noting here that although there is no direct mechanism for appl
 \label{sec:context-dependence}
 
 
-The system enforces a strong context independence condition on generated expansions by requiring that the TLM definition explicitly specify all modules that the expansions it generates might internally depend on. In this case, Line 6 of Fig.~\ref{fig:regex-tlm-def} specifies that generated expansions might use the module \li{Regex}, again as it is bound at the TLM definition site, using the module variable \li{Regex} internally. In  general, the dependency can be an arbitrary module path, e.g. \li{module List = Core.Std.List}. The \li{Pervasives} module is implicitly opened in each expansion. All other bindings, both at the TLM application site and the TLM definition site, are not internally available to the expansion. 
+The system enforces a strong context independence condition on generated expansions by requiring that the TLM definition explicitly specify all modules that the expansions it generates might internally depend on. In this case, Line 6 of Fig.~\ref{fig:regex-tlm-def} specifies that generated expansions might use the module \li{Regex}, again as it is bound at the TLM definition site, using the module variable \li{Regex} internally. In  general, the dependency can be an arbitrary module path, e.g. \li{module List = Core.Std.List}. The \li{Pervasives} module is implicitly opened in each expansion. All other bindings, whether at the TLM application site or the TLM definition site, are not internally available to the expansion. 
 
 % For example, consider the following dependency clause:
 % \begin{lstlisting}[numbers=none]
@@ -633,7 +633,7 @@ The system enforces a strong context independence condition on generated expansi
 % The module variable \li{List} will be bound internally to \li{Core.List} in all expansions generated by this TLM, including expansions generated at application sites where \li{List} or \li{Core.List} are not bound, or bound to different modules. 
 
 
-From the client programmer's perspective, the benefit of this application site context independence discipline is clear---clients do not need to give any thought to which bindings the expansion might invisibly be assuming are in scope, as they do when using unhygienic approaches (see Sec.~\ref{sec:existing-approaches}).%, e.g., \li{camlp4} \cite{de2003camlp4}, Sugar* \cite{erdweg2011sugarj}, PPX rewriters \cite{ocaml-manual} or Template Haskell \cite{SheardPeytonJones:Haskell-02,mainland2007s}.
+From the client's perspective, the benefit of this application site context independence discipline is clear---clients do not need to give any thought to which bindings the expansion might invisibly be assuming are in scope, as they do when using unhygienic approaches (see Sec.~\ref{sec:existing-approaches}).%, e.g., \li{camlp4} \cite{de2003camlp4}, Sugar* \cite{erdweg2011sugarj}, PPX rewriters \cite{ocaml-manual} or Template Haskell \cite{SheardPeytonJones:Haskell-02,mainland2007s}.
 
 The benefits of making the macro definition site dependencies explicit, rather than implicitly allowing expansions to access all bindings at the definition site as in many existing macro systems, arise from the fact that this exposes the TLM's dependencies in the signature of the module where the TLM is defined. This is useful for build tools that extract dependencies by source code analysis. Moreover, if an ``internal'' module is being used by expansions, then this will be manifest in the signature and can be corrected if this was unintended. 
 % (Similar concerns about unintended capture drives recent work on explicit closures for distributed computing \cite{DBLP:conf/ecoop/MillerHO14}.) 
@@ -647,18 +647,16 @@ Implicit access to the  definition site would require the implementation to care
   \text{\li{$regex `(GC$(DNA.any_base)GC)`}}\\[-10px]
   \xymatrix{
   ~ \ar[d]^{\text{The applied TLM lexes and parses the literal body to generate the \textbf{proto-expansion}.}} \\ ~
-  % \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4..15 : Regex.t>, Regex.Str "GC"))}} \ar[d]^f\\ 
   }\\[-5px]
-  \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4..15 : Regex.t>, Regex.Str "GC"))}}\\[-10px]
+  \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4..16 : Regex.t>, Regex.Str "GC"))}}\\[-10px]
   \xymatrix{
-  ~ \ar[d]^{\text{The system performs proto-expansion validation and generates the \textbf{final expansion}.}} \\ ~
-  % \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4..15 : Regex.t>, Regex.Str "GC"))}} \ar[d]^f\\ 
+  ~ \ar[d]^{\text{The system performs proto-expansion validation and recursively expands the splices to generate the final \textbf{expansion}.}} \\ ~
   }\\[-5px]
   \text{\li{Regex.Seq(Regex.Str "GC", Regex.Seq(DNA.any_base, Regex.Str "GC"))}}
 \end{array}
 \end{displaymath}
 \vspace{-4px}
-\caption{Expansion of TLM applications occurs in two steps.}
+\caption{TLM applications expand in two steps.}
 \vspace{-6px}
 \label{fig:expansion}
 \end{figure}
@@ -674,21 +672,21 @@ To address this problem, TLM parsers do not generate the final expansion directl
 % \begin{lstlisting}[numbers=none]
 %   Regex.Seq(Regex.Str "GC", Regex.Seq(spliced<4..15 : Regex.t>, Regex.Str "GC"))
 % \end{lstlisting}
-Here, \lismall{spliced<4..15 : Regex.t>} is a reference to the spliced expression \li{DNA.any_base} because characters $4$ through $15$, zero-indexed and inclusive, of \lismall{GC$(DNA.any_base)GC} are \lismall{DNA.any_base}. We return to the type annotation on the splice reference, \li{Regex.t}, in Sec. \ref{sec:segment-typing} below. The context independence condition can be enforced straightforwardly on the proto-expansion---the only free variable in the proto-expansion is \li{Regex}, which is an explicitly listed dependency in Fig.~\ref{fig:regex-tlm-def}, so all is well. 
+Here, \lismall{spliced<4..16 : Regex.t>} is a reference to the spliced expression \li{DNA.any_base} because the zero-indexed subsequence $[4, 16)$ of \lismall{GC$(DNA.any_base)GC} is \lismall{DNA.any_base}. We return to the type annotation on the splice reference, \li{Regex.t}, when we discuss \textbf{Segment Typing} in Sec. \ref{sec:segment-typing} below. The context independence condition can be enforced directly on the proto-expansion---the only free variable in the proto-expansion is \li{Regex}, which is an explicitly listed dependency in Fig.~\ref{fig:regex-tlm-def}, so all is well. 
 
 
 % Had a reference to \li{DNA} appeared in the proto-expansion, it would be clear that it did not originate in a spliced expression. Leaving it in the final expansion would mean that the expansion would be valid only in contexts where \li{DNA} is appropriately bound, i.e. \li{DNA} would be an invisible assumption that clients could not reason abstractly about. More subtly, using the binding of \li{DNA} from the TLM definition site would also be problematic because if \li{DNA} is renamed, it would not be obvious that this renaming needs to be propagated into the OCaml values that represent proto-expansions inside the parser (see Sec. \ref{sec:provider-perspective} for further discussion of AST representations). We avoid both of these issues by making dependencies explicit. %  can propagate into the TLM definition without changing the internal module variable being used.% Similar approaches have worked well in other situations where there are subtleties %Recent work on closures in distributed programming took a similar approach of making the variables  explicit, albeit for different reasons \cite{DBLP:conf/ecoop/MillerHO14}\todo{cite heather's paper}\todo{talk somewhere about how you could use implicit dependencies if you defined parser in-line using MetaOCaml, but this would have other trade-offs}
 % Requiring that TLMs refer to spliced expressions indirectly in this manner ensures that a TLM cannot ``forge'' spliced terms, i.e. mark some sub-term as being spliced when it does not in fact appear at some specified segment of the literal body.
 
 \subsubsection{Segmentation}\label{sec:segmentation}
-The finite set of splice references in the proto-expansion generated for a literal body is called the \emph{segmentation} of that literal body. The segmentation of the example above is the finite set containing one splice reference, \lismall{spliced<4..15 : Regex.t>}. For the more complex example from Line 5 of Fig.~\ref{fig:first-tlm-example}, the segmentation contains five splice references:
+The finite set of splice references in the proto-expansion generated for a literal body is called the \emph{segmentation} of that literal body. The segmentation of the example above is the finite set containing one splice reference, \lismall{spliced<4..16 : Regex.t>}. For the more complex example from Line 5 of Fig.~\ref{fig:first-tlm-example}, the segmentation contains five splice references:
 \begin{lstlisting}[numbers=none]
-  { spliced<2..5 : Regex.t>, spliced<9..20 : Regex.t>, spliced<26..29 : string>, 
-    spliced<33..44 : Regex.t>, spliced<49..52 : Regex.t> } 
+  { spliced<2..6 : Regex.t>, spliced<9..21 : Regex.t>, spliced<26..30 : string>, 
+    spliced<33..45 : Regex.t>, spliced<49..53 : Regex.t> } 
 \end{lstlisting}
 The system checks that the segmentation does in fact segment the literal body, i.e. that the segments are in-bounds, of positive extent and non-overlapping. Adjacent spliced segments must also be separated by at least one character. The spliced segment locations can therefore be communicated unambiguously to the programmer by tools downstream of the expander, e.g. program editors and pretty printers, using secondary notation. In this paper, non-spliced segments are shown in color and spliced segments start in black.  
 
-When TLM applications are nested, a distinct color can be used at each depth. For example, Fig.~\ref{fig:nesting-example} shows a program fragment where we transform an encoding of a chemical structure expressed using the standard SMILES notation for chemical structures \cite{anderson1987smiles}, extended with splicing notation, into a vector graphic, then embed this directly into a fragment of a webpage. We detail the TLM \li{$html at Html.t}, which implements HTML notation similar to that found in Ur/Web, in the supplement, and assume a TLM, \li{$smiles at Smiles.t} and a function, \li{Smiles.to_svg : Smiles.t => Html.t}, not shown. In Reason, \li{|>} is reverse function application.
+When TLM applications are nested, a distinct color can be used at each depth. For example, Fig.~\ref{fig:nesting-example} shows a program fragment where we transform an encoding of a chemical structure expressed using the standard SMILES notation for chemical structures \cite{anderson1987smiles}, extended with splicing notation, into a vector graphic, then embed this directly into a fragment of a webpage. We detail the TLM \li{$html at Html.t}, which implements HTML notation similar to that found in Ur/Web, in the accompanying technical report, and assume a TLM, \li{$smiles at Smiles.t} and a function, \li{Smiles.to_svg : Smiles.t => Html.t}, not shown. In Reason, \li{|>} is reverse function application.
 \begin{figure}[t]
 \begin{lstlisting}[numbers=none]
   $html `( SURL<div>
@@ -696,6 +694,7 @@ When TLM applications are nested, a distinct color can be used at each depth. Fo
              <$>EURL$smiles `(SCOLOR{ECOLORmono_glucoseSCOLOR}-O-{ECOLORmono_fructoseSCOLOR}ECOLOR)` |> Smiles.to_svgSURL</$>
            </div>EURL )`
 \end{lstlisting}
+\vspace{-2px}
 \caption{A practical demonstration of nested TLM application. The colors communicate the segmentation.}
 \label{fig:nesting-example}
 \end{figure}
@@ -704,7 +703,7 @@ When TLM applications are nested, a distinct color can be used at each depth. Fo
 
 By associating a type with each spliced segment, type inference can be performed abstractly, meaning that only the segment types, together with the expansion types specified by the applied TLMs, are necessary to infer types for variables appearing in a client-side function. For example, consider the function \li{restriction_template} on Lines 4-5 of Fig.~\ref{fig:first-tlm-example}. The return type of this function can be inferred to be \li{Regex.t} from the expansion type annotation on the \li{$regex} TLM, as previously discussed. The type of the argument, \li{gene}, can be inferred to be \li{string} because the segmentation specifies the type \li{string} for the spliced segment where it appears (cf. the segmentation shown in Sec. \ref{sec:segmentation} above). The context independence condition implies that \li{gene} cannot appear elsewhere in the expansion, and so no further typing constraints could possibly be collected from examining the portions of the (proto-)expansion being held abstract. Another important benefit of explicitly tracking the locations of spliced segments is that errors that originate in spliced terms can be reported in terms of their original source location \cite{DBLP:journals/jsc/DeursenKT93}.
 
-Segment types can be communicated directly to the programmer upon request by an editor service For Reason, we are equipping the {Merlin} tool \cite{Merlin}, which is used by various Reason editor modes (e.g. for Emacs and Vim), with a new editor command that reports the expected type of the innermost spliced segment containing the cursor. Note that because the type is explicit, this information can be reported even when there is a parse or type error in a spliced expression. % An alternative design that simply reported the type assigned to each spliced expression based on the final expansion (which already exists in Merlin) would be less useful in situations where there is a type error in a spliced expression, or the programmer is in the process of editing the program and wants to know what type of expression to construct.
+Segment types can be communicated directly to the programmer upon request by an editor service For Reason, we are equipping the {Merlin} tool\todo{cite ICFP merlin paper}{} \cite{Merlin}, which is used by various Reason editor modes (e.g. for Emacs and Vim), with a new editor command that reports the expected type of the innermost spliced segment containing the cursor. Note that because the type is explicit, this information can be reported even when there is a parse or type error in a spliced expression. % An alternative design that simply reported the type assigned to each spliced expression based on the final expansion (which already exists in Merlin) would be less useful in situations where there is a type error in a spliced expression, or the programmer is in the process of editing the program and wants to know what type of expression to construct.
 
 Segment types are somewhat analogous to the argument types of a function. The difference is that the argument signature of a function is the same every time the function is applied, i.e. it is associated with the function itself, whereas the inferred segmentation can differ for each choice of literal body. This, of course, gives TLMs substantially more notational flexibility, even relative to infix or mixfix function notation (where the number of subexpressions is fixed \cite{wieland2009parsing}).% (even infix or mixfix functions \cite{wieland2009parsing}).
 
@@ -717,7 +716,7 @@ In discussing the question of inferring a type for \li{gene} above, we neglected
 Now consider the scenario where the proto-expansion generated by \li{$html} has the following form:
 \begin{lstlisting}[numbers=none]
   let tmp = /* ... expansion-internal temporary ... */;
-  Html.H1Element(tmp, spliced<7..12 : Html.t>);
+  Html.H1Element(tmp, spliced<7..13 : Html.t>);
 \end{lstlisting}
 If the final expansion was produced na\"ively, by syntactically replacing the splice reference with the final expansion recursively determined for the corresponding spliced expression, then the  variable \li{tmp} in the spliced expression would capture the expansion-internal binding of \li{tmp}. The result if the types of the two bindings differed would be a type error exposing the internal details of the expansion. If the types of the two bindings of \li{tmp} coincided, then there would be no static indication of the problem but there could be subtle and mysterious changes in run-time behavior. % Capture of invisible bindings is, due to these hazards, clearly unreasonable.
 
@@ -761,7 +760,7 @@ Our contention is that small syntactic costs like these are more than justified 
 
 %  The system delegates responsibility over the parsing and expansion of each literal body to the applied TLM's parse function during a semantic phase called \emph{expansion}, which starts just before and continues into the typing phase. 
 
-%  Because the parse function is applied during this phase, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings because those variables stand for run-time values. Instead, there is are separate \emph{static bindings} marked by the \li{static} keyword that populate a \emph{static environment} that is discarded after expansion finishes. A more detailed account of static evaluation, both informal and informal, is given in the supplement. An alternative design that allows for the explicit lowering of standard-phase modules to the static phase has also been proposed for OCaml \cite{Ocaml/macros}. %\ificfp We are closely following this work in our implementation. \else \fi
+%  Because the parse function is applied during this phase, rather than at run-time, we call it a \emph{static function}. Static functions  cannot refer to the surrounding variable bindings because those variables stand for run-time values. Instead, there is are separate \emph{static bindings} marked by the \li{static} keyword that populate a \emph{static environment} that is discarded after expansion finishes. A more detailed account of static evaluation, both informal and informal, is given in the accompanying technical report. An alternative design that allows for the explicit lowering of standard-phase modules to the static phase has also been proposed for OCaml \cite{Ocaml/macros}. %\ificfp We are closely following this work in our implementation. \else \fi
 %   % return to in Sec. \ref{sec:static-eval}.
 
 %  The input type of the parse function, \li{body}, classifies encodings of literal {bodies}. Literal bodies are sequences of characters, so we define \li{body} as a synonym of \li{string} in \autoref{fig:indexrange-and-parseresult}. The return type is a sum type, defined by applying the parameterized type \li{parse_result} defined in \autoref{fig:indexrange-and-parseresult}, that distinguishes between parse errors and successful parses. Let us consider these two possibilities in turn.
@@ -876,7 +875,6 @@ After describing this example in detail, we will outline some alternative parsin
     let spliced : Segment.t => Parsetree.core_type => t;
   };
   notation $re_expr at Parsetree.expression { /* ... (see text) ... */ };
-  notation $re_type at Parsetree.core_type { /* ... (see text) ... */ };
   notation $proto_expr at ProtoExpr.t = $re_expr;
 \end{lstlisting}
 \caption{A fragment of the \li{Relit} module signature relevant to expression TLM providers.}
@@ -900,7 +898,7 @@ Although \li{Segment.t} is not held abstract in order to support certain advance
 
 To be able to repurpose this existing parse tree representation for proto-expansions, there must be some way to unambiguously represent splice references, notated earlier in the paper as \li{spliced<m..n : ty>} where \li{m..n} specifies a segment and \li{ty} is the segment's expected type. The \li{ProtoExpr} module solves this problem by providing a function \li{spSURLEURLliced} that takes a segment, of type \li{Segment.t}, and a type representation of type \li{Parsetree.core_type}, which also comes from OCaml's compiler library, and produces a corresponding value of type \li{ProtoExpr.t} that uniquely represents the corresponding splice references. Internally, we use OCaml's parse tree annotations.
 
-The datatypes in OCaml's \li{Parsetree} module are necessarily intricate, given the sophistication of the OCaml system, so constructing expression encodings manually is generally too unwieldy. Addressing this class of problem is, of course, the motivation for this very paper, so it is only natural that we define TLMs  for working with OCaml parse trees using familiar surface syntax, extended with splice forms. In the literature, literal notation for the host language's own parse trees is called \emph{quasiquotation}, and splicing is referred to as \emph{unquotation} or \emph{antiquotation} \cite{Bawd99a,shabalin2013quasiquotes,mainland2007s}. The TLMs \li{$re_expr} and \li{$re_type} specified on Lines 10-11 of Fig.~\ref{fig:relit-util} implement quasiquotation for OCaml syntax trees using Reason's surface syntax. The supplement describes their implementation. For clarity, the \li{$proto_expr} TLM is defined as a synonym for \li{$re_expr} on Line~12 of Fig.~\ref{fig:relit-util} (the two TLMs may diverge in the future). We apply this TLM many times in the semantic actions in Fig.~\ref{fig:regex-parser}. Notice, however, that the generalized literal forms in Fig.~\ref{fig:regex-parser} are not each prefixed by \li{$proto_expr}. Instead, we use the \li{open notation} directive on Line 2, which implicitly applies \li{$proto_expr} to all unadorned generalized literal forms following the usual lexical scoping rules for \li{open}. 
+The datatypes in OCaml's \li{Parsetree} module are necessarily intricate, given the sophistication of the OCaml system, so constructing expression encodings manually is generally too unwieldy. Addressing this class of problem is, of course, the motivation for this very paper, so it is only natural that we define TLMs  for working with OCaml parse trees using familiar surface syntax, extended with splice forms. In the literature, literal notation for the host language's own parse trees is called \emph{quasiquotation}, and splicing is referred to as \emph{unquotation} or \emph{antiquotation} \cite{Bawd99a,shabalin2013quasiquotes,mainland2007s}. The TLM \li{$re_expr}  specified on Line 10 of Fig.~\ref{fig:relit-util} provides quasiquotation for OCaml parse trees using Reason's surface syntax. The accompanying technical report describes its implementation. For clarity, the \li{$proto_expr} TLM is defined as a synonym for \li{$re_expr} on Line~12 of Fig.~\ref{fig:relit-util} (the two TLMs may diverge in the future). We apply this TLM many times in the semantic actions in Fig.~\ref{fig:regex-parser}. Notice, however, that the generalized literal forms in Fig.~\ref{fig:regex-parser} are not each prefixed by \li{$proto_expr}. Instead, we use the \li{open notation} directive on Line 2, which implicitly applies \li{$proto_expr} to all unadorned generalized literal forms following the usual lexical scoping rules for \li{open}. 
 
 To support antiquotation, the \li{$re_expr} TLM repurposes TLM application and generalized literal forms, as can be observed throughout Fig.~\ref{fig:regex-parser}. In particular, parse tree splicing is supported by unadorned generalized literal forms, e.g. on Line~23 where we implement the regex notation \li{r+} in terms of sequencing and star, taking care to bind \li{r} to an expansion-internal variable---also \li{r} but distinguished by the segmentation---to avoid double evaluation. String splicing (which converts the spliced string expression into a parse tree of string constant form) is performed by repurposing the TLM name \li{$s} (Line~16). There is also notation for references to spliced expressions that repurposes the TLM name \li{$spliced}, as seen on Lines 28-32, where the regex splicing logic is implemented. 
 
@@ -940,7 +938,7 @@ TLMs can be applied inside quoted code as long as the applied TLM is accessed th
 \subsubsection{Other Implementation Strategies}
 Although \li{ocamllex} and Menhir are powerful tools, they are not right for every parsing job. For example, we might want to use a different parser generator, a parser combinator library \cite{Hutton1992d}, or post-process the result of calling an existing parser to produce a corresponding proto-expansion. Fortunately, it is easy to bypass \li{ocamllex} and Menhir: 
 %The most obvious method is to define a trivial lexer that reads the entire literal body into a single token, and a trivial parser with one semantic action. In fact, this is not actually necessary because the system does not interface with \li{ocamllex} and Menhir directly. Rather, it is the job of the user's build system to make sure that by the time the compiler is invoked, these tools have already been invoked as necessary to produce ordinary OCaml modules satisfying the expected interface. It is just as well to implement this interface manually. 
-the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. For example, the supplement briefly describes how \li{$re_expr} can be expressed in terms of the Reason parser, a parse tree serializer and a tree transformation. It also details how the \li{$html} TLM shown previously is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step.
+the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. For example, the accompanying technical report briefly describes how \li{$re_expr} can be expressed in terms of the Reason parser, a parse tree serializer and a tree transformation. It also details how the \li{$html} TLM shown previously is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step.
 
 
 
@@ -1348,7 +1346,7 @@ An alternative point-of-view in ML is to treat the \li{dependencies} clause as f
 % \end{lstlisting} 
 % % This is the same as a definition that specifies $n$ type, expression or module parameters and immediately applies the given arguments, binding the result to the same TSM name. 
 
-% This explicit parameter passing discipline is reminiscent of work on explicit capture for distributed functions \cite{DBLP:conf/ecoop/MillerHO14}. By not implicitly giving expansions access to all definition-site bindings, we need not examine parse functions to reason about, e.g., renaming. Consequently, encodings of proto-terms can be values of standard datatypes (e.g. \li{proto_expr}) with variables represented simply as, e.g., strings, and quasiquotation notation can be expressing using TLMs (see supplement). A central design goal of Reason is to leave the OCaml semantics unchanged, so building quasiquotation in primitively, to integrate the free variables in term encodings into the overall binding discipline \cite{Bawd99a}, was in any case infeasible.
+% This explicit parameter passing discipline is reminiscent of work on explicit capture for distributed functions \cite{DBLP:conf/ecoop/MillerHO14}. By not implicitly giving expansions access to all definition-site bindings, we need not examine parse functions to reason about, e.g., renaming. Consequently, encodings of proto-terms can be values of standard datatypes (e.g. \li{proto_expr}) with variables represented simply as, e.g., strings, and quasiquotation notation can be expressing using TLMs (see accompanying technical report). A central design goal of Reason is to leave the OCaml semantics unchanged, so building quasiquotation in primitively, to integrate the free variables in term encodings into the overall binding discipline \cite{Bawd99a}, was in any case infeasible.
 
 
 % \newcommand{\moreExamplesSec}{Additional Examples}
@@ -1412,7 +1410,7 @@ Rather than constructing a grammar equipped with semantic actions using the asso
 \begin{lstlisting}[numbers=none]
   static syntax $grammar(P : PARSEGEN)(type 'a) at P.grammar('a) /*...*/
 \end{lstlisting}
-To support splicing, we need non-terminals that recognize unexpanded terms and produce the corresponding splice references, rather than the AST itself. This requires that the parser generator keep track of location information (as most production-grade parser generators already do for error reporting.) A more detailed example of this mechanism being used to define a TLM for a modular encoding of regular expressions is given in the supplement.% For spliced expressions, this non-terminal would need to be a family of non-terminals indexed by a value of type \li{proto_typ}. 
+To support splicing, we need non-terminals that recognize unexpanded terms and produce the corresponding splice references, rather than the AST itself. This requires that the parser generator keep track of location information (as most production-grade parser generators already do for error reporting.) A more detailed example of this mechanism being used to define a TLM for a modular encoding of regular expressions is given in the accompanying technical report.% For spliced expressions, this non-terminal would need to be a family of non-terminals indexed by a value of type \li{proto_typ}. 
 
 A grammar containing such non-terminals can serve as a \emph{summary specification} -- a human can simply be take this grammar as a specification of what the segmentation will be for every recognized string, rather than relying on an editor to communicate this information. The associated semantic actions can be held abstract as long as the system performs a simple check to ensure that the proto-expansion does mention each spliced expression from the corresponding production.
 
@@ -1450,7 +1448,7 @@ A grammar containing such non-terminals can serve as a \emph{summary specificati
 % \end{figure}
 
 \subsection{Static Evaluation, Formally}
-It is not difficult to extend $\miniVerseParam$ to account for static evaluation. Static environments, $\Sigma$, take the form $\staticenv{\omega}{\uOmega}{\uPsi}{\uPhi}$, where $\omega$ is a substitution. Each binding form is annotated with a \emph{phase}, $\phi$, either $\staticphase$ or $\standardphase$. The rules for binding forms annotated with $\standardphase$ are essentially unchanged, differing only in that $\Sigma$ passes through opaquely. The rules for binding forms annotated with $\staticphase$ are based on the corresponding $\standardphase$ phase rules, differing only in that 1) they operate on $\Sigma$ and 2) evaluation occurs immediately. Finally, the forms for TLM definition are modified so that the parse function is now an unexpanded, rather than an expanded expression. The substitution $\omega$ is applied to the parse function after it is expanded. The full details are defined as a small patch of $\miniVerseParam$ called $\miniVersePH$ in the supplement.
+It is not difficult to extend $\miniVerseParam$ to account for static evaluation. Static environments, $\Sigma$, take the form $\staticenv{\omega}{\uOmega}{\uPsi}{\uPhi}$, where $\omega$ is a substitution. Each binding form is annotated with a \emph{phase}, $\phi$, either $\staticphase$ or $\standardphase$. The rules for binding forms annotated with $\standardphase$ are essentially unchanged, differing only in that $\Sigma$ passes through opaquely. The rules for binding forms annotated with $\staticphase$ are based on the corresponding $\standardphase$ phase rules, differing only in that 1) they operate on $\Sigma$ and 2) evaluation occurs immediately. Finally, the forms for TLM definition are modified so that the parse function is now an unexpanded, rather than an expanded expression. The substitution $\omega$ is applied to the parse function after it is expanded. The full details are defined as a small patch of $\miniVerseParam$ called $\miniVersePH$ in the accompanying technical report.
 
 \subsection{Library Management}
 In the examples above, and in our formal treatment, we explicitly qualified various definitions with the \li{static} keyword to make them available within static values. In practice, we would like to be able to use libraries within both static values and standard values as needed without duplicating code. This can be accomplished either by the package manager (e.g. SML/NJ's CM \cite{blume:smlnj-cm}, extended with phase annotations) or by allowing one to explicitly lower an instance of a module define in the standard phase for use also in  the static phase, as in a recent proposal for modular staging macros in OCaml \cite{Ocaml/macros}.
@@ -1508,16 +1506,16 @@ That said, it should be possible to export TLM \emph{abbreviations} from modules
 
 This section will present a calculus of simple expression and pattern TLMs based on ``core ML'' called $\miniVersePat$. By the end of this section, we will have a theorem that formalizes the six reasoning principles that were outlined informally in the previous sections. $\miniVersePat$ consists of an \emph{unexpanded language}, or \emph{UL}, defined by typed expansion to the core language, named for the purposes of this paper $\miniVerseBase$. 
 
-% Because our focus is on these reasoning principles, and for reasons of space, we leave our full calculus of parametric TLMs to the supplement. The full calculus extends the simple calculus of this section with an ML module calculus based closely on the system defined by \citet{pfple1}, which in turn is based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. These additional mechanisms are necessary only to formalize the advanced features of Sec. \ref{sec:ptsms}. Proofs are in the supplement for both the simple and full calculus.
+% Because our focus is on these reasoning principles, and for reasons of space, we leave our full calculus of parametric TLMs to the accompanying technical report. The full calculus extends the simple calculus of this section with an ML module calculus based closely on the system defined by \citet{pfple1}, which in turn is based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. These additional mechanisms are necessary only to formalize the advanced features of Sec. \ref{sec:ptsms}. Proofs are in the accompanying technical report for both the simple and full calculus.
 
 
 % Programs are written as unexpanded expressions but evaluate as well-typed expanded expressions. We will start with a brief overview of our XL before turning in the remainder of the section on the UL.
 
 \subsection{Core Language}\label{sec:s-XL}
-Fig. \ref{fig:U-expanded-terms} gives the syntax of the core language, $\miniVerseBase$. This language forms a standard pure functional language with partial function types, quantification over types, recursive types, labeled product types, labeled sum types and support for pattern matching.\footnote{The supplement shows how to remove pattern matching  (and pattern TLMs) from the calculus by adding the usual elimination forms, e.g. $\unfold{e}$ rather than the $\aefoldp{p}$ pattern for values of recursive type.} Formally, core language terms are {abstract binding trees} (ABTs) identified up to alpha-equivalence, so we follow the syntactic conventions of \citet{pfple1}. This notational convention also clearly distinguishes core terms from unexpanded terms, which formally behave quite differently as we will describe below. 
+Fig. \ref{fig:U-expanded-terms} gives the syntax of the core language, $\miniVerseBase$. This language forms a standard pure functional language with partial function types, quantification over types, recursive types, labeled product types, labeled sum types and support for pattern matching.\footnote{The accompanying technical report shows how to remove pattern matching  (and pattern TLMs) from the calculus by adding the usual elimination forms, e.g. $\unfold{e}$ rather than the $\aefoldp{p}$ pattern for values of recursive type.} Formally, core language terms are {abstract binding trees} (ABTs) identified up to alpha-equivalence, so we follow the syntactic conventions of \citet{pfple1}. This notational convention also clearly distinguishes core terms from unexpanded terms, which formally behave quite differently as we will describe below. 
 
 
- The reader is directed to \emph{PFPL} \cite{pfple1} for a detailed introductory account of all of these language constructs. We will only tersely summarize the static and dynamic semantics of the core language because the particularities are not critical to our ideas. The static semantics is organized around the type formation judgement, $\istypeU{\Delta}{\tau}$, the expression typing judgement, $\hastypeU{\Delta}{\Gamma}{e}{\tau}$, and the pattern typing judgement, $\patType{\pctx}{p}{\tau}$. Type formation contexts, $\Delta$, track hypothesis of the form $\Dhyp{t}$, and typing contexts, $\Gamma$, track hypotheses of the form $x : \tau$. In the pattern typing judgement, $\pctx$ collects the typing hypotheses generated by $p$. These judgements are inductively defined in the supplemental material along with necessary auxiliary structures and  standard lemmas. The dynamic semantics of $\miniVerseBase$ is organized around the judgements $\isvalU{e}$, which says that $e$ is a value, and $\evalU{e}{e'}$, which says that $e$ evaluates to the value $e'$. As in ML, evaluation can diverge (general recursion is possible via recursive types \cite{pfple1}). It can also result in match failure.%\emph{Type formation contexts}, $\Delta$, and \emph{typing contexts}, $\Gamma$ are defined in the supplement in the standard way \cite{pfpl}, 
+ The reader is directed to \emph{PFPL} \cite{pfple1} for a detailed introductory account of all of these language constructs. We will only tersely summarize the static and dynamic semantics of the core language because the particularities are not critical to our ideas. The static semantics is organized around the type formation judgement, $\istypeU{\Delta}{\tau}$, the expression typing judgement, $\hastypeU{\Delta}{\Gamma}{e}{\tau}$, and the pattern typing judgement, $\patType{\pctx}{p}{\tau}$. Type formation contexts, $\Delta$, track hypothesis of the form $\Dhyp{t}$, and typing contexts, $\Gamma$, track hypotheses of the form $x : \tau$. In the pattern typing judgement, $\pctx$ collects the typing hypotheses generated by $p$. These judgements are inductively defined in the accompanying technical reportal material along with necessary auxiliary structures and  standard lemmas. The dynamic semantics of $\miniVerseBase$ is organized around the judgements $\isvalU{e}$, which says that $e$ is a value, and $\evalU{e}{e'}$, which says that $e$ evaluates to the value $e'$. As in ML, evaluation can diverge (general recursion is possible via recursive types \cite{pfple1}). It can also result in match failure.%\emph{Type formation contexts}, $\Delta$, and \emph{typing contexts}, $\Gamma$ are defined in the accompanying technical report in the standard way \cite{pfpl}, 
 % \[\begin{array}{ll}
 % % \textbf{Judgement Form} & \textbf{Description}\\
 % \istypeU{\Delta}{\tau} & \text{$\tau$ is a well-formed type}\\
@@ -1528,7 +1526,7 @@ Fig. \ref{fig:U-expanded-terms} gives the syntax of the core language, $\miniVer
 % & \text{and generates hypotheses $\pctx$} 
 % \end{array}\]
 % \emph{Type formation contexts}, $\Delta$, are finite sets of hypotheses of the form $\Dhyp{t}$. %Empty finite sets are written $\emptyset$, or omitted entirely within judgements, and non-empty finite sets are written as comma-separated finite sequences identified up to exchange and contraction. We write $\Delta, \Dhyp{t}$ when $\Dhyp{t} \notin \Delta$ for $\Delta$ extended with the hypothesis $\Dhyp{t}$. %Finite sets are written as finite sequences identified up to exchange.% We write $\Dcons{\Delta}{\Delta'}$ for the union of $\Delta$ and $\Delta'$.
-% \emph{Typing contexts}, $\Gamma$, are finite functions that map each variable $x \in \domof{\Gamma}$, where $\domof{\Gamma}$ is a finite set of variables, to the hypothesis $\Ghyp{x}{\tau}$, for some $\tau$. The judgements above are inductively defined in the supplemental material and validate standard lemmas, also given in the supplement.
+% \emph{Typing contexts}, $\Gamma$, are finite functions that map each variable $x \in \domof{\Gamma}$, where $\domof{\Gamma}$ is a finite set of variables, to the hypothesis $\Ghyp{x}{\tau}$, for some $\tau$. The judgements above are inductively defined in the accompanying technical reportal material and validate standard lemmas, also given in the accompanying technical report.
 %Empty typing contexts are written $\emptyset$, or omitted entirely within judgements, and non-empty typing contexts are written as finite sequences of hypotheses identified up to exchange and contraction. We write $\Gamma, \Ghyp{x}{\tau}$, when $x \notin \domof{\Gamma}$, for the extension of $\Gamma$ with a mapping from $x$ to $\Ghyp{x}{\tau}$, and $\Gcons{\Gamma}{\Gamma'}$ when $\domof{\Gamma} \cap \domof{\Gamma'} = \emptyset$ for the typing context mapping each $x \in \domof{\Gamma} \cup \domof{\Gamma'}$ to $x : \tau$ if $x : \tau \in \Gamma$ or $x : \tau \in \Gamma'$. % We write $\isctxU{\Delta}{\Gamma}$ if every type in $\Gamma$ is well-formed relative to $\Delta$.
 % \begin{definition}[Typing Context Formation] \label{def:isctxU}
 % $\isctxU{\Delta}{\Gamma}$ iff for each hypothesis $x : \tau \in \Gamma$, we have $\istypeU{\Delta}{\tau}$.
@@ -1786,7 +1784,7 @@ The \emph{typed expansion judgements} below specify the expansion process, which
 
 
 
-% These judgements are inductively defined in the supplement. 
+% These judgements are inductively defined in the accompanying technical report. 
 % \begingroup 
 % \def\thetheorem{\ref{thm:typed-expansion-short-U}}
 
@@ -1795,8 +1793,8 @@ The \emph{typed expansion judgements} below specify the expansion process, which
 %\begin{proof} This is the first part of Theorem \ref{thm:typed-expansion-U}, defined and proven below.\end{proof}
 
 
-Most of the unexpanded forms in Figure \ref{fig:U-unexpanded-terms}  mirror the expanded forms. We refer to these as the \emph{common forms}. % The mapping from expanded forms to common unexpanded forms is defined explicitly in the supplement. 
-The typed expansion rules that handle common forms mirror the corresponding typing rules. The \emph{expression TLM context}, $\uPsi$, and the \emph{pattern TLM context}, $\uPhi$, detailed below pass through these rules opaquely. For example, the rules for variables and lambdas are shown being applied in the example derivation in Fig.~\ref{fig:expansion-exmpl}, discussed below. The full set of rules is in the supplement.
+Most of the unexpanded forms in Figure \ref{fig:U-unexpanded-terms}  mirror the expanded forms. We refer to these as the \emph{common forms}. % The mapping from expanded forms to common unexpanded forms is defined explicitly in the accompanying technical report. 
+The typed expansion rules that handle common forms mirror the corresponding typing rules. The \emph{expression TLM context}, $\uPsi$, and the \emph{pattern TLM context}, $\uPhi$, detailed below pass through these rules opaquely. For example, the rules for variables and lambdas are shown being applied in the example derivation in Fig.~\ref{fig:expansion-exmpl}, discussed below. The full set of rules is in the accompanying technical report.
 %Each of these rules is based on the corresponding typing rule, i.e. Rules (\ref{rule:hastypeU-var}) through (\ref{rule:hastypeU-case}), respectively. For example, the following typed expansion rules are based on the typing rules (\ref{rule:hastypeU-var}), (\ref{rule:hastypeU-lam}) and (\ref{rule:hastypeU-ap}), respectively:% for unexpanded expressions of variable, function and application form, respectively: 
 % {\small\begin{mathpar}
 %   \inferrule[ee-id]{ }{\expandsUP{\uDelta}{\uGamma, \uGhyp{\ux}{x}{\tau}}{\uPsi}{\uPhi}{\ux}{x}{\tau}}
@@ -1843,7 +1841,7 @@ We define $\uGamma, \uGhyp{\ux}{x}{\tau}$ when $\uGamma = \uGG{\uG}{\Gamma}$ as 
 
 To develop an intuition for how this formulation solves the problem, it is instructive to inspect the derivation in Fig.~\ref{fig:expansion-exmpl} of the expansion of the unexpanded expression $\lam{\ux}{\utau}{\lam{\ux}{\utau}{\ux}}$ assuming $\expandsTU{\uDelta}{\utau}{\tau}$. Notice that each time Rule \textsc{ee-lam} is applied, the type identifier expansion context is updated but the typing context is extended with a fresh variable, first $x_1$ then $x_2$, which is possible by alpha varying only the expansion, leaving the unexpanded term unchanged. % Without this mechanism, expansions for unexpanded terms with shadowing would not be derivable.\todo{add let notation to show how this is actually relevant?}
 
-% \emph{Unexpanded type formation contexts}, $\uDelta$, consist of a \emph{type identifier expansion context}, $\uD$, paired with a standard type formation context, $\Delta$, and operate analogously (see supplement.)
+% \emph{Unexpanded type formation contexts}, $\uDelta$, consist of a \emph{type identifier expansion context}, $\uD$, paired with a standard type formation context, $\Delta$, and operate analogously (see accompanying technical report.)
 % of the form $\uDD{\uD}{\Delta}$, i.e. they . We similarly define $\uDelta, \uDhyp{\ut}{t}$ when $\uDelta=\uDD{\uD}{\Delta}$ as an abbreviation of $\uDD{\ctxUpdate{\uD}{\ut}{t}}{\Delta, \Dhyp{t}}$.%type identifier expansion context is always extended/updated together with 
 
 
@@ -1858,7 +1856,7 @@ To develop an intuition for how this formulation solves the problem, it is instr
 
 % A \emph{type identifier expansion context}, $\uD$, is a finite function that maps each type identifier $\ut \in \domof{\uD}$ to the hypothesis $\vExpands{\ut}{t}$, for some type variable $t$. We write $\ctxUpdate{\uD}{\ut}{t}$ for the type identifier expansion context that maps $\ut$ to $\vExpands{\ut}{t}$ and defers to $\uD$ for all other type identifiers (i.e. the previous mapping is \emph{updated}.) We define $\uDelta, \uDhyp{\ut}{t}$ when $\uDelta=\uDD{\uD}{\Delta}$ as an abbreviation of $\uDD{\ctxUpdate{\uD}{\ut}{t}}{\Delta, \Dhyp{t}}$.%type identifier expansion context is always extended/updated together with 
 
-% The \emph{type expansion judgement}, $\expandsTU{\uDelta}{\utau}{\tau}$, is inductively defined by the rules given in the supplement. The first three of these rules are reproduced below:
+% The \emph{type expansion judgement}, $\expandsTU{\uDelta}{\utau}{\tau}$, is inductively defined by the rules given in the accompanying technical report. The first three of these rules are reproduced below:
 % % \begin{subequations}%\label{rules:expandsTU}
 % \begin{mathpar}
 % \inferrule[te-id]{ }{\expandsTU{\uDelta, \uDhyp{\ut}{t}}{\ut}{t}}
@@ -2154,13 +2152,13 @@ $}, that allows the TLM's parser to distinguish parse errors from successful par
 % \] 
 
 The type abbreviated $\tCEExp$ classifies encodings of \emph{proto-expressions}, $\ce$ (pronounced ``grave $e$''). The syntax of proto-expressions, defined in Fig.~\ref{fig:U-candidate-terms}, will be described when we describe proto-expansion validation in Sec. \ref{sec:ce-syntax-U}. 
-As with $\tBody$, we need only take as a condition that there is an isomorphism between values of type $\tCEExp$ and closed proto-expressions, which is mediated in one direction by the \emph{proto-expression decoding judgement}, $\decodeCondE{e}{\ce}$ that we will return to when we describe TLM application below (see supplement for the full condition).
+As with $\tBody$, we need only take as a condition that there is an isomorphism between values of type $\tCEExp$ and closed proto-expressions, which is mediated in one direction by the \emph{proto-expression decoding judgement}, $\decodeCondE{e}{\ce}$ that we will return to when we describe TLM application below (see accompanying technical report for the full condition).
 
 In $\miniVersePat$, we model the \lismall{dependencies} clause as specifying a single value dependency.
 %\footnote{In \lifootnote{Relit}, this is further restricted to a module expression with a singleton signature, for reasons discussed in Sec.~\ref{sec:implementation}.} 
 The third premise of Rule~\textsc{ee-def-setlm} generates the expanded dependency, $\edep$ of type $\taudep$, from the unexpanded dependency, $\uedep$. Note that we do not need to explicitly allow for type dependencies (which would be formally cumbersome because we cannot ``tuple together'' types like we can values in this setting). Instead, type dependencies can be expressed by dependency on a value of existential type to be unpacked by the expansion. This existential type can in turn be expressed in terms of universal types by the well-known encoding \cite{B304,pfple1}. This workaround is perhaps unsurprising given that existentials relate closely to modules, which package both types and values \cite{pfple1,mitchell1988abstract}. 
 
-Having processed the TLM definition, we are ready to continue into the unexpanded expression $\ue$ where the TLM is bound. To activate the TLM definition for use by $\ue$, the third row of premises in Rule~\textsc{ee-def-setlm} first generates a fresh variable, \li{x}, to stand for the value dependency. We will use this variable to instantiate the dependency in each generated expansion when we discuss TLM application below. Note that there is no corresponding expression identifier in $\uG$. Second, the rule extends the expression TLM context, $\uPsi$, to associate the TLM identifier $\tsmv$ with $x$, as well as with the given expansion type and parse function. If $\tsmv$ was already defined, the previous definition is shadowed (the supplement gives some additional details on how TLM contexts are structured).
+Having processed the TLM definition, we are ready to continue into the unexpanded expression $\ue$ where the TLM is bound. To activate the TLM definition for use by $\ue$, the third row of premises in Rule~\textsc{ee-def-setlm} first generates a fresh variable, \li{x}, to stand for the value dependency. We will use this variable to instantiate the dependency in each generated expansion when we discuss TLM application below. Note that there is no corresponding expression identifier in $\uG$. Second, the rule extends the expression TLM context, $\uPsi$, to associate the TLM identifier $\tsmv$ with $x$, as well as with the given expansion type and parse function. If $\tsmv$ was already defined, the previous definition is shadowed (the accompanying technical report gives some additional details on how TLM contexts are structured).
 
 The final premise of Rule~\textsc{ee-def-setlm}, together with the conclusion of the rule, specifies the expansion of the TLM definition as being of function application form---it wraps $e$, where the variable $x$ stands free for the dependency, with a lambda binding $x$, and then immediately applies it to pass down the actual value dependency, $\edep$. In other words, it \li{let}-binds the dependency. This defers to the core language with regard to whether $\edep$ is evaluated eagerly or lazily.
 
@@ -2299,7 +2297,7 @@ The typed pattern expansion rule governing pattern TLM application, Rule~\textsc
 \subsection{Proto-Expansion Validation}\label{sec:ce-validation-U}\label{sec:ce-syntax-U}\label{sec:s-PEV}
 Proto-expansion validation occurs in two steps, corresponding to the final two premises of the TLM application rules in Fig.~\ref{fig:ee-ap-setlm}. 
 
-The first of these two premises determines the segmentation of the proto-expansion by pulling out the splice references and ensures that it is valid via the predicate $\segOK{\psi}{b}$, where $\psi$ is the segmentation. This checks that each segment  has positive length and is within bounds of $b$, and that the segments do not overlap and are separated by at least one character (see supplement).
+The first of these two premises determines the segmentation of the proto-expansion by pulling out the splice references and ensures that it is valid via the predicate $\segOK{\psi}{b}$, where $\psi$ is the segmentation. This checks that each segment  has positive length and is within bounds of $b$, and that the segments do not overlap and are separated by at least one character (see accompanying technical report).
 
 The second of these two premises {typechecks} the proto-expression or proto-pattern, and simultaneously generates a corresponding core language expression or pattern, from which the final expansion is constructed as described above. This step is specified by the following judgements:% are types and expanded expressions, respectively.
 \[\begin{array}{ll}
@@ -2313,7 +2311,7 @@ The second of these two premises {typechecks} the proto-expression or proto-patt
 
 The purpose of the \emph{splicing scenes} $\tscenev$, $\escenev$ and $\pscenev$ is to ``remember'' the contexts and literal body from the TLM application site (cf. the final premise of Rule \textsc{ee-ap-setlm} in Fig.~\ref{fig:ee-def-setlm}) for when validation encounters spliced terms. For example, \emph{expression splicing scenes}, $\escenev$, are of the form $\esceneUP{\uDelta}{\uGamma}{\uPsi}{\uPhi}{b}$.
 
-\paragraph{Common Forms} Most of the proto-expansion forms, including all of those elided in Fig.~\ref{fig:U-candidate-terms} mirror corresponding expanded forms. The rules governing proto-expansion validation for these common forms  in the supplement correspondingly mirror the typing rules. Splicing scenes---$\escenev$, $\tscenev$ and $\pscenev$--pass opaquely through these rules, i.e. none of these rules can access the application site contexts. Notice that the initial expansion-interal typing contexts, $\Delta$ and $\Gamma$, start out empty in the rules in Fig.~\ref{fig:ee-ap-setlm}. Together, this maintains context independence (defined formally below).
+\paragraph{Common Forms} Most of the proto-expansion forms, including all of those elided in Fig.~\ref{fig:U-candidate-terms} mirror corresponding expanded forms. The rules governing proto-expansion validation for these common forms  in the accompanying technical report correspondingly mirror the typing rules. Splicing scenes---$\escenev$, $\tscenev$ and $\pscenev$--pass opaquely through these rules, i.e. none of these rules can access the application site contexts. Notice that the initial expansion-interal typing contexts, $\Delta$ and $\Gamma$, start out empty in the rules in Fig.~\ref{fig:ee-ap-setlm}. Together, this maintains context independence (defined formally below).
 
 Notice that proto-rules, $\crulev$, involve expanded patterns, $p$, not proto-patterns, $\cpv$, because proto-rules appear in proto-expressions, which are generated by expression TLMs. Proto-patterns arise only from pattern TLMs. There is no variable proto-pattern form, for the reasons described in Sec. \ref{sec:sptsms}.
 
@@ -2382,13 +2380,13 @@ The only interesting forms in Fig.~\ref{fig:U-candidate-terms} are the reference
 \noindent
 This first premise of this rule parses out the requested segment of the literal body, $b$, to produce an unexpanded expression, $\ue$. The second premise performs proto-type expansion on the given type annotation, $\ctau$, producing a type, $\tau$. The expansion-internal type variables in $\Delta$ are not available to $\tau$. The third premise then invokes type expansion on $\ue$ \emph{under the application site contexts}, $\uDD{\uD}{\Delta_\text{app}}$ and $\uGG{\uG}{\Gamma_\text{app}}$, but \emph{not} the expansion-internal contexts, $\Delta$ and $\Gamma$.  The final premise requires that the application site contexts are disjoint from the expansion-local type formation context. Because proto-expansions are ABTs identified up to alpha-equivalence, we can always discharge the final premise by alpha-varying the proto-expansion. This serves to enforce capture avoidance. Note that the purpose of $\miniVersePat$ is to specify the necessary conditions, not to specify a particular implementation strategy. There are various ways to implement this capture avoidance condition. We will formally state the capture avoidance property in terms of capture avoiding substitution below, which is one strategy. Another is to pro-actively generate fresh variables for all internal bindings \emph{a priori}.
 
-The rule for references to spliced unexpanded types and patterns are analogous (see supplement). Note that we did not give examples of type splicing in the previous sections, but it is occasionally useful. For example, a TLM that implements a parser generator in the style of Menhir could need type splicing for reading in the non-terminal types, e.g. as on Line 9 of Fig.~\ref{fig:regex-parser}.
+The rule for references to spliced unexpanded types and patterns are analogous (see accompanying technical report). Note that we did not give examples of type splicing in the previous sections, but it is occasionally useful. For example, a TLM that implements a parser generator in the style of Menhir could need type splicing for reading in the non-terminal types, e.g. as on Line 9 of Fig.~\ref{fig:regex-parser}.
 % \noindent
 % We first splice out the requested segment. The second premise expands the type annotation under an empty context, because the type annotation must be meaningful at the application site (so, independent of $\Delta$ and $\Gamma$) and not itself make any assumptions about the application site context. Spliced types can appear in the annotation. The third premise performs typed expansion of the spliced unexpanded expression under the application site contexts, but not the expansion-local contexts. The final two premises ensure that these contexts are disjoint, again to force capture avoidance.
 
 
 
-% The rule for references to spliced unexpanded patterns is entirely analogous (see supplement).
+% The rule for references to spliced unexpanded patterns is entirely analogous (see accompanying technical report).
 % {\small\begin{mathpar}
 % \inferrule[ppv-spliced]{
 %   \parseUPat{\bsubseq{b}{m}{n}}{\upv}\\
@@ -2419,7 +2417,7 @@ Let us now sketch the main metatheoretic properties of $\miniVersePat$.
 The additional second clause simply states that the final expansion produced by proto-expression validation is well-typed under the combined application site and expansion-internal context (because spliced terms are distinguished only in the proto-expansion, but not in the final expansion). % The combined context can only be formed if these are disjoint.
 The proof proceeds by mutual rule induction and appeal to the analogous typed pattern expansion theorem and simple lemmas about type expansion   and proto-type validation. The only issue is that it is not immediately clear that the mutual induction is well-founded, because the case in the proof of part 2 for Rule \textsc{pev-spliced} invokes part 1 of the induction hypothesis on a term that is not a sub-term of the conclusion, but rather parsed out of the literal body, $b$. To establish that the mutual induction is well-founded, then, we need to explicitly establish a decreasing metric. The intuition is that parsing a term of out a literal body cannot produce a bigger term than the term that contained that very literal body. 
 % More specifically, {the sum of the lengths of the literal bodies that appear in the term strictly decreases each time you perform a nested TLM application} because some portion of the term has to be consumed by the TLM name and the delimiters. 
-The details are given in the supplement.
+The details are given in the accompanying technical report.
 
 %  A similar argument is needed to prove Typed Pattern Expansion:
 % \begin{theorem}[Typed Pattern Expansion (Strong)] ~
@@ -2504,7 +2502,7 @@ The following theorem summarizes the abstract reasoning principles that client p
 \end{theorem}
 
 
-% The proof, which involves auxiliary lemmas about the decomposition of proto-types and proto-expressions, is given in the supplement.
+% The proof, which involves auxiliary lemmas about the decomposition of proto-types and proto-expressions, is given in the accompanying technical report.
 
 Notice that we were able to state the hygiene properties (\textbf{Capture Avoidance} and \textbf{Context Independence}) without needing a notion of alpha-equivalence of source terms, as in typical formal accounts of hygiene \cite{Kohlbecker86a,DBLP:conf/popl/Adams15,DBLP:conf/popl/ClingerR91,DBLP:journals/lisp/DybvigHB92,DBLP:conf/esop/HermanW08,Herman10:Theory}. Instead, we used standard notions of capture avoiding substitution and free variables combined with the context disjointness conditions in the rules above. This is possible only because we keep track of spliced terms explicitly in the proto-expansion. %In fact, doing so is critical for TLMs -- there is no notion of alpha-conversion for partially parsed terms, so any notion of hygiene that relies on this notion would be inapplicable.
 
@@ -2583,7 +2581,7 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 % % \label{fig:P-macro-expressions-types-u}
 % % \end{figure}
 
-% We will now outline $\miniVerseParam$, a calculus that extends $\miniVersePat$ with parametric TLMs. This calculus is organized, like $\miniVersePat$, as an unexpanded language (UL) defined by typed expansion to an expanded language (XL). There is not enough space to describe $\miniVerseParam$ with the same level of detail as in Sec. \ref{sec:setlms-formally}, so we highlight only the most important concepts below. The details are in the supplement.
+% We will now outline $\miniVerseParam$, a calculus that extends $\miniVersePat$ with parametric TLMs. This calculus is organized, like $\miniVersePat$, as an unexpanded language (UL) defined by typed expansion to an expanded language (XL). There is not enough space to describe $\miniVerseParam$ with the same level of detail as in Sec. \ref{sec:setlms-formally}, so we highlight only the most important concepts below. The details are in the accompanying technical report.
 
 % The XL consists of 1) module expressions, $M$, classified by signatures, $\sigma$; 2) constructions, $c$, classified by kinds, $\kappa$; and 3) expressions classified by types, which are constructions of kind $\akty$ (we use metavariables $\tau$ instead of $c$ for types by convention.) Metavariables $X$ ranges over module variables and $u$ or $t$ over construction variables. The module and construction languages are based closely on those defined by \citet{pfple1}, which in turn are based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. A complete account of these developments is unfortunately beyond the scope of this paper. The expression language extends the language of $\miniVersePat$ only to allow projection out of modules.
 
@@ -2697,7 +2695,7 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 % % \end{equation*}
 % \vspace{-5px}
 
-% Normalization eliminates parameters introduced in higher-order abbreviations, leaving only those parameter applications specified by the original TLM definition. Normal forms and progress and preservation theorems are established in the supplement.
+% Normalization eliminates parameters introduced in higher-order abbreviations, leaving only those parameter applications specified by the original TLM definition. Normal forms and progress and preservation theorems are established in the accompanying technical report.
 
 % The third row of premises looks up the applied TLM's definition by invoking a simple metafunction to extract its name, $a$, then looking up $a$ within the peTLM definition context, $\Psi$.
 % % \begin{align}
@@ -2752,7 +2750,7 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 % \end{mathpar}
 % (This is only sensible because we maintain the invariant that $\Omega$ is always an extension of $\Omega_\text{params}$.)
 
-% The calculus enjoys metatheoretic properties analogous to those described in Sec. \ref{sec:s-metatheory}, modified to account for the presence of modules, kinds and parameterization. The following theorem establishes the abstract reasoning principles available when applying a parametric expression TLM. The clauses are directly analogous to those of Theorem \ref{thm:setlm-reasoning}, so for reasons of space we do not repeat the inline descriptions. The \textbf{Kinding} clauses can be understood by analogy to the \textbf{Typing} clauses. The details of parametric pattern TLMs (ppTLMs) are analogous (see supplement.)
+% The calculus enjoys metatheoretic properties analogous to those described in Sec. \ref{sec:s-metatheory}, modified to account for the presence of modules, kinds and parameterization. The following theorem establishes the abstract reasoning principles available when applying a parametric expression TLM. The clauses are directly analogous to those of Theorem \ref{thm:setlm-reasoning}, so for reasons of space we do not repeat the inline descriptions. The \textbf{Kinding} clauses can be understood by analogy to the \textbf{Typing} clauses. The details of parametric pattern TLMs (ppTLMs) are analogous (see accompanying technical report.)
 % \vspace{-3px}
 % \begin{theorem}[peTLM Reasoning Principles]
 % If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
@@ -2833,7 +2831,7 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 % % \end{theorem}
 % % 
 % % \begin{proof} 
-% % The proof, in the supplement, relies on an auxiliary lemma about decomposing proto-patterns.
+% % The proof, in the accompanying technical report, relies on an auxiliary lemma about decomposing proto-patterns.
 
 % % \subsection{Retrospective} Let us step back and briefly review what we have accomplished so far. First, we defined an entirely standard expanded language (Sec. \ref{sec:s-XL}). Then we mirrored the forms in this language to form the common forms of the unexpanded language (Sec. \ref{sec:s-UL}), taking care to handle identifiers carefully (Sec. \ref{sec:s-TE}). We also added forms for defining TLMs (Sec. \ref{sec:s-TLM-def}). We then considered TLM application, which invokes a parse function to programmatically produce an encoding of a proto-expansion (Sec. \ref{sec:s-TLM-ap}). Each proto-expansion is then decoded, validated and inductively expanded  (Sec. \ref{sec:s-PEV}) to establish the abstract reasoning principles just described (Sec. \ref{sec:s-metatheory}). 
 % % We write $\tsfrom{\escenev}$ for the type splicing scene constructed by dropping unnecessary contexts from $\escenev$:
@@ -3569,7 +3567,7 @@ The importance of specialized notation as a ``tool for thought'' has long been r
 
 Of course, this desire to ``relieve the brain of unnecessary work'' has motivated not only the syntax but also the semantics of languages like ML and Scala -- these languages maintain a strong type and binding discipline so that programmers, and their tools, can hold certain implementation details abstract when reasoning about program behavior.  In the words of \citet{B304}, ``type structure is a syntactic discipline for enforcing levels of abstraction.''
 
-Previously, these two relief mechanisms were in tension---mechanisms  that allowed programmers to express new notation would obscure the type and binding structure of the program text. TLMs resolve this tension for the broad class of literal forms that generalized literal forms subsume. This class includes all of the examples enumerated in Sec. \ref{sec:intro} (up to the choice of outermost delimiter), the varied and non-trivial case studies outlined in this paper and in the supplement, and the examples collected from the empirical study by \citet{TSLs}. We anticipate many more interesting examples will emerge as the Reason community explores the mechanism.
+Previously, these two relief mechanisms were in tension---mechanisms  that allowed programmers to express new notation would obscure the type and binding structure of the program text. TLMs resolve this tension for the broad class of literal forms that generalized literal forms subsume. This class includes all of the examples enumerated in Sec. \ref{sec:intro} (up to the choice of outermost delimiter), the varied and non-trivial case studies outlined in this paper and in the accompanying technical report, and the examples collected from the empirical study by \citet{TSLs}. We anticipate many more interesting examples will emerge as the Reason community explores the mechanism.
 
 Of course, not all possible literal notation will prove to be in good taste. %TLMs leave the burden of establishing the value of any particular literal notation to individual library providers, rather than to the language designer. 
 The reasoning principles that TLMs provide, which are the primary contributions of this paper, allow clients to "reason around" poor literal designs, using principles analogous to those already familiar to programmers in languages like ML and Scala. Although we emphasized integration with modules, our formal system demonstrates that modules are not necessary to capture the fundamental ideas in this paper. We intend this paper to be useful to the designers of languages far from the ML tradition. More generally, we intend for the ``reasoning principles first'' approach advocated in this paper to be a useful intellectual framework for language designers considering the merits of other ``conveniences''. % We must leave a detailed empirical evaluation of the impact of particular TLMs on various quality attributes, like programmer productivity and program comprehensibility, as future work. 
@@ -3605,7 +3603,7 @@ At several points in the paper, we allude to editor integration. However, severa
 
 % Let us conclude by considering the oft-uttered phrase ``syntax doesn't matter'', which is generally taken to mean that syntactic concerns are orthogonal to various more important semantic concerns. Our hope is that the reader will leave this paper with an understanding that this is a rather simplistic proclamation, because semantic concerns are relevant to notation design as well! % We hope that this work will lead to more ``reasonable'' variants of other syntactic conveniences, e.g. the ubiquitious ``deriving'' clauses on datatype definitions.
 
-% Other directions for future work are given in the supplement\todo{do this?}.
+% Other directions for future work are given in the accompanying technical report\todo{do this?}.
 
 % Another interesting question is what this mechanism would look like in the setting of a projectional structure editor, i.e. one where the syntax is not textual but rather tree-shaped and projected in an interative manner to the programmer. This paper taken together with work by \citet{Omar:2012:ACC:2337223.2337324,DBLP:conf/popl/OmarVHAH17} can serve to guide such an effort.
 
@@ -3655,11 +3653,11 @@ supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042;
  by the NSA under lablet contract \#H98230-14-C-0140; and by Ravi Chugh
  at the University of Chicago. The authors
 would like to thank Robert Harper, Karl Crary and Eric Van Wyk for 
-valuable feedback on the first author's doctoral dissertation, which forms the basis of this work; 
+valuable feedback on the first author's doctoral dissertation \cite{omar-thesis}, which forms the basis of this work; 
 Charles Chamberlain 
 for his crucial contributions to the implementation and for valuable feedback on the
 paper; and members of the PL Reading Group at University of Chicago and the anonymous referees
-at ICFP and prior conferences for their valuable critiques, which substantially improved the paper.
+ for their thoughtful critiques, which substantially improved the paper.
 
   % This material is based upon work supported by the
   % \grantsponsor{GS100000001}{National Science
@@ -3710,7 +3708,7 @@ at ICFP and prior conferences for their valuable critiques, which substantially 
 % \label{fig:P-macro-expressions-types-u}
 % \end{figure}
 
-We will now outline $\miniVerseParam$, a calculus that extends $\miniVersePat$ with parametric TLMs. This calculus is organized, like $\miniVersePat$, as an unexpanded language (UL) defined by typed expansion to an expanded language (XL). There is not enough space to describe $\miniVerseParam$ with the same level of detail as in Sec. \ref{sec:setlms-formally}, so we highlight only the most important concepts below. The details are in the supplement.
+We will now outline $\miniVerseParam$, a calculus that extends $\miniVersePat$ with parametric TLMs. This calculus is organized, like $\miniVersePat$, as an unexpanded language (UL) defined by typed expansion to an expanded language (XL). There is not enough space to describe $\miniVerseParam$ with the same level of detail as in Sec. \ref{sec:setlms-formally}, so we highlight only the most important concepts below. The details are in the accompanying technical report.
 
 The XL consists of 1) module expressions, $M$, classified by signatures, $\sigma$; 2) constructions, $c$, classified by kinds, $\kappa$; and 3) expressions classified by types, which are constructions of kind $\akty$ (we use metavariables $\tau$ instead of $c$ for types by convention.) Metavariables $X$ ranges over module variables and $u$ or $t$ over construction variables. The module and construction languages are based closely on those defined by \citet{pfple1}, which in turn are based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. A complete account of these developments is unfortunately beyond the scope of this paper. The expression language extends the language of $\miniVersePat$ only to allow projection out of modules.
 
@@ -3827,7 +3825,7 @@ The fourth premise performs \emph{peTLM expression normalization}, $\tsmexpEvals
 % \end{equation*}
 \vspace{-5px}
 
-Normalization eliminates parameters introduced in higher-order abbreviations, leaving only those parameter applications specified by the original TLM definition. Normal forms and progress and preservation theorems are established in the supplement.
+Normalization eliminates parameters introduced in higher-order abbreviations, leaving only those parameter applications specified by the original TLM definition. Normal forms and progress and preservation theorems are established in the accompanying technical report.
 
 The third row of premises looks up the applied TLM's definition by invoking a simple metafunction to extract its name, $a$, then looking up $a$ within the peTLM definition context, $\Psi$.
 % \begin{align}
@@ -3882,7 +3880,7 @@ Proto-expansion validation operates conceptually as in $\miniVersePat$. The only
 \end{mathpar}
 (This is only sensible because we maintain the invariant that $\Omega$ is always an extension of $\Omega_\text{params}$.)
 
-The calculus enjoys metatheoretic properties analogous to those described in Sec. \ref{sec:s-metatheory}, modified to account for the presence of modules, kinds and parameterization. The following theorem establishes the abstract reasoning principles available when applying a parametric expression TLM. The clauses are directly analogous to those of Theorem \ref{thm:setlm-reasoning}, so for reasons of space we do not repeat the inline descriptions. The \textbf{Kinding} clauses can be understood by analogy to the \textbf{Typing} clauses. The details of parametric pattern TLMs (ppTLMs) are analogous (see supplement.)
+The calculus enjoys metatheoretic properties analogous to those described in Sec. \ref{sec:s-metatheory}, modified to account for the presence of modules, kinds and parameterization. The following theorem establishes the abstract reasoning principles available when applying a parametric expression TLM. The clauses are directly analogous to those of Theorem \ref{thm:setlm-reasoning}, so for reasons of space we do not repeat the inline descriptions. The \textbf{Kinding} clauses can be understood by analogy to the \textbf{Typing} clauses. The details of parametric pattern TLMs (ppTLMs) are analogous (see accompanying technical report.)
 \vspace{-3px}
 \begin{theorem}[peTLM Reasoning Principles]
 If $\expandsP{\uOmega}{\uPsi}{\uPhi}{\utsmap{\uepsilon}{b}}{e}{\tau}$ then:
