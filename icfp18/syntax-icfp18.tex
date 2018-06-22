@@ -554,7 +554,7 @@ Line 2 applies \li{$regex} to construct the regex \li{DNA.any_base} that was  de
       in package regex_parser;
       dependencies = {module Regex = Regex}
     };
-  }
+  };
 \end{lstlisting}
 \vspace{-5px}
 \caption{The definition of \li{$regex}. Fig. \ref{fig:lexer-and-parser} defines \li{RegexLexer} and \li{RegexParser}, which are detailed in Sec.~\ref{sec:provider-perspective}.}
@@ -919,9 +919,9 @@ TLM-related forms are available to be repurposed in this way by \li{$proto_expr}
 \begin{lstlisting}[numbers=none]
   $proto_expr `( SURLleEURLSURLt y = ^(EURLr1SURL); $m `(...{^(r2)}...)`EURL )`
 \end{lstlisting}
-The sequence \li{^(r1)} is in expression position, so antiquotation occurs. However, there is no way for \li{$re_expr} to know how the TLM that \li{$m} will eventually refer to will parse the sequence \li{^(r2)}---it may end up in a spliced expression, or it may have some other meaning---so it cannot perform antiquotation. In other words, TLM expansion is fundamentally ``outside-in''.  Notice that the segmentation does communicate the fact that \li{r2} has not been antiquoted (it remains lavender). However, to avoid confusion, we decided not to support the generation of TLM application forms via \li{$re_expr}, and instead repurposed that notation for antiquotation. 
+The sequence \li{^(r1)} is in expression position, so antiquotation occurs. However, there is no way for \li{$re_expr} to know how the TLM that \li{$m} will eventually refer to will parse the sequence \li{^(r2)}---it may end up in a spliced expression, or it may have some other meaning---so it cannot perform antiquotation. In other words, TLM expansion is fundamentally ``outside-in''.  Notice that the segmentation does communicate the fact that \li{r2} has not been antiquoted (it remains lavender), but to avoid confusion, we decided not to support the generation of TLM applications via \li{$re_expr}. 
 
-This issue does \textbf{not} come up when using TLMs to define quotation literals for languages other than Reason itself (an example is given in Sec.~\ref{sec:sptsms}), so if this design proves too limiting, it may be reasonable to build ``inside-out'' quasiquotation primitively into Reason. In fact, this is already possible using a preprocessor, \li{ppx_metaquot}, from the \li{ppx_tools} library \cite{ppx-tools}, or with MetaOCaml and related systems, discussed below. %(Nested TLM application via splicing is, of course, useful and fully supported, e.g. in Fig.~\ref{fig:nesting-example}).
+This issue does \textbf{not} come up when using TLMs to define quotation literals for languages other than Reason itself (an example is given in Sec.~\ref{sec:sptsms}), so if this design proves too limiting, it may be reasonable to build ``inside-out'' quasiquotation primitively into Reason. In fact, this is already available using a preprocessor, \li{ppx_metaquot}, from the \li{ppx_tools} library \cite{ppx-tools}, or with MetaOCaml and related systems, discussed below. %(Nested TLM application via splicing is, of course, useful and fully supported, e.g. in Fig.~\ref{fig:nesting-example}).
  % Typed quotations with an explicit representation of contexts would need to be built in to the language  necessary to even think about expanding a 
 
 
@@ -933,7 +933,7 @@ In order to maintain the abstract reasoning principles discussed in Sec. \ref{se
 \begin{enumerate}
   \item First, the segmentation is computed and validated. This involves checking two criteria:
     \begin{enumerate}
-      \item The segments must be in-bounds, of positive extent, non-overlapping and separated by at least one character.
+      \item The segments must be in-bounds, of positive extent, non-overlapping and separated.
       \item The segment types must encode valid types assuming only the TLM dependencies.
     \end{enumerate}
   \item Second, the proto-expansion is typechecked assuming only the TLM dependencies (plus opened \li{Pervasives}), treating each splice reference as a variable of the specified segment type.
@@ -942,18 +942,125 @@ If validation fails, the client is notified that the applied TLM is incorrectly 
 
 \subsubsection{MetaOCaml}\label{sec:metaocaml} In ``vanilla'' OCaml, it is not possible to define a datatype that classifies only valid proto-expansions according to the correctness criteria above. The MetaOCaml type system comes closer by extending the semantics of OCaml with values of type \li{'a code}, which are constructed using a primitive typed quasiquotation operation \cite{DBLP:conf/flops/Kiselyov14,taha2004gentle}. In MetaOCaml-BER, which is an active implementation of (an extension of) MetaOCaml as a fork of the compiler, and \li{ppx_stage}, which implements a subset of MetaOCaml as an ordinary compiler plugin rather than a fork of the compiler \cite{ppxstage}, a value of type \li{'a code} is represented as, and can be coerced safely to, an OCaml parse tree for the corresponding expression of type \li{'a} \cite{DBLP:conf/flops/Kiselyov14}. It is therefore possible to implement a TLM parser using \li{'a code} values internally, doing the coercion only at the end. However, the typing guarantee is relative to the context where the quotation was constructed, i.e. the parser's implementation, so a validation step is still needed to ensure that the assumptions are consistent with those specified by the \li{dependencies} clause. 
 
-The segmentation criteria cannot be statically enforced and, in both mentioned implementations of MetaOCaml, it is impossible to express splice references directly because they do not yet support terms that contain explicit type annotations. There are various workarounds, e.g. by defining for each possible segment type \li{t} a dummy value of type \li{t code} and then post-processing the parse tree after the coercion step. 
+The segmentation criteria cannot be statically enforced and, in both mentioned implementations of MetaOCaml, it is impossible to express splice references directly because they do not yet support terms with type annotations. One workaround is to define for each  segment type \li{t} a dummy value of type \li{t code} that is replaced with a splice reference by post-processing after the coercion step. 
 
-Overall, this approach can substantially increase a TLM provider's confidence in the type correctness of the expansion logic, with the caveats just mentioned. With \li{ppx_stage}, it is possible to compile the parser separately without requiring that clients use the plugin. 
+Overall, this approach can, at least, substantially increase a TLM provider's confidence in the type correctness of the expansion logic. 
+% With \li{ppx_stage}, it is possible to compile the parser separately without requiring that clients use the plugin. 
 TLMs can be applied inside quoted code as long as the applied TLM is accessed through a dependency of the TLM being defined (so that internal dependency references correctly resolve). %MetaOCaml-BER does not change the parse tree or bytecode representation of the OCaml system, and values of type \li{'a code} are not part of the public interface of a TLM parser, so it should, in principle, be possible to compile a parser using MetaOCaml-BER for use in  ``vanilla'' OCaml (and therefore Reason) programs. However, MetaOCaml-BER does not suitably package the necessary pieces of its run-time system, so we have not verified this conjecture.
 
 \subsubsection{Other Implementation Strategies}
 \label{sec:html-example}
-Although \li{ocamllex} and Menhir are powerful tools, they are not right for every parsing job. For example, we might want to use a different parser generator, a parser combinator library \cite{Hutton1992d}, or post-process the result of calling an existing parser to produce a corresponding proto-expansion. Fortunately, it is easy to bypass \li{ocamllex} and Menhir: 
+
+\begin{figure}[t]
+\begin{subfigure}[t]{0.46\textwidth}
+\begin{lstlisting}
+  module Html = {
+    /* a simplified encoding of HTML */
+    type tag = string;
+    type attr = (string, string);
+    type attrs = list(attr);
+    type t = 
+      | Text(string) 
+      | Elem(tag, attrs, list(t));
+  };
+\end{lstlisting}
+\vspace{-6px}
+\caption{The \li{Html} module, which defines \li{Html.t}.}
+\label{fig:html-type-def}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.52\textwidth}
+\begin{lstlisting}[morekeywords={expression}]
+  module HtmlNotation = {
+    notation $html at Html.t {
+      lexer HtmlLexer
+      expression parser HtmlParser.expr
+      pattern parser HtmlParser.pat 
+      in package html_parser;
+      dependencies = {module Html = Html}
+    };
+  };
+\end{lstlisting}
+\vspace{-6px}
+\caption{The \li{$html} expression and pattern TLMs.}
+\label{fig:html-tlm-def}
+\end{subfigure}
+
+\begin{subfigure}[t]{\textwidth}
+\vspace{3px}
+% let pElem : Html.tag -> Html.attrs -> list(ProtoExpr.t) -> ProtoExpr.t = (* ... *)
+% let pTextElem : Html.tag -> Html.attrs, string) -> ProtoExpr.t = (* ... *)
+\begin{lstlisting}
+  module HtmlLexer = Relit.TrivLexer;
+  module HtmlParser = Relit.HandRolledExprPatParser({
+    module ProtoHtml = {
+      type t = PText(string)
+             | PElem(Html.tag, Html.attrs, list(t))
+             | PSplicedElem(Relit.Segment.t) 
+             | PSplicedText(Relit.Segment.t) 
+      let parse : string => t = 
+        /* ... via Markup.ml's stream combinators (see text) ... */;
+    };
+    module ExprExpander = {
+      open notation Relit.$proto_expr; open ProtoHtml;
+      let expand_attr = (x1, x2) => `(SURL ($s `(EURLx1SURL)`, $s `(EURLx2SURL)`)EURL )`;
+      let expand_attrs = (attrs) => `(SURL $list `(EURLList.map(expand_attr, attrs)SURL)`EURL )`;
+      let expand_proto = fun 
+      | PText(text) => `(SURL Html.Text($s `(EURLtextSURL)`)EURL )` 
+      | PElem(tag, attrs, children) => 
+        `(SURL Html.Elem($s `(EURLtagSURL)`, `(EURLexpand_attrs(attrs)SURL)`, 
+            $list `(EURLList.map(expand_parsed, children)SURL)`)EURL )`
+      | PSplicedHtml(seg) => `(SURL $spliced `(EURLsegSURL : Html.t) EURL)`);
+      | PSplicedText(seg) => `(SURL Html.Text($spliced `(EURLsegSURL : striSURLEURLng)`) EURL)`
+    };
+    let expr = (body) => body |> ProtoHtml.parse |> ExprExpander.expand_proto;
+    let pat  = (body) => expr(body) |> ProtoPat.from_expr;
+  })
+\end{lstlisting}
+\vspace{-6px}
+\caption{The implementation of \li{HtmlParser}, which defers the parsing step to the \li{Markup.ml} library \cite{markupml}.}
+\label{fig:html-parser}
+\vspace{-5px}
+\end{subfigure}
+% \begin{subfigure}[t]{\textwidth}
+% \lstset{deletestring=[d]{"}}
+% \begin{lstlisting}
+%   open HtmlNotation; 
+%   exception UnexpectedFormat;
+%   let scrape_data = $html.(fun 
+%   | `(SURL<div... class="result">EURL
+%       [ `(SCOLOR<h1><$$>ECOLORtitleSCOLOR</$$></h1>ECOLOR)`, author, summary, ..._ ]SURL</div>EURL)` => 
+%     (title, author, summary)
+%   | _ => raise UnexpectedFormat);
+% \end{lstlisting}
+% \vspace{-4px}
+% \caption{Using a pattern TLM to deconstruct an HTML value.}
+% \label{fig:pattern-tlm-example}
+% \end{subfigure}
+\vspace{5px}
+\caption{Case Study: HTML literals as a library}
+\vspace{-4px}
+\label{fig:html-case-study}
+\end{figure}
+
+Although \li{ocamllex} and Menhir are powerful tools, they are not right for every parsing job. For example, we might want to use a different parser generator, a parser combinator library \cite{Hutton1992d}, or post-process the result of calling an existing parser to produce a corresponding proto-expansion. Fortunately, it is easy to bypass \li{ocamllex} and Menhir. 
 %The most obvious method is to define a trivial lexer that reads the entire literal body into a single token, and a trivial parser with one semantic action. In fact, this is not actually necessary because the system does not interface with \li{ocamllex} and Menhir directly. Rather, it is the job of the user's build system to make sure that by the time the compiler is invoked, these tools have already been invoked as necessary to produce ordinary OCaml modules satisfying the expected interface. It is just as well to implement this interface manually. 
-the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. For example, the accompanying technical report briefly describes how \li{$re_expr} can be expressed in terms of the Reason parser, a parse tree serializer and a tree transformation. It also details how the \li{$html} TLM shown previously is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step.
+% the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few functors that take care of the necessary boilerplate in situations where we simply want to define the parser as a function of type \li{string => Relit.ProtoExpr.t}. 
+%For example, the accompanying technical report briefly describes how \li{$re_expr}, described above, can be expressed in terms of the Reason parser, a parse tree serializer and a simple tree transformation. 
+Let us consider one substantial example of this approach here: the \li{$html} TLM, shown being applied in Fig.~\ref{fig:nesting-example}, is implemented using an existing, ``production grade'' HTML parsing library, \li{Markup.ml} \cite{markupml}, together with a simple post-processing step as outlined in Fig.~\ref{fig:html-case-study}. 
 
+There are many ways to represent HTML data, but one simple representation is specified by \li{Html.t}, defined in Fig.~\ref{fig:html-type-def}. However, manually applying the constructors is tedious and, for many web programmers, the induced notation is unfamiliar. It also makes it difficult to copy-and-paste from, for example, existing HTML files, as might be useful when refactoring an existing project to use Reason. 
+The \li{$html} TLM defined in Fig.~\ref{fig:html-tlm-def} implements the standard HTML notation extended with the tags \li{<$>} and \li{<$$>}, which support \li{Html.t} splicing and \li{string} splicing, respectively. 
+%It also supports the suffix \li{...} on a tag, which causes the body of the tag to be a splice of type \li{list(Html.t)}. 
+{We would also in practice have splicing for HTML lists and attribute values, but we omit these here.}
 
+Fig.~\ref{fig:html-parser} shows much of the implementation of \li{HtmlParser},  which is constructed by applying a functor that constructs a module that has the same essential interface as the modules that Menhir generates, with the functions \li{expr : string -> ProtoExpr.t} and \li{pat : string -> ProtoPat.t} of the input module exported as the ``non-terminals''. The companion lexer is \li{Relit.TrivLexer}, which simply passes the whole literal body on as a single token. The implementation of \li{expr} on Line 23 of Fig.~\ref{fig:html-parser} reveals that the literal body is parsed by first calling \li{ProtoHtml.parse}, then passing the result on to \li{ExprExpander.expand_proto}. (We discuss \li{pat} in the next section\todo{do this}{}.)
+
+The \li{ProtoHtml.parse} function, outlined on Lines 8-9, generates a value of the type \li{ProtoHtml.t} defined on Lines 4-7 and so named because it is similar to \li{Html.t} but distinguishes spliced segments, like a proto-expression. We omit the definition of \li{ProtoHtml.parse} but conceptually, it starts by creating a character stream from the literal body, then from that creates a \li{Markup.ml} HTML content stream, then transforms that to a stream that emits the signals from the HTML content stream until it sees a splice start tag (which is reported as a syntax error relative to the HTML standard), at which point it calls \li{Segment.read_to}, described earlier, to advance the original character stream until it recognizes the closing tag, emitting the generated segment and then returning control to the HTML content stream. Finally, it folds over this stream to produce the result of type \li{ProtoHtml.t}. 
+
+The \li{ExprExpander.expand_proto} function defined, with some helper functions, on Lines~12-21 finishes the job of the TLM parser by mapping the parsed proto-HTML to a proto-expression using the \li{$proto_expr} TLM previously described (in this case, using the \li{$list} antiquotation form that produces a parse tree of OCaml's built in list literal form from a list of parse trees).% It would be straightforward to reuse the \li{ProtoHtml} module for different variations on HTML encodings, implementing only the expander anew. Overall, the amount of code needed to implement HTML literals.
+
+Reason currently builds in ``JSX'' literals, which also support an HTML-like notation with support for splicing in a somewhat idiosynchratic manner motivated by certain JavaScript libraries (in particular, React). The expansion of this notation must be interpretted by a PPX rewriter. The problem is that this makes it difficult to use different HTML-related libraries at once. For example, ReasonReact and an XML library might both want to use this notation. This approach solves this problem (as well as other problems with the PPX-based approach as discussed in Sec.~\ref{sec:existing-approaches}).
 
   % These names are resolved as if they were at the top level of the compilation unit, not as module paths at the TLM definition site (because the resulting module must not refer to bound module variables, e.g. as bound by enclosing functors, or else it would be impossible to resolve the lexer and parser implementations at compile-time).
 
@@ -1126,6 +1233,14 @@ the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few
 \section{Pattern Literals}
 \label{sec:sptsms}
 
+
+The previous section introduced expression TLMs, which support value construction. This section introduces pattern TLMs, which support value deconstruction via the structural pattern matching facilities common to ML-like languages. 
+
+For example, the definitions outlined in Fig. \ref{fig:lam} allow us to elegantly express an evaluator for the lambda calculus as shown in Fig. \ref{fig:lam-eval}. We assume that the terms of \li{Lambda} are represented differently from the values to avoid needing additional ``impossible'' cases, but we can use the same notation for both without conflict by defining separate TLMs, \li{$term} and \li{$v}, respectively. Each of these TLMs defines both expression and pattern literal notation, distinguished by qualifiers in the TLM definition as shown on Lines 5-6 of Fig. \ref{fig:lam}, and we see examples of all four of these notations in use in Fig. \ref{fig:lam-eval}. These TLMs were designed to be used for operating on \li{Lambda} terms, so we chose a splicing convention inspired by the typical convention ``on paper'', where identifiers appearing in the literal are parsed as spliced (OCaml) variables, as indicated by the colors in Fig. \ref{fig:lam-eval}. For example, on Line 5, \li{x} and \li{e} are bound by the literal pattern for \li{Lambda} terms on the left, then spliced into the expression literal on the right to construct the corresponding \li{Lambda} value. % A different pair of TLMs at the same types could make the opposite choice, parsing identifiers as \li{Lambda} language variables and defining a separate notation for splicing. %These would be less elegant for writing the evaluator but more useful when, for example, writing its tests. This sort of flexibility is difficult to achieve in settings where the grammar of the host language is itself extended (e.g. with the more limited mixfix systems of Coq \cite{Coq:manual} or Agda \cite{norell2007towards}) because syntactic conflicts ensue.
+
+From a client programmer's perspective, reasoning principles analogous to those described in Sec. \ref{sec:client-perspective} for expression TLMs are available. \textbf{Responsibility} is assigned by the same protocol, and the type annotation on the responsible TLM governs the type of the generated pattern, satisfying the \textbf{Expansion Typing} condition. Patterns can contain module paths and type annotations, so pattern TLMs are governed by the same \textbf{Context Independence} condition as expression TLMs. The same protocol around \textbf{Segmentation} is also enforced. 
+
+
 \begin{figure}[t]
 \begin{subfigure}[t]{0.55\textwidth}
 \begin{lstlisting}[morekeywords={expression}]
@@ -1168,12 +1283,6 @@ the \li{Relit} library includes a trivial lexer, \li{Relit.TrivLexer}, and a few
 \vspace{-8px}
 \label{fig:lam-example}
 \end{figure}
-
-The previous section introduced expression TLMs, which support value construction. This section introduces pattern TLMs, which support value deconstruction via the structural pattern matching facilities common to ML-like languages. 
-
-For example, the definitions outlined in Fig. \ref{fig:lam} allow us to elegantly express an evaluator for the lambda calculus as shown in Fig. \ref{fig:lam-eval}. We assume that the terms of \li{Lambda} are represented differently from the values to avoid needing additional ``impossible'' cases, but we can use the same notation for both without conflict by defining separate TLMs, \li{$term} and \li{$v}, respectively. Each of these TLMs defines both expression and pattern literal notation, distinguished by qualifiers in the TLM definition as shown on Lines 5-6 of Fig. \ref{fig:lam}, and we see examples of all four of these notations in use in Fig. \ref{fig:lam-eval}. These TLMs were designed to be used for operating on \li{Lambda} terms, so we chose a splicing convention inspired by the typical convention ``on paper'', where identifiers appearing in the literal are parsed as spliced (OCaml) variables, as indicated by the colors in Fig. \ref{fig:lam-eval}. For example, on Line 5, \li{x} and \li{e} are bound by the literal pattern for \li{Lambda} terms on the left, then spliced into the expression literal on the right to construct the corresponding \li{Lambda} value. % A different pair of TLMs at the same types could make the opposite choice, parsing identifiers as \li{Lambda} language variables and defining a separate notation for splicing. %These would be less elegant for writing the evaluator but more useful when, for example, writing its tests. This sort of flexibility is difficult to achieve in settings where the grammar of the host language is itself extended (e.g. with the more limited mixfix systems of Coq \cite{Coq:manual} or Agda \cite{norell2007towards}) because syntactic conflicts ensue.
-
-From a client programmer's perspective, reasoning principles analogous to those described in Sec. \ref{sec:client-perspective} for expression TLMs are available. \textbf{Responsibility} is assigned by the same protocol, and the type annotation on the responsible TLM governs the type of the generated pattern, satisfying the \textbf{Expansion Typing} condition. Patterns can contain module paths and type annotations, so pattern TLMs are governed by the same \textbf{Context Independence} condition as expression TLMs. The same protocol around \textbf{Segmentation} is also enforced. 
 
 The main novelty has to do with \textbf{Segment Typing} and \textbf{Capture}. Variables in patterns do not refer to existing bindings, as in expressions, but rather introduce bindings into other expressions, e.g. the corresponding branch of a case analysis or the body of a function, so the critical question is this: given only the segmentation of a pattern literal, can we determine exactly which variables the expansion binds, and what the types of these variables are? To answer in the affirmative, we need to preclude the possibility of ``invisible bindings'', so the system ensures that pattern literals bind only those variables that appear inside spliced patterns. This implies that \emph{proto-patterns simply cannot contain pattern variables}. The segmentation assigns a type to each spliced segment, so the question just asked can be answered given only the segmentation.
 
@@ -1273,6 +1382,26 @@ All of the examples that we have discussed so far operate at a single specified 
 %Moreover, as discussed at the end of Sec. \ref{sec:context-dependence}, the expansions that they generate have no access to libraries. This section introduces \emph{parametric TLMs} to neatly resolve both of these limitations (which also limited the prior work on TSL \cite{TSLs}.) Parametric TLMs can be defined over a type- and module-parameterized family of types, and the proto-expansions they generate can refer to supplied type and module parameters. Partial parameter application decreases the syntactic cost of this explicit parameter passing style. 
 % \subsection{Parametric TLMs By Example}\label{sec:ptsms-by-example}
 
+
+Fig. \ref{fig:map-sig} shows a portion of the signature \li{Map.S} from the OCaml standard library, which specifies a polymorphic abstract data type \cite{liskov1974programming,harper1997programming} \li{t('a)} of finite maps with keys of type \li{key}. There are many ways to implement this signature. For example, the \li{Map.Make} functor in the standard library implements this signature using balanced binary trees given a module that specifies a \li{key} type equipped with comparison functions. The \li{Misc.StringMap} module in the standard library also provides a specialized implementation of this signature with type \li{key = string}.
+
+We can define a TLM, \li{$map}, that is parametric over implementations of this signature, \li{M : Map.S}, and over choices of the co-domain type, \li{a}, as shown in Fig. \ref{fig:map-tlm}. We can then partially apply \li{$map} to \li{Misc.StringMap} as shown on Line 1 of Fig.~\ref{fig:map-ap}, producing a TLM, \li{$stringmap},  parameterized only over the type \li{a}, with expansion type \li{Misc.StringMap.t(a)}. We can apply \li{$stringmap} to a type specialize it further, e.g. \li{$stringmap string} has expansion type \li{Misc.StringMap.t(string)}.  For TLMs where all remaining parameters are types mentioned in the expansion type, we can also immediately apply the TLM to a generalized literal form as shown on Lines~2-3 of Fig.~\ref{fig:map-ap}. The type parameters are determined by unification using the types inferred for the spliced expressions together with the segment types specified in the segmentation, and any surrounding type constraints. In this example, we can infer \li{a} to be \li{string} because \li{string_of_int(id) : string} and the corresponding segment type is \li{a}. TLM abbreviations can themselves be parameterized to support partial application of parameters other than the last.
+
+% For example, given some module that implements this signature, \li{HashDict : DICT}, we can apply \li{$dict} as follows:
+% \begin{lstlisting}[numbers=none]
+%     $dict HashDict int [|"key1"SURL=>EURL10SURL; EURL"key2"SURL=>EURL15|]
+% \end{lstlisting}
+% Notice that the segmentation immediately reveals which punctuation is particular to this TLM and where the spliced key and value expressions appear. Because the context-free syntax of unexpanded terms is never modified, it is possible to reason modularly about syntactic determinism, i.e. we can reason above that \li{=>} does not appear in the follow set of unexpanded expressions \cite{conf/pldi/SchwerdfegerW09}, so there can never be an ambiguity about where a key expression ends.
+
+The proto-expansion generated by a parametric TLM can refer to its parameters. Validation checks that the proto-expansion is truly parametric---in this case, the proto-expansion must be valid for all modules \li{M : Map.S} and types \li{a}. It is only after validation that we substitute the actual parameters, here \li{Misc.StringMap} for \li{M} and \li{string} for \li{a}, into the final expansion. 
+
+%Only the type annotations on references to spliced terms are subject to early parameter substitution (because they classify application site terms.)
+
+% If we will use the \li{HashDict} implementation ubiquitously, we can abbreviate the partial application of \li{$dict} to \li{HashDict}, resulting in a TLM that is parametric over only the type \li{'a}:
+% \begin{lstlisting}[numbers=none]
+%     syntax $dict' = $dict HashDict; 
+% \end{lstlisting}
+
 \begin{figure}
 \begin{subfigure}[t]{0.4\textwidth}
 \begin{lstlisting}
@@ -1320,25 +1449,6 @@ All of the examples that we have discussed so far operate at a single specified 
 \vspace{-5px}
 \label{fig:map-fig}
 \end{figure}
-
-Fig. \ref{fig:map-sig} shows a portion of the signature \li{Map.S} from the OCaml standard library, which specifies a polymorphic abstract data type \cite{liskov1974programming,harper1997programming} \li{t('a)} of finite maps with keys of type \li{key}. There are many ways to implement this signature. For example, the \li{Map.Make} functor in the standard library implements this signature using balanced binary trees given a module that specifies a \li{key} type equipped with comparison functions. The \li{Misc.StringMap} module in the standard library also provides a specialized implementation of this signature with type \li{key = string}.
-
-We can define a TLM, \li{$map}, that is parametric over implementations of this signature, \li{M : Map.S}, and over choices of the co-domain type, \li{a}, as shown in Fig. \ref{fig:map-tlm}. We can then partially apply \li{$map} to \li{Misc.StringMap} as shown on Line 1 of Fig.~\ref{fig:map-ap}, producing a TLM, \li{$stringmap},  parameterized only over the type \li{a}, with expansion type \li{Misc.StringMap.t(a)}. We can apply \li{$stringmap} to a type specialize it further, e.g. \li{$stringmap string} has expansion type \li{Misc.StringMap.t(string)}.  For TLMs where all remaining parameters are types mentioned in the expansion type, we can also immediately apply the TLM to a generalized literal form as shown on Lines~2-3 of Fig.~\ref{fig:map-ap}. The type parameters are determined by unification using the types inferred for the spliced expressions together with the segment types specified in the segmentation, and any surrounding type constraints. In this example, we can infer \li{a} to be \li{string} because \li{string_of_int(id) : string} and the corresponding segment type is \li{a}. TLM abbreviations can themselves be parameterized to support partial application of parameters other than the last.
-
-% For example, given some module that implements this signature, \li{HashDict : DICT}, we can apply \li{$dict} as follows:
-% \begin{lstlisting}[numbers=none]
-%     $dict HashDict int [|"key1"SURL=>EURL10SURL; EURL"key2"SURL=>EURL15|]
-% \end{lstlisting}
-% Notice that the segmentation immediately reveals which punctuation is particular to this TLM and where the spliced key and value expressions appear. Because the context-free syntax of unexpanded terms is never modified, it is possible to reason modularly about syntactic determinism, i.e. we can reason above that \li{=>} does not appear in the follow set of unexpanded expressions \cite{conf/pldi/SchwerdfegerW09}, so there can never be an ambiguity about where a key expression ends.
-
-The proto-expansion generated by a parametric TLM can refer to its parameters. Validation checks that the proto-expansion is truly parametric---in this case, the proto-expansion must be valid for all modules \li{M : Map.S} and types \li{a}. It is only after validation that we substitute the actual parameters, here \li{Misc.StringMap} for \li{M} and \li{string} for \li{a}, into the final expansion. 
-
-%Only the type annotations on references to spliced terms are subject to early parameter substitution (because they classify application site terms.)
-
-% If we will use the \li{HashDict} implementation ubiquitously, we can abbreviate the partial application of \li{$dict} to \li{HashDict}, resulting in a TLM that is parametric over only the type \li{'a}:
-% \begin{lstlisting}[numbers=none]
-%     syntax $dict' = $dict HashDict; 
-% \end{lstlisting}
 
 The \li{dependencies} clause shown in previous examples can be understood in terms of parameterization over the dependencies, using the given module variables, followed immediately by partial application of the corresponding module paths. Note, however, that module parameters need an explicit signature, like functor (module function) arguments in ML.
 
