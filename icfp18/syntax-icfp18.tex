@@ -686,7 +686,7 @@ The finite set of splice references in the proto-expansion generated for a liter
 \end{lstlisting}
 The system checks that the segmentation does in fact segment the literal body, i.e. that the segments are in-bounds, of positive extent and non-overlapping. Adjacent spliced segments must also be separated by at least one character. The spliced segment locations can therefore be communicated unambiguously to the programmer by tools downstream of the expander, e.g. program editors and pretty printers, using secondary notation. In this paper, non-spliced segments are shown in color and spliced segments start in black.  
 
-When TLM applications are nested, a distinct color can be used at each depth. For example, Fig.~\ref{fig:nesting-example} shows a program fragment where we transform an encoding of a chemical structure expressed using the standard SMILES notation for chemical structures \cite{anderson1987smiles}, extended with splicing notation, into a vector graphic, then embed this directly into a fragment of a webpage. We detail the TLM \li{$html at Html.t}, which implements HTML notation similar to that found in Ur/Web, in the accompanying technical report, and assume a TLM, \li{$smiles at Smiles.t} and a function, \li{Smiles.to_svg : Smiles.t => Html.t}, not shown. In Reason, \li{|>} is reverse function application.
+When TLM applications are nested, a distinct color can be used at each depth. For example, Fig.~\ref{fig:nesting-example} shows a program fragment where we transform an encoding of a chemical structure expressed using the standard SMILES notation for chemical structures \cite{anderson1987smiles}, extended with splicing notation, into a vector graphic, then embed this directly into a fragment of a webpage. We will detail the TLM \li{$html at Html.t}, which implements HTML notation similar to that found in Ur/Web, in Sec.~\ref{sec:html-example}, and we assume a TLM \li{$smiles at Smiles.t}, and a function, \li{Smiles.to_svg : Smiles.t => Html.t}, not shown. In Reason, \li{|>} is reverse function application.
 \begin{figure}[t]
 \vspace{-8px}
 \begin{lstlisting}[numbers=none]
@@ -770,8 +770,10 @@ Our contention is that small syntactic costs like these are more than justified 
 \vspace{-5px}
 \subsection{Provider Perspective}
 \label{sec:provider-perspective}
+\vspace{-1px}
 \begin{figure}
 \begin{subfigure}[t]{0.30\textwidth}
+\vspace{-8px}
 \begin{lstlisting}[morekeywords={rule,parse,eof}]
   { 
   open RegexParser;
@@ -806,12 +808,13 @@ Our contention is that small syntactic costs like these are more than justified 
         (readsplice(lexbuf)) }
     | eof { EOF }
 \end{lstlisting}
-\vspace{-4px}
+\vspace{-5px}
 \caption{\li{RegexLexer.mll}}
 \label{fig:regex-lexer}
 \end{subfigure}
 \hfill
 \begin{subfigure}[t]{0.61\textwidth}
+\vspace{-8px}
 \begin{lstlisting}[morekeywords={token,left,start},stringstyle=\ttfamily\color{black}]
   %{ 
   open notation Relit.$proto_expr; 
@@ -846,20 +849,20 @@ Our contention is that small syntactic costs like these are more than justified 
       { `(SURL Regex.Str
            ($spliced `(EURLsegSURL : strEURLSURLing)`) EURL)` }
 \end{lstlisting}
-\vspace{-4px}
+\vspace{-5px}
 \caption{\li{RegexParser.mly}}
 \label{fig:regex-parser}
 \end{subfigure}
-\vspace{2px}
+\vspace{1px}
 \caption{The lexer and parser for the \li{$regex} TLM from Fig.~\ref{fig:regex-tlm-def}. See Fig.~\ref{fig:relit-util} for relevant definitions from \li{Relit}.}
 \label{fig:lexer-and-parser}
-\vspace{-5px}
+\vspace{-7px}
 \end{figure}
 
-Let us turn now to the perspective of the TLM provider, whose principal task is to define the lexer and parser named in the TLM definition. Our implementation of TLMs for Reason, called \li{Relit}, assumes that the TLM provider is using \li{ocamllex} to generate the lexer \cite{ocaml-manual} and Menhir to generate the parser \cite{pottier2016menhir}. Menhir is a modern derivative of Yacc~\cite{johnson1975yacc,TarditiDR:mly} with support for LR(1) grammars \cite{jourdan2012validating}. Reason itself is implemented using these same tools. \li{Relit} requires that the TLM provider package the lexer and parser into an \li{ocamlfind} package named in the TLM definition---in the case of Fig.~\ref{fig:regex-tlm-def}, \li{regex_parser}---so that \li{Relit} can load them, together with their dependencies, at expansion-time. The TLM also specifies the name of the starting non-terminal---here, \li{start} on Line 4 of Fig.~\ref{fig:regex-tlm-def}. 
+Let us turn now to the perspective of the TLM provider, whose principal task is to define the lexer and parser named in the TLM definition---\li{RegexLexer} and \li{RegexParser} in Fig.~\ref{fig:regex-tlm-def}. Our implementation of TLMs for Reason, called \li{Relit}, assumes that the provider is using \li{ocamllex} \cite{ocaml-manual} and Menhir  \cite{pottier2016menhir} to generate the lexer and parser, respectively. Menhir is a modern derivative of Yacc~\cite{johnson1975yacc,TarditiDR:mly} with support for LR(1) grammars \cite{jourdan2012validating}. The Reason implementation also uses these tools. \li{Relit} requires that the TLM provider package the lexer and parser into an \li{ocamlfind} package named in the TLM definition---in the case of Fig.~\ref{fig:regex-tlm-def}, \li{regex_parser}---so that \li{Relit} can load them, together with their dependencies, at expansion-time. The TLM must also name the starting non-terminal---here, \li{start} on Line~4 of Fig.~\ref{fig:regex-tlm-def}. 
 % What is fundamentally important is that there is some clear protocol by which the lexer and parser names and the starting non-terminal name specified by the TLM definition, in this case \li{RegexLexer} and \li{RegexParser.start} on Lines 3-4 of Fig.~\ref{fig:regex-tlm-def}, are resolved to lexer and parser implementations that can be evaluated at expansion-time, i.e. during compilation. 
-The \li{ocamllex} and Menhir definitions used to implement \li{RegexLexer} and \li{RegexParser} appear in Fig.~\ref{fig:lexer-and-parser}. A fragment of the signature of the \li{Relit_helper} library, which provides various necessary definitions and utilities to TLM providers, appears in Fig.~\ref{fig:relit-util}. 
-After describing this example in detail, we outline some alternative parsing strategies that do not directly require the use of \li{ocamllex} and Menhir in Sec.~\ref{sec:html-example}. In particular, we describe the \li{$html} TLM from Fig.~\ref{fig:nesting-example}. 
+The \li{ocamllex} and Menhir definitions that implement \li{RegexLexer} and \li{RegexParser} appear in Fig.~\ref{fig:lexer-and-parser}. 
+After detailing this example in Sec.~\ref{sec:regex-lexer}-\ref{sec:regexparser}, we summarize the relevant parser correctness criteria in Sec.~\ref{sec:correctness-criteria}, describe how providers might use MetaOCaml to reason more precisely about type correctness in Sec.~\ref{sec:metaocaml}, and finally outline an alternative implementation strategy in Sec.~\ref{sec:html-example} that sidesteps \li{ocamllex} and Menhir to support the use of arbitrary parse functions. In particular, we implement the \li{$html} TLM from Fig.~\ref{fig:nesting-example} using an off-the-shelf HTML parser.
 
 
 
@@ -886,6 +889,7 @@ After describing this example in detail, we outline some alternative parsing str
 
 \subsubsection{\li{RegexLexer}}
 \label{sec:regex-lexer}
+% A fragment of the signature of the \li{Relit_helper} library, which provides various necessary definitions and utilities to TLM providers, appears in Fig.~\ref{fig:relit-util}. 
 In most respects, the definition of the lexer in Fig.~\ref{fig:regex-lexer} is conventional. It reads various token patterns on Lines 6-23, emitting the corresponding tokens specified by the \lstinline[morekeywords={token}]{%token} declarations in Fig.~\ref{fig:regex-parser}, which have been brought into scope by Line 2 of Fig.~\ref{fig:regex-lexer}. Lines 20-21 combine sequences of non-special characters (e.g. alphanumeric characters) into a single string token. Lines 22-23 implement backslash-prefixed escape sequences for characters that have special meaning in this notation for regexes, emitting a string token in each instance.\footnote{A better approach would be to define a second lexing rule that greedily combines sequences consisting of non-special characters and escape characters into a single \li{STR} token, but for the sake of exposition, we stick to this simpler approach.}  
 
 Lines 24-31 of the lexer, which recognize the notation for regex splicing \li{$(}$e$\li{)}, and string splicing, \li{$$(}$e$\li{)}, are more unusual. Recall from Sec.~\ref{sec:context-dependence} that the parser must represent spliced terms abstractly, by their location within the literal body. This implies that the TLM does not need to parse spliced expressions itself, as long as it can independently decide where the spliced expressions start and end. A paired start and end position is a segment,  represented by a value of the type \li{Segment.t} defined on Line 2 of Fig.~\ref{fig:relit-util}. Lines 26-27 and Lines 30-31 of the lexer produce a segment by calling a helper function, \li{Relit.Segment.read_to}, that internally invokes the Reason lexer on the provided lexing buffer until it sees an instance of the provided token outside of a Reason comment, string literal or generalized literal. If the provided token is a right delimiter also used by Reason, like \li{")"} on Line 4 of Fig.~\ref{fig:regex-lexer}, then \li{read_to} looks for the first unmatched instance. For example, if the remaining lexing buffer contains {\small \texttt{f("))"))A|G}} then \li{read_to} will consume up through the final instance of \li{)} and emit the start and end position, excluding the closing delimiter, relative to the original buffer.
@@ -919,6 +923,7 @@ This allows us to encode expansions using ordinary OCaml values (in fact, using 
 
 
 \subsubsection{Correctness Criteria}
+\label{sec:correctness-criteria}
 In order to maintain the abstract reasoning principles discussed in Sec. \ref{sec:client-perspective}, the system \emph{validates} each proto-expansion generated by the parser as follows:
 \begin{enumerate}
   \item First, the segmentation is computed and validated. This involves checking two criteria:
