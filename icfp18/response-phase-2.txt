@@ -1,0 +1,14 @@
+Response to mandatory revisions
+-------------------------------
+
+> The characterization of Scheme/Racket-style 
+> macros needs to be revised.
+
+We revised the characterization of Scheme/Racket-style macros on page 27 to 
+be more clear about how an escape hatch could be used to implement TLMs as a layer atop the Racket macro system, per the previous author response. The 
+wording was also revised to be more clear about the problem.
+
+- The example from the appendix should move to the main paper.
+
+We have moved the example from the appendix (HTML) into the main paper as
+requested, in Sec. 2.2.5
