@@ -286,7 +286,7 @@ supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042;
 
 
 \chapter{Implementing Quasiquotation} The Reason quasiquotation TLMs, e.g. \li{$proto_expr}, can be implemented by the functional transformations outlined below, with an example from each step (grossly simplified from the actual \li{Parsetree} representation) on the right. In words, \li{$re_expr} first programmatically invokes the Reason parser on the literal body. It next serializes the generated parse tree to Reason source code, then parses that. This produces a parse tree that, if evaluated in the appropriate environment, will produce the original parse tree. The final step is to implement antiquotation as described above by repurposing the generalized literal forms in the body, using the source locations from the first parse tree, which have  been carried into the second parse tree as constants.
-\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{8.3pt}{1em}\selectfont]
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{8.4pt}{1em}\selectfont]
 body             "2 + `(xyz)`" 
 |> parse_re      Plus(Num(2, Loc(0)), GenLit("xyz", Loc(6)))
 |> serialize_re  "Plus(Num(2, Loc(0)), GenLit(\"SCSSxyz\ECSS", Loc(6)))"
