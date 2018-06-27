@@ -1,6 +1,8 @@
 \PassOptionsToPackage{svgnames,dvipsnames,svgnames}{xcolor}
 
 \documentclass[12pt]{report}
+\usepackage{fullpage,cmu-titlepage2}
+
 \newif\ificfp
 \icfptrue
 \newcommand{\todolater}[1]{{\color{magenta} TODO (Later): #1}}
@@ -68,7 +70,7 @@ pdfborder={0 0 0},  %removes outlines around hyper links in online display
 \usepackage{amsmath,amssymb, amsthm}
 
 \allowdisplaybreaks[1]
-\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{definition}[theorem]{Definition}
@@ -229,42 +231,67 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 %   \ignorespacesafterend
 % }
 % \makeatother
+\title{Reasonably Programmable Literal Notation: Supplemental Material}
 
-\begin{document} 
-\title{Reasonably Programmable Literal Notation\\ (ICFP 2018 Anonymous Supplemental Material)}
-\date{March 16, 2018}
+\author{Cyrus Omar \and Jonathan Aldrich}
+
+\date{July 8, 2018}
+
+\abstract{
+This report presents a complete technical account of the formal system that was described in the accompanying paper, as well as more details on the quasiquotation TLM.
+}
+
+\keywords{extensible syntax; macros; hygiene; type systems}
+
+\trnumber{CMU-ISR-18-104}
+
+%\citationinfo{}
+
+%\arpasupport{fox}
+\support{This work was
+supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042;
+ by the NSA under lablet contract \#H98230-14-C-0140; and by Ravi Chugh
+ at the University of Chicago.}
+% \authorsupport{The author holds a Froboz Gradual Fellowship.}
+
+% \otherdisclaimer{NSF}
+
+\begin{document}
+\renewcommand*{\thepage}{title-\arabic{page}} 
 \maketitle
+\renewcommand*{\thepage}{\arabic{page}} 
+\appendix
+
 \tableofcontents
 \appendix
 
-\chapter{Additional Examples}
 
 
 
 
-\section{HTML Literals} 
-Reason is seeing increasing adoption in the domain of client-side web programming, where generating and manipulating HTML data is central. 
-There are many ways to represent HTML data in Reason, but one simple and useful representation is specified by \li{Html.t}, defined in Fig.~\ref{fig:html-type-def}. However, manually applying the constructors of this type is tedious and, for many web programmers, the induced notation is unfamiliar. It also makes it difficult to copy-and-paste from, for example, existing HTML files, as might be useful when refactoring an existing project to use Reason. Instead, we would like HTML literal notation. 
-The \li{$html} TLM defined in Fig.~\ref{fig:html-tlm-def} implements the standard HTML notation extended with the tags \li{<$>} and \li{<$$>}, which support \li{Html.t} splicing and \li{string} splicing, respectively. It also supports the suffix \li{...} on a tag, which causes the body of the tag to be a splice of type \li{list(Html.t)}.\footnote{We would also in practice have splicing for  attribute values, but for simplicity we omit these.} The example in the paper demonstrated the first of these. The example in Fig.~\ref{fig:pattern-tlm-example} shows the list splicing form in pattern position.% HTML splicing form, \li{<$>}$e$\li{</$>}. 
+% \section{HTML Literals} 
+% Reason is seeing increasing adoption in the domain of client-side web programming, where generating and manipulating HTML data is central. 
+% There are many ways to represent HTML data in Reason, but one simple and useful representation is specified by \li{Html.t}, defined in Fig.~\ref{fig:html-type-def}. However, manually applying the constructors of this type is tedious and, for many web programmers, the induced notation is unfamiliar. It also makes it difficult to copy-and-paste from, for example, existing HTML files, as might be useful when refactoring an existing project to use Reason. Instead, we would like HTML literal notation. 
+% The \li{$html} TLM defined in Fig.~\ref{fig:html-tlm-def} implements the standard HTML notation extended with the tags \li{<$>} and \li{<$$>}, which support \li{Html.t} splicing and \li{string} splicing, respectively. It also supports the suffix \li{...} on a tag, which causes the body of the tag to be a splice of type \li{list(Html.t)}.\footnote{We would also in practice have splicing for  attribute values, but for simplicity we omit these.} The example in the paper demonstrated the first of these. The example in Fig.~\ref{fig:pattern-tlm-example} shows the list splicing form in pattern position.% HTML splicing form, \li{<$>}$e$\li{</$>}. 
 
-% The HTML standard is complex. In addition, good error handling is important in practice. As such, most practical HTML parsing libraries are ``hand-rolled'', i.e. they are not generated from a context-free grammar by a general parser generator like Menhir. For example, the robust \li{Markup.ml} library for OCaml provides a simple one-pass stream-based interface that can be used to generate an HTML representation of the user's choice \cite{ocaml}. Let us outline how we can use this library to implement HTML literals, with support for splicing as just specified. 
-In implementing HTML literals, using a parser generator may not be ideal. Instead, ``post-processing'' the result of an existing parser is a good approach. Fig.~\ref{fig:html-parser} shows much of the implementation of \li{HtmlParser},  which is constructed by applying a functor that constructs a module that has the same essential interface as the modules that Menhir generates, with the functions \li{expr : string -> ProtoExpr.t} and \li{pat : string -> ProtoPat.t} of the input module exported as the ``non-terminals''. The companion lexer is \li{Relit.TrivLexer}. The implementation of \li{expr} on Line 23 of Fig.~\ref{fig:html-parser} reveals that the literal body is parsed by first calling \li{ProtoHtml.parse}, then passing the result on to \li{ExprExpander.expand_proto}.
+% % The HTML standard is complex. In addition, good error handling is important in practice. As such, most practical HTML parsing libraries are ``hand-rolled'', i.e. they are not generated from a context-free grammar by a general parser generator like Menhir. For example, the robust \li{Markup.ml} library for OCaml provides a simple one-pass stream-based interface that can be used to generate an HTML representation of the user's choice \cite{ocaml}. Let us outline how we can use this library to implement HTML literals, with support for splicing as just specified. 
+% In implementing HTML literals, using a parser generator may not be ideal. Instead, ``post-processing'' the result of an existing parser is a good approach. Fig.~\ref{fig:html-parser} shows much of the implementation of \li{HtmlParser},  which is constructed by applying a functor that constructs a module that has the same essential interface as the modules that Menhir generates, with the functions \li{expr : string -> ProtoExpr.t} and \li{pat : string -> ProtoPat.t} of the input module exported as the ``non-terminals''. The companion lexer is \li{Relit.TrivLexer}. The implementation of \li{expr} on Line 23 of Fig.~\ref{fig:html-parser} reveals that the literal body is parsed by first calling \li{ProtoHtml.parse}, then passing the result on to \li{ExprExpander.expand_proto}.
 
-The \li{ProtoHtml.parse} function, outlined on Lines 8-9, generates a value of the type \li{ProtoHtml.t} defined on Lines 2-6 and so named because it is similar to \li{Html.t} but distinguishes spliced segments, like a proto-expression. We omit the definition of \li{ProtoHtml.parse} but conceptually, it starts by creating a character stream from the literal body, then from that creates a \li{Markup.ml} HTML content stream, then transforms that to a stream that emits the signals from the HTML content stream until it sees a splice start tag (which is reported as a syntax error relative to the HTML standard), at which point it calls \li{Segment.read_to}, which was described in the paper, to advance the original character stream until it recognizes the closing tag, emitting the generated segment and then returning control to the HTML content stream. The final step is to fold over this stream to produce the desired result of type \li{ProtoHtml.t}. 
+% The \li{ProtoHtml.parse} function, outlined on Lines 8-9, generates a value of the type \li{ProtoHtml.t} defined on Lines 2-6 and so named because it is similar to \li{Html.t} but distinguishes spliced segments, like a proto-expression. We omit the definition of \li{ProtoHtml.parse} but conceptually, it starts by creating a character stream from the literal body, then from that creates a \li{Markup.ml} HTML content stream, then transforms that to a stream that emits the signals from the HTML content stream until it sees a splice start tag (which is reported as a syntax error relative to the HTML standard), at which point it calls \li{Segment.read_to}, which was described in the paper, to advance the original character stream until it recognizes the closing tag, emitting the generated segment and then returning control to the HTML content stream. The final step is to fold over this stream to produce the desired result of type \li{ProtoHtml.t}. 
 
-The \li{ExprExpander.expand_proto} function defined, with some helper functions, on Lines~9-20 finishes the job of the TLM parser by mapping the parsed proto-HTML to a proto-expression using the \li{$proto_expr} TLM previously described (in this case, using the \li{$list} antiquotation form that produces a parse tree of OCaml's built in list literal form from a list of parse trees). It would be straightforward to reuse the \li{ProtoHtml} module for different variations on HTML encodings, implementing only the expander anew. Overall, the amount of code needed to implement HTML literals.
+% The \li{ExprExpander.expand_proto} function defined, with some helper functions, on Lines~9-20 finishes the job of the TLM parser by mapping the parsed proto-HTML to a proto-expression using the \li{$proto_expr} TLM previously described (in this case, using the \li{$list} antiquotation form that produces a parse tree of OCaml's built in list literal form from a list of parse trees). It would be straightforward to reuse the \li{ProtoHtml} module for different variations on HTML encodings, implementing only the expander anew. Overall, the amount of code needed to implement HTML literals.
 
-Reason currently builds in ``JSX'' literals, which also support an HTML-like notation with support for splicing in a somewhat idiosynchratic manner motivated by certain JavaScript libraries (in particular, React). The expansion of this notation must be interpretted by a PPX rewriter. The problem is that this makes it difficult to use different HTML-related libraries at once. For example, ReasonReact and an XML library might both want to use this notation. This approach solves this problem (as well as other problems with the PPX-based approach as discussed in the paper). % For example, another encoding is one where each tag in the HTML standard correspond to a distinct datatype constructor.
+% Reason currently builds in ``JSX'' literals, which also support an HTML-like notation with support for splicing in a somewhat idiosynchratic manner motivated by certain JavaScript libraries (in particular, React). The expansion of this notation must be interpretted by a PPX rewriter. The problem is that this makes it difficult to use different HTML-related libraries at once. For example, ReasonReact and an XML library might both want to use this notation. This approach solves this problem (as well as other problems with the PPX-based approach as discussed in the paper). % For example, another encoding is one where each tag in the HTML standard correspond to a distinct datatype constructor.
 
 
 
-\section{Implementing Quasiquotation} The Reason quasiquotation TLMs, e.g. \li{$re_expr}, can similarly be implemented by the functional transformations outlined below, with an example from each step (grossly simplified from the actual \li{Parsetree} representation) on the right. In words, \li{$re_expr} first programmatically invokes the Reason parser on the literal body. It next serializes the generated parse tree to Reason source code, then parses that. This produces a parse tree that, if evaluated in the appropriate environment, will produce the original parse tree. The final step is to implement antiquotation as described above by repurposing the generalized literal forms in the body, using the source locations from the first parse tree, which have  been carried into the second parse tree as constants.
-\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{8pt}{1em}\selectfont]
-  body             "2 + `(xyz)`" 
-  |> parse_re      Plus(Num(2, Loc(0)), GenLit("xyz", Loc(6)))
-  |> serialize_re  "Plus(Num(2, Loc(0)), GenLit(\"SCSSxyz\ECSS", Loc(6)))"
-  |> parse_re      Ap(V("Plus"), /*...*/Ap(V("GenLit"), Pair(Str("xyz"), /*...*/Num(6)))
-  |> genlit_to_sp  Ap(V("Plus"), /*...*/Spliced(6,8,TyPath(["ProtoExpr","t"])))
+\chapter{Implementing Quasiquotation} The Reason quasiquotation TLMs, e.g. \li{$proto_expr}, can be implemented by the functional transformations outlined below, with an example from each step (grossly simplified from the actual \li{Parsetree} representation) on the right. In words, \li{$re_expr} first programmatically invokes the Reason parser on the literal body. It next serializes the generated parse tree to Reason source code, then parses that. This produces a parse tree that, if evaluated in the appropriate environment, will produce the original parse tree. The final step is to implement antiquotation as described above by repurposing the generalized literal forms in the body, using the source locations from the first parse tree, which have  been carried into the second parse tree as constants.
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\fontsize{8.3pt}{1em}\selectfont]
+body             "2 + `(xyz)`" 
+|> parse_re      Plus(Num(2, Loc(0)), GenLit("xyz", Loc(6)))
+|> serialize_re  "Plus(Num(2, Loc(0)), GenLit(\"SCSSxyz\ECSS", Loc(6)))"
+|> parse_re      Ap(V("Plus"), /*...*/Ap(V("GenLit"), Pair(Str("xyz"), /*...*/Num(6)))
+|> genlit_to_sp  Ap(V("Plus"), /*...*/Spliced(6,8,TyPath(["ProtoExpr","t"])))
 \end{lstlisting}
 
 % \section{Regular Expressions, More Abstractly}
