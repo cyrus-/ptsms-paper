@@ -1,0 +1,70 @@
+ICFP 2018 AEC Paper #121 Reviews and Comments
+===========================================================================
+Paper #121 Reasonably Programmable Literal Notation
+
+
+Review #121B
+===========================================================================
+
+Artifact summary
+----------------
+The artifact is a well-packaged VirtualBox image with the a Reason compiler fork containing the proposed literal feature pre-installed. The instructions were clear and everything was easy to run, including verifying some of the figures in the paper, and running my own experiments.
+A number of the features described in the paper are not implemented in this artifact, however the authors provide some justification for that in the artifact guide.
+
+Comments for author
+-------------------
+AEC: Able to run VM and execute the tests. Everything seems to be in order. Will dig in with the paper later on.
+
+Final Review:
+
+I was able to follow all the provided instructions without issue, and verify that the artifact supports the figures in the paper (modulo the minor changes described in the guide), as well as run the tests. I also had some fun experimenting with my own examples, and nothing seemed to go wrong.
+
+The authors note that several features (in particular Pattern TLMs which are the subject of a whole section of the paper) are not implemented in the artifact. My one minor reservation, and the reason I weak-accept rather than accept this artifact, is that the paper presents these features as already accomplished, but on examining the artifact they are not yet implemented, so I don't feel like those parts of the paper are adequately supported by this artifact.
+
+Nevertheless, the central point of this paper, to maintain the reasoning principles outlined in the paper while introducing these programmable literals, is supported by the examples provided.
+
+
+
+Review #121A
+===========================================================================
+
+Artifact summary
+----------------
+The authors propose a way to define language extensions that add new literal notation (for example, to define regular expressions or HTML trees). Their proposal targets Reason, a modified syntax for OCaml. They implement it as a modified version of the Reason parser and using the OCaml PPX preprocessor system.
+
+The author's main claim is that language extensions defined in their system are easier to reason about than those defined by other preprocessors or macro systems. They identify six "reasoning principles" in particular: for example, programmers should be able to understand which extension introduces a given notation, how splicing works, which type a literal or a spliced expression has, and so on, all without knowing the exact workings of the extension.
+
+The artifact consists of this prototype implementation plus some examples and tests to validate the claims of the paper. It is packaged as a virtual machine that can be easily loaded and run in VirtualBox.
+
+Comments for author
+-------------------
+I did not encounter problems in using the artifact; the instructions to run the tests and the examples are clear.
+
+The provided examples and tests illustrate clearly the reasoning principles explained in the paper. The fourth principle (Segmentation) is perhaps shown less explicitly by the tests, but is still quite convincing (it should be particularly useful for integration with editors and pretty-printers).
+
+I have tried to tweak the examples to test some more situations. I've also tried to write a new TLM definition, albeit a fairly simple one. It does not seem to hard to extend the examples (though the error messages when something goes wrong are not always very informative).
+
+The artifact also contains the source code of the implementation. The authors point especially to the file `relit/ppx_relit/ppx_relit.ml` which defines the expansion of literal notations. I have not read much of the code, but it seems fairly legible.
+
+The main limitation of the artifact concerns consistency and completeness with respect to the paper: there are a number of discrepancies and some missing freatures. The authors point this out clearly in the guide to the artifact, but not in the paper: I hope the final version can be clearer on this. They state that they will provide a more complete implementation by the time of the conference.
+
+Despite this limitation, I agree with the authors' assessment that the artifact, in its current state, is already sufficient to support the main claims of the paper. The missing features are mostly of secondary importance (except pattern TLMs). I also think the artifact is a valuable aid to researchers to compare the authors' approach to others, since new examples and extensions can be defined fairly easily.
+
+
+
+Review #121C
+===========================================================================
+
+Artifact summary
+----------------
+
+The authors introduce "typed literal macros" which allow programmers to define new literal notation in a type safe manner that is amenable to abstract reasoning about types and bindings. The authors provide and implementation of TLMs on top of the Reason compiler frontend for OCaml. The submitted artifact contains this TLM implementation as well as examples of TLMs and instructions to run them. The artifact allowed for easy experimentation, including running examples TLMs from the paper.
+
+Comments for author
+-------------------
+The artifact is usable as provided and provides instructions to run the tests and the examples.
+The examples are also straightforward to modify. Writing completely new TLMs is also supported. The error messages generated when writing a TLM are somewhat hard to follow, but that is excusable for a research prototype. Investigating useful error messages might be an interesting future direction. The implementation source code is also contained in the virtual machine image. It seems to be reasonably readable to a programmer familiar with OCaml.
+
+The artifact documentation notes that there are some missing features (such as pattern TLMs, which seems like an important part of the paper). I would strongly urge the authors to either note explicitly in the paper that these are yet to be implemented, or to complete the implementation for the final version.
+
+That being said, the artifact seems to be support the claims of the paper quite well. It was easy to get started and verify the main examples and claims. Overall, this is a good example of a usable, effective artifact.
