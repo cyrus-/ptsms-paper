@@ -1,7 +1,7 @@
 \PassOptionsToPackage{svgnames,dvipsnames,svgnames}{xcolor}
 %% For double-blind review submission
 % \documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=false,printccs=false,printacmref=false}
-\documentclass[acmsmall]{acmart}
+\documentclass[acmsmall,screen]{acmart}
 % \documentclass[sigplan,review,10pt,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 % \documentclass[acmsmall,10pt,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
@@ -65,7 +65,11 @@
 \renewcommand{\subsubsection}{%
   \@startsection{subsubsection}{3}%
   {\z@}{1ex \@plus .2ex \@minus .2ex}{-1em}%
-  {\normalfont\normalsize\bfseries}%
+  {\sffamily\normalsize\bfseries\maybe@addperiod}%
+}
+
+\newcommand{\maybe@addperiod}[1]{%
+  #1\@addpunct{.}%
 }
 \makeatother
 
@@ -106,26 +110,26 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 \newcommand{\lifootnote}[1]{\lstinline[basicstyle=\ttfamily\fontsize{7pt}{1em}\selectfont]{#1}}
 
 
-\makeatletter\if@ACM@journal\makeatother
-%% Journal information (used by PACMPL format)
-%% Supplied to authors by publisher for camera-ready submission
-\acmJournal{PACMPL}
-\acmVolume{1}
-\acmNumber{1}
-\acmArticle{1}
-\acmYear{2018}
-\acmMonth{9}
-\acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
-\else\makeatother
-%% Conference information (used by SIGPLAN proceedings format)
-%% Supplied to authors by publisher for camera-ready submission
-\acmConference[ICFP'18]{International Conference on Functional Programming}{September 23--29, 2018}{St. Louis, MO, USA}
-\acmYear{2018}
-\acmISBN{978-x-xxxx-xxxx-x/YY/MM}
-\acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
-\fi
+% \makeatletter\if@ACM@journal\makeatother
+% %% Journal information (used by PACMPL format)
+% %% Supplied to authors by publisher for camera-ready submission
+% \acmJournal{PACMPL}
+% \acmVolume{1}
+% \acmNumber{1}
+% \acmArticle{1}
+% \acmYear{2018}
+% \acmMonth{9}
+% \acmDOI{10.1145/nnnnnnn.nnnnnnn}
+% \startPage{1}
+% \else\makeatother
+% %% Conference information (used by SIGPLAN proceedings format)
+% %% Supplied to authors by publisher for camera-ready submission
+% \acmConference[ICFP'18]{International Conference on Functional Programming}{September 23--29, 2018}{St. Louis, MO, USA}
+% \acmYear{2018}
+% \acmISBN{978-x-xxxx-xxxx-x/YY/MM}
+% \acmDOI{10.1145/nnnnnnn.nnnnnnn}
+% \startPage{1}
+% \fi
 
 
 %% Copyright information
@@ -134,9 +138,20 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 % \setcopyright{none}             %% For review submission
 %\setcopyright{acmcopyright}
 %\setcopyright{acmlicensed}
+%%% The following is specific to ICFP'18 and the paper
+%%% 'Reasonably Programmable Literal Notation'
+%%% by Cyrus Omar and Jonathan Aldrich.
+%%%
 \setcopyright{rightsretained}
-%\copyrightyear{2017}           %% If different from \acmYear
-
+\acmPrice{}
+\acmDOI{10.1145/3234629}
+\acmYear{2018}
+\copyrightyear{2018}
+\acmJournal{PACMPL}
+\acmVolume{2}
+\acmNumber{ICFP}
+\acmArticle{40}
+\acmMonth{9}
 
 %% Bibliography style
 \bibliographystyle{ACM-Reference-Format}
@@ -183,7 +198,7 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
   \institution{University of Chicago}            %% \institution is required
   \city{Chicago}
   \state{IL}
-  % \country{USA}
+  \country{USA}
 }
 \email{comar@cs.uchicago.edu}          %% \email is recommended
 % \affiliation{
@@ -199,7 +214,7 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
   \institution{Carnegie Mellon University}           %% \institution is required
   \city{Pittsburgh}
   \state{PA}
-  % \country{USA}
+  \country{USA}
 }
 \email{jonathan.aldrich@cs.cmu.edu}         %% \email is recommended
 
@@ -266,7 +281,7 @@ Compared to existing approaches, TLMs are uniquely \emph{reasonable}. TLM client
 
 %% Keywords
 %% comma separated list
-% \keywords{keyword1, keyword2, keyword3}  %% \keywords is optional
+\keywords{parsing, macro systems, hygiene, type systems, pattern matching}  %% \keywords is optional
 
 
 %% \maketitle
@@ -284,7 +299,7 @@ Lists are common across problem domains, but other literal notation is more spec
 %The desugarings of these literal expressions, not shown, are substantially more verbose and less readable to programmers familiar with XHTML. 
 
 \begin{figure}[h]
-\vspace{-9px}
+% \vspace{-9px}
 \begin{lstlisting}
   fun heading first_name = SURL<xml><h1>Hello, {[EURLfirst_nameSURL]}!</h1></xml>EURL
   val body = SURL<xml><body>{EURLheading "World"SURL} ...</body></xml>EURL
