@@ -144,14 +144,15 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 %%%
 \setcopyright{rightsretained}
 \acmPrice{}
-\acmDOI{10.1145/3234629}
+\acmDOI{10.1145/3236801}
 \acmYear{2018}
 \copyrightyear{2018}
 \acmJournal{PACMPL}
 \acmVolume{2}
 \acmNumber{ICFP}
-\acmArticle{40}
+\acmArticle{106}
 \acmMonth{9}
+
 
 %% Bibliography style
 \bibliographystyle{ACM-Reference-Format}
@@ -160,7 +161,7 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 %% issue of PACMPL.
 \citestyle{acmauthoryear}   %% For author/year citations
 
-\input{thesis/macros}
+\input{macros}
 
 \setlength{\abovecaptionskip}{4pt plus 3pt minus 2pt} % Chosen fairly arbitrarily
 \setlength{\belowcaptionskip}{-2pt plus 3pt minus 2pt} % Chosen fairly arbitrarily
@@ -299,7 +300,7 @@ Lists are common across problem domains, but other literal notation is more spec
 %The desugarings of these literal expressions, not shown, are substantially more verbose and less readable to programmers familiar with XHTML. 
 
 \begin{figure}[h]
-% \vspace{-9px}
+\vspace{-4px}
 \begin{lstlisting}
   fun heading first_name = SURL<xml><h1>Hello, {[EURLfirst_nameSURL]}!</h1></xml>EURL
   val body = SURL<xml><body>{EURLheading "World"SURL} ...</body></xml>EURL
@@ -307,7 +308,7 @@ Lists are common across problem domains, but other literal notation is more spec
 \vspace{-3px}
 \caption{HTML literals with support for splicing at two types are built primitively into Ur/Web \cite{conf/popl/Chlipala15}.}
 \label{fig:urweb}
-\vspace{-10px}
+\vspace{-5px}
 \end{figure}
 
 This design practice, where the language designer privileges certain library constructs with built-in literal notation, is \emph{ad hoc} in that it is easy to come up with other examples of data structures for which mathematicians, scientists or programmers have invented specialized notation \cite{DBLP:journals/cacm/Iverson80,cajori1928history,TSLs}. For example, (1) clients of a ``collections'' library might want not just list literals, but also literal notation for matrices, finite maps, and so on; (2) clients of a ``web programming'' library might want CSS literals (which Ur/Web lacks); (3) a compiler author might want ``quotation'' literals for the terms of the object language and various intermediate languages of interest; and (4) clients of a ``chemistry'' library might want chemical structure literals based on the SMILES standard \cite{anderson1987smiles}.
@@ -1650,7 +1651,7 @@ That said, it should be possible to export TLM \emph{abbreviations} from modules
 \section{Typed Literal Macros, Formally}
 \label{sec:setlms-formally}
 
-This section presents  $\miniVersePat$, a calculus of simple expression and pattern TLMs based on ``core ML''. By the end of this section, we will have theorems that formalize the reasoning principles that were outlined informally in the previous sections. $\miniVersePat$ consists of an {unexpanded language} ({UL}) defined by typed expansion to the core language, named for the purposes of this paper $\miniVerseBase$. 
+This section presents  $\miniVersePat$, a calculus of simple expression and pattern TLMs based on ``core ML''. By the end of this section, we will have theorems that formalize the reasoning principles that were outlined informally in the previous sections. $\miniVersePat$ consists of an {unexpanded language} ({UL}) defined by typed expansion to the core language, named for the purposes of this paper $\miniVerseCore$. 
 
 % Because our focus is on these reasoning principles, and for reasons of space, we leave our full calculus of parametric TLMs to the accompanying technical report. The full calculus extends the simple calculus of this section with an ML module calculus based closely on the system defined by \citet{pfple1}, which in turn is based on early work by \citet{MacQueen:1984:MSM:800055.802036,DBLP:conf/popl/MacQueen86}, subsequent work on the phase splitting interpretation of modules \cite{harper1989higher} and on using dependent singleton kinds to track type identity \cite{stone2006extensional,DBLP:conf/lfmtp/Crary09}, and finally on formal developments by \citet{dreyer2005understanding} and \citet{conf/popl/LeeCH07}. These additional mechanisms are necessary only to formalize the advanced features of Sec. \ref{sec:ptsms}. Proofs are in the accompanying technical report for both the simple and full calculus.
 
@@ -1658,10 +1659,10 @@ This section presents  $\miniVersePat$, a calculus of simple expression and patt
 % Programs are written as unexpanded expressions but evaluate as well-typed expanded expressions. We will start with a brief overview of our XL before turning in the remainder of the section on the UL.
 
 \subsection{Core Language}\label{sec:s-XL}
-Fig. \ref{fig:U-expanded-terms} gives the syntax of the core language, $\miniVerseBase$. This language forms a standard pure functional language with partial function types, quantification over types, recursive types, labeled product types, labeled sum types and support for pattern matching.\footnote{The accompanying technical report shows how to remove pattern matching  (and pattern TLMs) from the calculus by adding the usual elimination forms, e.g. $\unfold{e}$ rather than the $\aefoldp{p}$ pattern for values of recursive type.} Formally, core language terms are {abstract binding trees} (ABTs) identified up to alpha-equivalence, so we follow the syntactic conventions of \citet{pfple1}. This notational convention also clearly distinguishes core terms from unexpanded terms, which formally behave quite differently as we will describe below. 
+Fig. \ref{fig:U-expanded-terms} gives the syntax of the core language, $\miniVerseCore$. This language forms a standard pure functional language with partial function types, quantification over types, recursive types, labeled product types, labeled sum types and support for pattern matching.\footnote{The accompanying technical report shows how to remove pattern matching  (and pattern TLMs) from the calculus by adding the usual elimination forms, e.g. $\unfold{e}$ rather than the $\aefoldp{p}$ pattern for values of recursive type.} Formally, core language terms are {abstract binding trees} (ABTs) identified up to alpha-equivalence, so we follow the syntactic conventions of \citet{pfple1}. This notational convention also clearly distinguishes core terms from unexpanded terms, which formally behave quite differently as we will describe below. 
 
 
- The reader is directed to \emph{PFPL} \cite{pfple1} for a detailed introductory account of all of these language constructs. We will only tersely summarize the static and dynamic semantics of the core language because the particularities are not critical to our ideas. The static semantics is organized around the type formation judgement, $\istypeU{\Delta}{\tau}$, the expression typing judgement, $\hastypeU{\Delta}{\Gamma}{e}{\tau}$, and the pattern typing judgement, $\patType{\pctx}{p}{\tau}$. Type formation contexts, $\Delta$, track hypothesis of the form $\Dhyp{t}$, and typing contexts, $\Gamma$, track hypotheses of the form $x : \tau$. In the pattern typing judgement, $\pctx$ collects the typing hypotheses generated by $p$. These judgements are inductively defined in the accompanying technical report along with necessary auxiliary structures and standard lemmas. The dynamic semantics of $\miniVerseBase$ is organized around the judgements $\isvalU{e}$, which says that $e$ is a value, and $\evalU{e}{e'}$, which says that $e$ evaluates to the value $e'$. As in ML, evaluation can diverge (general recursion is possible via recursive types \cite{pfple1}). It can also result in match failure.%\emph{Type formation contexts}, $\Delta$, and \emph{typing contexts}, $\Gamma$ are defined in the accompanying technical report in the standard way \cite{pfpl}, 
+ The reader is directed to \emph{PFPL} \cite{pfple1} for a detailed introductory account of all of these language constructs. We will only tersely summarize the static and dynamic semantics of the core language because the particularities are not critical to our ideas. The static semantics is organized around the type formation judgement, $\istypeU{\Delta}{\tau}$, the expression typing judgement, $\hastypeU{\Delta}{\Gamma}{e}{\tau}$, and the pattern typing judgement, $\patType{\pctx}{p}{\tau}$. Type formation contexts, $\Delta$, track hypothesis of the form $\Dhyp{t}$, and typing contexts, $\Gamma$, track hypotheses of the form $x : \tau$. In the pattern typing judgement, $\pctx$ collects the typing hypotheses generated by $p$. These judgements are inductively defined in the accompanying technical report along with necessary auxiliary structures and standard lemmas. The dynamic semantics of $\miniVerseCore$ is organized around the judgements $\isvalU{e}$, which says that $e$ is a value, and $\evalU{e}{e'}$, which says that $e$ evaluates to the value $e'$. As in ML, evaluation can diverge (general recursion is possible via recursive types \cite{pfple1}). It can also result in match failure.%\emph{Type formation contexts}, $\Delta$, and \emph{typing contexts}, $\Gamma$ are defined in the accompanying technical report in the standard way \cite{pfpl}, 
 % \[\begin{array}{ll}
 % % \textbf{Judgement Form} & \textbf{Description}\\
 % \istypeU{\Delta}{\tau} & \text{$\tau$ is a well-formed type}\\
@@ -1821,7 +1822,7 @@ $\arraycolsep=2pt\begin{array}{llcl}
 \mathsf{Pat} & p & ::= & x  ~\vert~ \aewildp ~\vert~ \aefoldp{p} ~\vert~ \aetplp{\labelset}{\mapschema{p}{i}{\labelset}} ~\vert~ \aeinjp{\ell}{p}
 \end{array}$
 \end{minipage}
-\caption[Syntax of the core language of $\miniVersePat$]{Syntax of the core language, $\miniVerseBase$, which is an entirely standard typed lambda calculus.  Metavariable $x$ ranges over variables, $t$ over type variables, $\ell$ over labels and $L$ over finite sets of labels. We write $\mapschema{\tau}{i}{\labelset}$ for a finite mapping of each label $i$ in $\labelset$ to some type $\tau_i$, and similarly for other sorts of terms. We write $\seqschemaX{r}$ for a finite sequence of $n > 0$  rules. %When using stylized forms, the label set is omitted when it can be inferred, e.g. the labeled product type $\prodt{\finmap{\mapitem{\ell_1}{e_1}, \mapitem{\ell_2}{e_2}}}$ leaves the label set $\{\ell_1, \ell_2\}$ implicit. 
+\caption[Syntax of the core language of $\miniVersePat$]{Syntax of the core language, $\miniVerseCore$, which is an entirely standard typed lambda calculus.  Metavariable $x$ ranges over variables, $t$ over type variables, $\ell$ over labels and $L$ over finite sets of labels. We write $\mapschema{\tau}{i}{\labelset}$ for a finite mapping of each label $i$ in $\labelset$ to some type $\tau_i$, and similarly for other sorts of terms. We write $\seqschemaX{r}$ for a finite sequence of $n > 0$  rules. %When using stylized forms, the label set is omitted when it can be inferred, e.g. the labeled product type $\prodt{\finmap{\mapitem{\ell_1}{e_1}, \mapitem{\ell_2}{e_2}}}$ leaves the label set $\{\ell_1, \ell_2\}$ implicit. 
 % When we use the stylized forms, we assume that the reader can infer suppressed indices and arguments from the surrounding context.
 }
 \label{fig:U-expanded-terms}
@@ -2459,7 +2460,7 @@ The second of these two premises {typechecks} the proto-expression or proto-patt
 
 The purpose of the \emph{splicing scenes} $\tscenev$, $\escenev$ and $\pscenev$ is to ``remember'' the contexts and literal body from the TLM application site (cf. the final premise of Rule \textsc{ee-ap-setlm} in Fig.~\ref{fig:ee-def-setlm}) for when validation encounters spliced terms. For example, \emph{expression splicing scenes}, $\escenev$, are of the form $\esceneUP{\uDelta}{\uGamma}{\uPsi}{\uPhi}{b}$.
 
-\paragraph{Common Forms} Most of the proto-expansion forms, including all of those elided in Fig.~\ref{fig:U-candidate-terms} mirror corresponding expanded forms. The rules governing proto-expansion validation for these common forms  in the accompanying technical report correspondingly mirror the typing rules. Splicing scenes---$\escenev$, $\tscenev$ and $\pscenev$--pass opaquely through these rules, i.e. none of these rules can access the application site contexts. Notice that the initial expansion-interal typing contexts, $\Delta$ and $\Gamma$, start out empty in the rules in Fig.~\ref{fig:ee-ap-setlm}. This maintains context independence (defined formally below).
+\paragraph{Common Forms} Most of the proto-expansion forms, including all of those elided in Fig.~\ref{fig:U-candidate-terms} mirror corresponding expanded forms. The rules governing proto-expansion validation for these common forms  in the accompanying technical report correspondingly mirror the typing rules. Splicing scenes---$\tscenev$, $\escenev$ and $\pscenev$--pass opaquely through these rules, i.e. none of these rules can access the application site contexts. Notice that the initial expansion-interal typing contexts, $\Delta$ and $\Gamma$, start out empty in the rules in Fig.~\ref{fig:ee-ap-setlm}. This maintains context independence (defined formally below).
 
 Notice that proto-rules, $\crulev$, involve expanded patterns, $p$, not proto-patterns, $\cpv$, because proto-rules appear in proto-expressions, which are generated by expression TLMs. Proto-patterns arise only from pattern TLMs. There is no variable proto-pattern form, for the reasons described in Sec. \ref{sec:sptsms}.
 
@@ -3594,10 +3595,10 @@ If $\patExpands{\upctx}{\uPhi}{\utsmap{\tsmv}{b}}{p}{\tau}$ where $\uDelta=\uDD{
 \label{sec:implementation}
 The implementation, \li{Relit}, which is an ongoing effort based on the design described in this paper, consists of a few extensions to the context-free syntax of Reason together with a parse tree pre-processor for the OCaml compiler, currently using its PPX system (discussed in Sec.~\ref{sec:existing-approaches}).
 
-\paragraph{TLM Definitions} The Reason grammar extension turns TLM definitions into module definitions of a stereotyped form. For example, definition of \li{$regex} from Fig.~\ref{fig:regex-tlm-def} is, eliding a few minor details, implemented as shown below. The comments describe how the components correspond. 
+\paragraph{TLM Definitions} The Reason grammar extension turns TLM definitions into module definitions of a stereotyped form. For example, the definition of \li{$regex} from Fig.~\ref{fig:regex-tlm-def} is, eliding a few minor details, implemented as shown below. The comments describe how the components correspond. 
 
 \begin{lstlisting}
-    module RelitInternalDefn_regex = struct
+    module RelitInternalDefn_regex = struct (* notation $regex *)
       type t = Regex.t (* corresponds to "at Regex.t" *)
       module Lexer_RegexLexer = struct end (* ... "lexer RegexLexer" *)
       module Parser_RegexParser = struct end (* ... "parser RegexParser" *)
@@ -3610,7 +3611,8 @@ The implementation, \li{Relit}, which is an ongoing effort based on the design d
     end
 \end{lstlisting}
 
-The name of the TLM is stored as the module name, with the internal prefix \li{RelitInternalDefn_}. By encoding TLM definitions as modules, TLMs can be packaged inside other modules (\li{RegexNotation} in Fig.~\ref{fig:regex-tlm-def}) and it is straightforward to support scoped TLM abbreviations, as on Line 1 of Fig.~\ref{fig:first-tlm-example}. By encoding the relevant information from the TLM definition in module names, e.g. \li{Lexer_RegexLexer} and \li{Nonterminal_start}, we ensure that the corresponding signature is a \emph{singleton signature}, i.e. it uniquely identifies the TLM definition, so TLM definitions can be included in module signatures, exported from functors and packaged using the standard tooling.
+% The name of the TLM is stored as the module name, with the internal prefix \li{RelitInternalDefn_}. 
+By encoding TLM definitions as modules and encoding the information from the TLM definition in module names, e.g. \li{Lexer_RegexLexer} and \li{Nonterminal_start}, we ensure that the corresponding signature is a \emph{singleton signature}, i.e. it uniquely identifies the TLM definition, so TLM definitions can be included in module signatures, exported from within module definitions (including those generated by functors) and packaged using the standard tooling.
 
 
 % TLM definitions are constrained so that the signature of the generated module is a \emph{singleton}, i.e. that it uniquely determines the module. This implies that the dependencies cannot list a value---only module paths and concrete types can be listed. As such, TLM definition equality is decidable and TLM definitions can be tracked in module types (signatures) without any special effort. %Note that this is more restrictive than in the formal system in the previous section, where parse functions were included inline, rather than by path, and dependencies were arbitrary values. It must be possible to resolve the implementation of the lexer and parser modules, not just their signatures, at expansion time, so lexer and module paths must be separately packaged as described in Sec.~\ref{sec:provider-perspective}.
@@ -3621,9 +3623,11 @@ The name of the TLM is stored as the module name, with the internal prefix \li{R
           ("You're using relit syntax without the relit ppx!", "A|T|G|C") [@relit])
 \end{lstlisting}
 
-The Relit preprocessor rewrites TLM applications by following the specification in the previous section, differing only in that the ``dependency variable'' is a ``dependency path'', here to \li{Notation_regex___relit.Dependencies}. The only difficult is in finding the TLM definition at all, which due to our integration into the module system may have been accessed indirectly, e.g. here via the \li{open} directive and in other situations via module synonyms, functors and so on. The trick is in the singleton restriction just described---if we can determine the signature for the module path that \li{Apply} is accessed from, we have the full definition in hand. To do so, we run the OCaml typechecker on this unexpanded representation. Because the TLM application raises an exception, its type can be generalized arbitrarily. As long as unrelated type errors at a particular depth are resolved (treating the TLM applications at that depth as ``holes'') expansion at that depth can proceed. This occasionally causes types that incidentally appear in error messages to be more general than the programmer might expect (e.g. here \li{restriction_template} will have type \li{'a => 'b} during this ``pre-typing'' phase). 
+The Relit preprocessor rewrites TLM applications by following the specification in the previous section, differing only in that the ``dependency variable'' is a ``dependency path'', here to \li{Notation_regex___relit.Dependencies}. The only difficult is in finding the TLM definition at all, which due to our integration into the module system may have been accessed indirectly, e.g. here via the \li{open} directive and in other situations via module synonyms, functors and so on. The trick is in the singleton restriction just described---if we can determine the signature for the module path that \li{Apply} is accessed from, we have the full definition in hand. To do so, we run the OCaml typechecker on this unexpanded representation. Because the TLM application raises an exception, its type can be generalized arbitrarily. As long as unrelated type errors at a particular depth are resolved (treating the TLM applications at that depth as ``holes''), expansion at that depth can proceed. This occasionally causes types that incidentally appear in error messages to be more general than the programmer might expect (e.g. here \li{restriction_template} will have type \li{'a => 'b} during this ``pre-typing'' phase). 
 %If this type ends up in an error message incidentally, e.g. due to a signature mismatch elsewhere, it may be somewhat confusing. 
 We are working to improve error reporting and, more generally, improving integration with various other tools in the Reason / OCaml ecosystem.
+
+Pattern TLMs are similar, but OCaml does not support exceptions in pattern position so we require a preprocessing step that turns any expression that the pattern binds over into an exception.
 
 \paragraph{Proto-Expansion Validation} The typing phase of proto-expansion validation also defers to the OCaml typechecker, with spliced expressions  represented as exceptions ascribed the corresponding segment type. The recursively generated substitutions are, after validation is complete, substituted in the standard capture-avoiding manner by simply replacing splice references with variables, and then wrapping the proto-expansion in a function that is immediately applied to the splices.
 
@@ -3775,7 +3779,7 @@ At several points, we allude to editor integration. However, several important q
 \paragraph{Concluding Remarks} 
 To conclude, let us briefly reiterate the key ideas of this paper. The focus was on ensuring that client programmers can follow simple protocols when they have questions about the syntactic structure, type structure or binding structure of a program. In answering these sorts of questions,  the client is not made to look at the generated expansion itself, nor inspect the parser implementation. Instead, the programmer need only be given knowledge of the expansion type from the TLM definition and the segmentation inferred by the expander at each application site, which carries a small volume of information that can be communicated straightforwardly by standard editor services. Certain questions related to the binding structure simply do not need to be asked due to the strict context independence and capture avoidance discipline of the system.%enabled by the explicit tracking of dependencies and of spliced segments. 
 
-Despite these semantic constraints, the system is able to express a number of non-trivial examples with few compromises because there is only one simple lexical constraint on literal bodies. The mechanism integrates cleanly into Reason/OCaml, with full support for its type system, module system and pattern matching system. TLM providers can use existing, mature parser generators and parse tree representations, and can opt-in to a stronger typing discipline by using various implementations of MetaOCaml. Overall, we believe that TLMs represent a distinctly \emph{reasonable} and \emph{expressive} new point in the design space of literal notation definition systems.
+Despite these semantic constraints, the system is able to express a number of non-trivial examples with few compromises because there is only one simple lexical constraint on literal bodies. The mechanism integrates cleanly into Reason/OCaml, with full support for its type system, module system and pattern matching system. TLM providers can use existing, mature parser generators and parse tree representations, and can opt-in to a stronger typing discipline by using various implementations of MetaOCaml. Overall, we believe that TLMs represent a distinctly \emph{reasonable} and \emph{expressive} new point in the design space of literal notation definition systems and macro systems.
 \vspace{-5px}
 
 % Unhygienic term rewriting systems like OCaml's PPX system and Template Haskell can be used to rewrite string literals, but these systems also do no adequately address any of these reasoning criteria. Hygienic macro systems, like those available in various Lisp-family languages and in Scala, are also unsuitable because the hygiene constraints prevent the macros from surfacing spliced expressions from literal bodies. The system of \emph{type-specific languages} (TSLs) developed in prior work by \citet{TSLs} has made perhaps the most headway toward these ideals, but it too does not adequately maintain these reasoning criteria. Moreover, it is not clear how to integrate this approach, which was developed for a simple monomorphic language with nominal types and local type inference, into ML, which supports structural types, parameterized types, abstract types, modules, pattern matching and non-local type inference. We will say more about these existing approaches in Sec. \ref{sec:existing-approaches}. For now, it suffices to say that after evaluating existing approaches, we found that none of them were suitable for integration into Reason.
@@ -3830,7 +3834,7 @@ paper; and members of the PL Reading Group at University of Chicago and the anon
 
 \clearpage
 %% Bibliography
-\bibliography{../../../papers/research}
+\bibliography{research}
 
 \begin{comment}\appendix
 \subsection{Parametric TLMs, Formally}
