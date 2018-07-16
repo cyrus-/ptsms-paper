@@ -63,7 +63,7 @@
 % \usepackage{rotating}
 % \usepackage{pdflscape}
 
-\usepackage[colorlinks=true,allcolors=Blue,backref,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered,
+\usepackage[colorlinks=true,allcolors=Blue,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered,
 pdfborder={0 0 0},  %removes outlines around hyper links in online display
 ]{hyperref}
 
@@ -120,7 +120,7 @@ pdfborder={0 0 0},  %removes outlines around hyper links in online display
 
 \usepackage{mathtools}
 \usepackage{ stmaryrd }
-\usepackage[numbers,sort]{natbib}
+\usepackage[numbers]{natbib}
 
 % \usepackage{subfigure}
 
@@ -238,7 +238,7 @@ moredelim=**[is][\color{black}]{SOK}{EOK},
 \date{July 8, 2018}
 
 \abstract{
-This report presents a complete technical account of the formal system that was described in the accompanying paper, as well as more details on the quasiquotation TLM.
+This report presents a complete technical account of the formal system that was described in the accompanying paper \cite{tlms-icfp18}, as well as more details on the quasiquotation TLM.
 }
 
 \keywords{extensible syntax; macros; hygiene; type systems}
@@ -249,7 +249,7 @@ This report presents a complete technical account of the formal system that was 
 
 %\arpasupport{fox}
 \support{This work was
-supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042;
+supported in part by AFRL and DARPA under agreement \#FA8750-16-2-0042 and 
  by the NSA under lablet contract \#H98230-14-C-0140.}
 % \authorsupport{The author holds a Froboz Gradual Fellowship.}
 
@@ -487,7 +487,7 @@ body             "2 + `(xyz)`"
 
 
 \bibliographystyle{plainnat}
-\bibliography{../../../../papers/research} %your bib file
+\bibliography{../research} %your bib file
 
 \end{document}
 
